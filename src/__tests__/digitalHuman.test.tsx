@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import DigitalHumanViewer from '../components/DigitalHumanViewer';
 import ControlPanel from '../components/ControlPanel';
-import { useDigitalHumanStore, TTSService, ASRService } from '../store/digitalHumanStore';
+import { useDigitalHumanStore } from '../store/digitalHumanStore';
+import { TTSService, ASRService } from '../core/audio/audioService';
 import React from 'react';
 
 // Mock React's useRef before Three.js mocks

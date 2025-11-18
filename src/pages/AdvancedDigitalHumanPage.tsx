@@ -4,7 +4,8 @@ import ControlPanel from '../components/ControlPanel';
 import VoiceInteractionPanel from '../components/VoiceInteractionPanel';
 import ExpressionControlPanel from '../components/ExpressionControlPanel';
 import BehaviorControlPanel from '../components/BehaviorControlPanel';
-import { useDigitalHumanStore, ttsService, asrService } from '../store/digitalHumanStore';
+import { useDigitalHumanStore } from '../store/digitalHumanStore';
+import { ttsService, asrService } from '../core/audio/audioService';
 import { Toaster, toast } from 'sonner';
 
 export default function AdvancedDigitalHumanPage() {

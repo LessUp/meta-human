@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import DigitalHumanViewer from '../components/DigitalHumanViewer';
 import ControlPanel from '../components/ControlPanel';
-import { useDigitalHumanStore, ttsService, asrService } from '../store/digitalHumanStore';
+import { useDigitalHumanStore } from '../store/digitalHumanStore';
+import { ttsService, asrService } from '../core/audio/audioService';
 import { Toaster, toast } from 'sonner';
 
 export default function DigitalHumanPage() {
