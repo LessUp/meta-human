@@ -6,6 +6,7 @@ import ExpressionControlPanel from '../components/ExpressionControlPanel';
 import BehaviorControlPanel from '../components/BehaviorControlPanel';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { ttsService, asrService } from '../core/audio/audioService';
+import { digitalHumanEngine } from '../core/avatar/DigitalHumanEngine';
 import { Toaster, toast } from 'sonner';
 
 export default function AdvancedDigitalHumanPage() {
@@ -17,15 +18,7 @@ export default function AdvancedDigitalHumanPage() {
     currentExpression,
     currentEmotion,
     isSpeaking,
-    setPlaying,
     setRecording,
-    setMuted,
-    setAutoRotate,
-    setExpression,
-    setEmotion,
-    play,
-    pause,
-    reset,
     toggleMute,
     toggleAutoRotate
   } = useDigitalHumanStore();
@@ -44,17 +37,17 @@ export default function AdvancedDigitalHumanPage() {
   // 处理播放/暂停
   const handlePlayPause = () => {
     if (isPlaying) {
-      pause();
+      digitalHumanEngine.pause();
       toast.info('数字人暂停');
     } else {
-      play();
+      digitalHumanEngine.play();
       toast.success('数字人开始播放');
     }
   };
 
   // 处理重置
   const handleReset = () => {
-    reset();
+    digitalHumanEngine.reset();
     setCurrentBehavior('idle');
     toast.info('数字人重置到初始状态');
   };
@@ -90,21 +83,21 @@ export default function AdvancedDigitalHumanPage() {
     // 处理基本命令
     switch (command) {
       case '打招呼':
-        setExpression('smile');
-        setEmotion('happy');
+        digitalHumanEngine.setExpression('smile');
+        digitalHumanEngine.setEmotion('happy');
         setCurrentBehavior('greeting');
         ttsService.speak('您好！很高兴见到您！');
         toast.success('执行打招呼动作');
         break;
       case '跳舞':
-        setExpression('laugh');
-        setEmotion('excited');
+        digitalHumanEngine.setExpression('laugh');
+        digitalHumanEngine.setEmotion('excited');
         setCurrentBehavior('excited');
         ttsService.speak('让我为您跳一支舞！');
         toast.success('执行跳舞动作');
         break;
       case '说话':
-        setExpression('speaking');
+        digitalHumanEngine.setExpression('speaking');
         setCurrentBehavior('speaking');
         ttsService.speak('我正在说话，有什么可以帮助您的吗？');
         toast.success('执行说话动作');
@@ -112,7 +105,7 @@ export default function AdvancedDigitalHumanPage() {
       case '表情':
         const expressions = ['smile', 'surprise', 'sad', 'angry'];
         const randomExpression = expressions[Math.floor(Math.random() * expressions.length)];
-        setExpression(randomExpression);
+        digitalHumanEngine.setExpression(randomExpression);
         ttsService.speak(`这是我的${randomExpression}表情！`);
         toast.success(`切换到${randomExpression}表情`);
         break;
@@ -135,7 +128,7 @@ export default function AdvancedDigitalHumanPage() {
 
   // 处理表情变化
   const handleExpressionChange = (expression: string, intensity: number) => {
-    setExpression(expression);
+    digitalHumanEngine.setExpression(expression);
     console.log(`表情变化: ${expression}, 强度: ${intensity}`);
     toast.info(`表情切换到: ${expression}`);
   };

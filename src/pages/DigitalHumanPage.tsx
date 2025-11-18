@@ -3,6 +3,7 @@ import DigitalHumanViewer from '../components/DigitalHumanViewer';
 import ControlPanel from '../components/ControlPanel';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { ttsService, asrService } from '../core/audio/audioService';
+import { digitalHumanEngine } from '../core/avatar/DigitalHumanEngine';
 import { Toaster, toast } from 'sonner';
 
 export default function DigitalHumanPage() {
@@ -12,13 +13,7 @@ export default function DigitalHumanPage() {
     isMuted,
     autoRotate,
     isSpeaking,
-    setPlaying,
     setRecording,
-    setMuted,
-    setAutoRotate,
-    play,
-    pause,
-    reset,
     toggleMute,
     toggleAutoRotate
   } = useDigitalHumanStore();
@@ -53,15 +48,15 @@ export default function DigitalHumanPage() {
   // 处理播放/暂停
   const handlePlayPause = () => {
     if (isPlaying) {
-      pause();
+      digitalHumanEngine.pause();
     } else {
-      play();
+      digitalHumanEngine.play();
     }
   };
 
   // 处理重置
   const handleReset = () => {
-    reset();
+    digitalHumanEngine.reset();
   };
 
   // 处理录音开关
