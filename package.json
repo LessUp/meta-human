@@ -31,7 +31,8 @@
     "sonner": "^1.2.4",
     "tailwind-merge": "^3.4.0",
     "three": "^0.158.0",
-    "zustand": "^4.4.7"
+    "zustand": "^4.4.7",
+    "@mediapipe/face_mesh": "^0.4.1633559619"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

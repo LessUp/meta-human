@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DigitalHumanViewer from '../components/DigitalHumanViewer';
 import ControlPanel from '../components/ControlPanel';
 import VoiceInteractionPanel from '../components/VoiceInteractionPanel';
+import VisionMirrorPanel from '../components/VisionMirrorPanel';
 import ExpressionControlPanel from '../components/ExpressionControlPanel';
 import BehaviorControlPanel from '../components/BehaviorControlPanel';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
@@ -215,6 +216,7 @@ export default function AdvancedDigitalHumanPage() {
   const tabs = [
     { id: 'basic', label: '基础控制', icon: '🎮' },
     { id: 'voice', label: '语音交互', icon: '🎤' },
+    { id: 'vision', label: '视觉镜像', icon: '📷' },
     { id: 'chat', label: '对话', icon: '💬' },
     { id: 'expression', label: '表情控制', icon: '😊' },
     { id: 'behavior', label: '行为控制', icon: '🧠' }
@@ -323,6 +325,21 @@ export default function AdvancedDigitalHumanPage() {
                 <VoiceInteractionPanel
                   onTranscript={handleTranscript}
                   onSpeak={handleSpeak}
+                />
+              )}
+              
+              {activeTab === 'vision' && (
+                <VisionMirrorPanel
+                  onEmotionChange={(emotion) => {
+                    if (emotion === 'happy') {
+                      digitalHumanEngine.setExpression('smile');
+                    } else if (emotion === 'surprised') {
+                      digitalHumanEngine.setExpression('surprise');
+                    } else {
+                      digitalHumanEngine.setExpression('neutral');
+                    }
+                    digitalHumanEngine.setEmotion(emotion);
+                  }}
                 />
               )}
               
