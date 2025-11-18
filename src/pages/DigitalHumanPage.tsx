@@ -27,7 +27,26 @@ export default function DigitalHumanPage() {
   // 处理模型加载完成
   const handleModelLoad = (model: any) => {
     console.log('数字人模型加载完成:', model);
-    setModelLoaded(true);
+    console.log('当前modelLoaded状态:', modelLoaded);
+    
+    // 使用函数式更新确保状态正确更新
+    setModelLoaded(prevState => {
+      console.log('从状态', prevState, '更新到', true);
+      return true;
+    });
+    
+    console.log('状态更新已调用，检查UI是否刷新...');
+  };
+
+  // 监听modelLoaded状态变化
+  useEffect(() => {
+    console.log('modelLoaded状态已更新为:', modelLoaded);
+  }, [modelLoaded]);
+
+  // 添加一个测试按钮来手动触发状态更新
+  const testStateUpdate = () => {
+    console.log('手动测试状态更新');
+    setModelLoaded(prev => !prev);
   };
 
   // 处理播放/暂停
@@ -68,8 +87,7 @@ export default function DigitalHumanPage() {
   const handleVoiceCommand = (command: string) => {
     console.log('执行语音命令:', command);
     // 语音命令处理已经在ASRService中实现
-    const tts = new ttsService.constructor();
-    tts.speak(`正在执行命令：${command}`);
+    ttsService.speak(`正在执行命令：${command}`);
   };
 
   // 组件卸载时清理
@@ -137,6 +155,14 @@ export default function DigitalHumanPage() {
                   <div className="text-xs text-gray-500">
                     Three.js 渲染引擎 | WebGL
                   </div>
+                  
+                  {/* 测试按钮 */}
+                  <button 
+                    onClick={testStateUpdate}
+                    className="ml-4 px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                  >
+                    测试状态
+                  </button>
                 </div>
               </div>
             </div>

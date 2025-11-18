@@ -1,8 +1,34 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import DigitalHumanViewer from '../components/DigitalHumanViewer';
 import ControlPanel from '../components/ControlPanel';
 import { useDigitalHumanStore, TTSService, ASRService } from '../store/digitalHumanStore';
+import React from 'react';
+
+// Mock React's useRef before Three.js mocks
+vi.spyOn(React, 'useRef').mockImplementation(() => {
+  const groupMock = {
+    children: [],
+    position: { x: 0, y: 0, z: 0 },
+    rotation: { x: 0, y: 0, z: 0 },
+    scale: { x: 1, y: 1, z: 1 },
+    add: vi.fn((object) => {
+      if (object && typeof object === 'object') {
+        groupMock.children.push(object);
+      }
+    }),
+    remove: vi.fn((object) => {
+      const index = groupMock.children.indexOf(object);
+      if (index > -1) {
+        groupMock.children.splice(index, 1);
+      }
+    })
+  };
+  
+  return {
+    current: groupMock
+  };
+});
 
 // 模拟Three.js相关模块
 vi.mock('@react-three/fiber', () => ({
@@ -22,29 +48,7 @@ vi.mock('@react-three/fiber', () => ({
     },
     camera: {},
     gl: {}
-  })),
-  useRef: vi.fn(() => {
-    const ref = {
-      current: {
-        children: [],
-        position: { x: 0, y: 0, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale: { x: 1, y: 1, z: 1 }
-      }
-    };
-    ref.current.add = vi.fn((object) => {
-      if (object && typeof object === 'object') {
-        ref.current.children.push(object);
-      }
-    });
-    ref.current.remove = vi.fn((object) => {
-      const index = ref.current.children.indexOf(object);
-      if (index > -1) {
-        ref.current.children.splice(index, 1);
-      }
-    });
-    return ref;
-  })
+  }))
 }));
 
 vi.mock('@react-three/drei', () => ({
@@ -66,17 +70,12 @@ vi.mock('three', () => ({
   }),
   Mesh: vi.fn(function Mesh() {
     const mesh = {
-      position: { x: 0, y: 0, z: 0 },
+      position: { x: 0, y: 0, z: 0, set: vi.fn() },
       rotation: { x: 0, y: 0, z: 0 },
       scale: { x: 1, y: 1, z: 1 },
       add: vi.fn(),
       remove: vi.fn()
     };
-    mesh.position.set = vi.fn((x, y, z) => {
-      mesh.position.x = x;
-      mesh.position.y = y;
-      mesh.position.z = z;
-    });
     return mesh;
   }),
   Group: vi.fn(function Group() {
@@ -84,17 +83,10 @@ vi.mock('three', () => ({
       children: [],
       position: { x: 0, y: 0, z: 0 },
       rotation: { x: 0, y: 0, z: 0 },
-      scale: { x: 1, y: 1, z: 1 }
+      scale: { x: 1, y: 1, z: 1 },
+      add: vi.fn(),
+      remove: vi.fn()
     };
-    group.add = vi.fn((object) => {
-      group.children.push(object);
-    });
-    group.remove = vi.fn((object) => {
-      const index = group.children.indexOf(object);
-      if (index > -1) {
-        group.children.splice(index, 1);
-      }
-    });
     return group;
   }),
   Vector3: vi.fn(function Vector3(x = 0, y = 0, z = 0) { return { x, y, z }; }),
@@ -126,10 +118,12 @@ describe('DigitalHumanViewer', () => {
 
   it('handles auto rotate prop', () => {
     const { rerender } = render(<DigitalHumanViewer autoRotate={false} />);
-    expect(screen.getByText('自动旋转: 关闭')).toBeInTheDocument();
+    expect(screen.getByText('自动旋转:')).toBeInTheDocument();
+    expect(screen.getByText('关闭')).toBeInTheDocument();
     
     rerender(<DigitalHumanViewer autoRotate={true} />);
-    expect(screen.getByText('自动旋转: 开启')).toBeInTheDocument();
+    expect(screen.getByText('自动旋转:')).toBeInTheDocument();
+    expect(screen.getByText('开启')).toBeInTheDocument();
   });
 
   it('calls onModelLoad callback', () => {

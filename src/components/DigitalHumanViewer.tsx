@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, Suspense } from 'react';
+import React, { useRef, useEffect, Suspense, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Environment, useGLTF, Text, Html } from '@react-three/drei';
 import * as THREE from 'three';
@@ -24,11 +24,16 @@ function LoadingFallback() {
 function DigitalHumanModel({ modelUrl, onModelLoad }: { modelUrl?: string; onModelLoad?: (model: any) => void }) {
   const meshRef = useRef<THREE.Group>(null);
   const { scene } = useThree();
+  const [isLoaded, setIsLoaded] = useState(false);
   
   // 使用默认的立方体作为数字人模型占位符
   // 在实际应用中，这里应该加载真实的3D模型文件
   useEffect(() => {
-    if (meshRef.current) {
+    console.log('DigitalHumanModel useEffect触发，onModelLoad:', typeof onModelLoad);
+    
+    if (meshRef.current && typeof meshRef.current.add === 'function') {
+      console.log('开始创建数字人模型...');
+      
       // 创建基础数字人形状
       const geometry = new THREE.BoxGeometry(1, 2, 0.5);
       const material = new THREE.MeshStandardMaterial({ 
@@ -63,15 +68,23 @@ function DigitalHumanModel({ modelUrl, onModelLoad }: { modelUrl?: string; onMod
       meshRef.current.add(leftEye);
       meshRef.current.add(rightEye);
       
-      if (onModelLoad) {
-        onModelLoad(meshRef.current);
-      }
+      console.log('模型创建完成，准备调用onModelLoad...');
+      
+      // 延迟调用onModelLoad确保组件完全挂载
+      setTimeout(() => {
+        if (onModelLoad && meshRef.current) {
+          console.log('调用onModelLoad回调函数...');
+          onModelLoad(meshRef.current);
+          console.log('onModelLoad回调函数已调用');
+        }
+        setIsLoaded(true);
+      }, 100);
     }
   }, [onModelLoad]);
   
   // 添加简单的动画效果
   useFrame((state) => {
-    if (meshRef.current) {
+    if (meshRef.current && typeof meshRef.current.add === 'function') {
       meshRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
       // 头部轻微摆动
       const head = meshRef.current.children[1];
@@ -91,13 +104,13 @@ function Scene({ modelUrl, autoRotate, showControls, onModelLoad }: DigitalHuman
       <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
       <pointLight position={[-10, -10, -10]} intensity={0.5} />
       
-      <Suspense fallback={<LoadingFallback />}>
-        <DigitalHumanModel modelUrl={modelUrl} onModelLoad={onModelLoad} />
-      </Suspense>
+      <DigitalHumanModel modelUrl={modelUrl} onModelLoad={onModelLoad} />
       
       {showControls && <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} autoRotate={autoRotate} />}
       
-      <Environment preset="studio" />
+      {/* 简化环境设置，避免外部资源加载 */}
+      <color attach="background" args={['#1a1a2e']} />
+      <fog attach="fog" args={['#1a1a2e', 10, 50]} />
       
       {/* 添加网格地板 */}
       <gridHelper args={[10, 10]} position={[0, -1, 0]} />
@@ -111,6 +124,8 @@ export default function DigitalHumanViewer({
   showControls = true, 
   onModelLoad 
 }: DigitalHumanViewerProps) {
+  console.log('DigitalHumanViewer渲染，onModelLoad:', typeof onModelLoad);
+  
   return (
     <div className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-700 rounded-lg overflow-hidden">
       <Canvas
