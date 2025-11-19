@@ -14,6 +14,7 @@ interface DigitalHumanState {
   // 行为状态
   currentEmotion: string;
   currentExpression: string;
+  expressionIntensity: number;
   
   // 系统状态
   isConnected: boolean;
@@ -29,6 +30,7 @@ interface DigitalHumanState {
   setSpeaking: (speaking: boolean) => void;
   setEmotion: (emotion: string) => void;
   setExpression: (expression: string) => void;
+  setExpressionIntensity: (intensity: number) => void;
   setConnected: (connected: boolean) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -53,6 +55,7 @@ export const useDigitalHumanStore = create<DigitalHumanState>((set, get) => ({
   isSpeaking: false,
   currentEmotion: 'neutral',
   currentExpression: 'neutral',
+  expressionIntensity: 0.8,
   isConnected: true,
   isLoading: false,
   error: null,
@@ -66,6 +69,7 @@ export const useDigitalHumanStore = create<DigitalHumanState>((set, get) => ({
   setSpeaking: (speaking) => set({ isSpeaking: speaking }),
   setEmotion: (emotion) => set({ currentEmotion: emotion }),
   setExpression: (expression) => set({ currentExpression: expression }),
+  setExpressionIntensity: (intensity) => set({ expressionIntensity: intensity }),
   setConnected: (connected) => set({ isConnected: connected }),
   setLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error }),
@@ -86,7 +90,8 @@ export const useDigitalHumanStore = create<DigitalHumanState>((set, get) => ({
       isPlaying: false,
       currentAnimation: 'idle',
       currentEmotion: 'neutral',
-      currentExpression: 'neutral'
+      currentExpression: 'neutral',
+      expressionIntensity: 0.8
     });
     console.log('数字人重置');
   },

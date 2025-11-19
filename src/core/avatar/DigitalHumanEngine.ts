@@ -21,6 +21,11 @@ export class DigitalHumanEngine {
     setExpression(expression);
   }
 
+  setExpressionIntensity(intensity: number) {
+    const { setExpressionIntensity } = useDigitalHumanStore.getState();
+    setExpressionIntensity(intensity);
+  }
+
   setEmotion(emotion: string) {
     const { setEmotion } = useDigitalHumanStore.getState();
     setEmotion(emotion);

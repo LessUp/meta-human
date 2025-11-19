@@ -31,12 +31,14 @@ function DigitalHumanModel({ modelUrl, onModelLoad }: { modelUrl?: string; onMod
     currentAnimation,
     isPlaying,
     isSpeaking,
+    expressionIntensity,
   } = useDigitalHumanStore((state) => ({
     currentExpression: state.currentExpression,
     currentEmotion: state.currentEmotion,
     currentAnimation: state.currentAnimation,
     isPlaying: state.isPlaying,
     isSpeaking: state.isSpeaking,
+    expressionIntensity: state.expressionIntensity,
   }));
 
   // 使用默认的立方体作为数字人模型占位符
@@ -120,8 +122,10 @@ function DigitalHumanModel({ modelUrl, onModelLoad }: { modelUrl?: string; onMod
     const group = meshRef.current;
     if (!group) return;
 
-    const { body, head, leftArm, rightArm } = (group as any).userData || {};
+    const { body, head, leftArm, rightArm, leftEye, rightEye } = (group as any).userData || {};
     const t = state.clock.elapsedTime;
+    const intensity = typeof expressionIntensity === 'number' ? expressionIntensity : 0.8;
+    const strength = 0.5 + intensity;
 
     // 基础重置
     if (head) {
@@ -136,26 +140,58 @@ function DigitalHumanModel({ modelUrl, onModelLoad }: { modelUrl?: string; onMod
       leftArm.rotation.set(0, 0, 0);
       rightArm.rotation.set(0, 0, 0);
     }
+    if (leftEye && rightEye) {
+      leftEye.scale.set(1, 1, 1);
+      rightEye.scale.set(1, 1, 1);
+    }
 
     // 表情：用简单的头部形变和姿态模拟
     if (head) {
       switch (currentExpression) {
+        case 'neutral':
+          break;
         case 'smile':
-          head.scale.set(1.05, 1.05, 1.05);
+          head.scale.set(1 + 0.05 * strength, 1 + 0.05 * strength, 1 + 0.05 * strength);
+          head.position.y = 1.3 + 0.02 * strength;
           break;
         case 'laugh':
-          head.scale.set(1.1, 1.1, 1.1);
+          head.scale.set(1 + 0.12 * strength, 1 + 0.12 * strength, 1 + 0.12 * strength);
+          head.position.y = 1.32 + 0.03 * strength;
           break;
         case 'surprise':
-          head.scale.set(1.1, 1.1, 1.1);
-          head.position.y = 1.35;
+          head.scale.set(1 + 0.1 * strength, 1 + 0.1 * strength, 1 + 0.1 * strength);
+          head.position.y = 1.35 + 0.02 * strength;
+          if (leftEye && rightEye) {
+            leftEye.scale.set(1.5 * strength, 1.5 * strength, 1.5 * strength);
+            rightEye.scale.set(1.5 * strength, 1.5 * strength, 1.5 * strength);
+          }
           break;
         case 'sad':
-          head.scale.set(0.95, 0.9, 0.95);
-          head.position.y = 1.25;
+          head.scale.set(1 - 0.08 * strength, 1 - 0.12 * strength, 1 - 0.08 * strength);
+          head.position.y = 1.25 - 0.02 * strength;
+          head.rotation.x = 0.15 * strength;
           break;
         case 'angry':
-          head.rotation.z = 0.1;
+          head.rotation.z = 0.15 * strength;
+          head.position.y = 1.28;
+          break;
+        case 'blink':
+        case 'eye_blink': {
+          const blink = 0.2 + 0.8 * (1 - Math.abs(Math.sin(t * 8 * strength)));
+          if (leftEye && rightEye) {
+            leftEye.scale.y = blink;
+            rightEye.scale.y = blink;
+          }
+          break;
+        }
+        case 'eyebrow_raise':
+          head.position.y = 1.35 + 0.05 * strength;
+          break;
+        case 'mouth_open':
+          head.scale.set(1 + 0.05 * strength, 1 + 0.15 * strength, 1 + 0.05 * strength);
+          break;
+        case 'head_nod':
+          head.rotation.x = Math.sin(t * 4 * strength) * 0.3;
           break;
         default:
           break;

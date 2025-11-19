@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@mediapipe/face_mesh": "^0.4.1633559619",
+    "@mediapipe/pose": "^0.5.1675469404",
     "@react-three/drei": "^9.88.13",
     "@react-three/fiber": "^8.15.19",
     "@types/three": "^0.158.0",

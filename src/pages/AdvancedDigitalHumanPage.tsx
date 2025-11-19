@@ -190,6 +190,7 @@ export default function AdvancedDigitalHumanPage() {
   // 处理表情变化
   const handleExpressionChange = (expression: string, intensity: number) => {
     digitalHumanEngine.setExpression(expression);
+    digitalHumanEngine.setExpressionIntensity(intensity);
     console.log(`表情变化: ${expression}, 强度: ${intensity}`);
     toast.info(`表情切换到: ${expression}`);
   };
