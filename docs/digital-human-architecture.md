@@ -283,3 +283,4 @@ server/
 
 - 本设计文档遵循 KISS 原则：优先使用前端 Web 能力和简单规则实现“足够好”的体验，再在此基础上迭代增强。
 - 当前所有设计均以“有限动画 clip” 为前提，后续如果更换为复杂的骨骼动画 / 全身驱动，可以在 `DigitalHumanEngine` 中扩展接口，而无需大改 UI / Service 层。
+ - 本文聚焦于架构与模块职责的设计，关于分阶段演进计划与优先级，可参考 `docs/digital-human-roadmap.md` 中的详细 Roadmap。 

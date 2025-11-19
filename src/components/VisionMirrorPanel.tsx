@@ -4,7 +4,7 @@ import type { UserEmotion } from '../core/vision/visionMapper';
 
 interface VisionMirrorPanelProps {
   onEmotionChange: (emotion: UserEmotion) => void;
-  onHeadMotion?: (motion: 'nod' | 'shakeHead') => void;
+  onHeadMotion?: (motion: 'nod' | 'shakeHead' | 'raiseHand' | 'waveHand') => void;
 }
 
 export default function VisionMirrorPanel({ onEmotionChange, onHeadMotion }: VisionMirrorPanelProps) {

@@ -1,17 +1,21 @@
 import { mapFaceToEmotion, UserEmotion } from './visionMapper';
 
 type EmotionCallback = (emotion: UserEmotion) => void;
-type MotionCallback = (motion: 'nod' | 'shakeHead') => void;
+type MotionCallback = (motion: 'nod' | 'shakeHead' | 'raiseHand' | 'waveHand') => void;
 
 class VisionService {
   private video: HTMLVideoElement | null = null;
   private stream: MediaStream | null = null;
   private running = false;
   private faceMesh: any = null;
+  private pose: any = null;
   private onEmotion: EmotionCallback | null = null;
   private onMotion: MotionCallback | null = null;
   private yawHistory: number[] = [];
   private pitchHistory: number[] = [];
+  private leftWristXHistory: number[] = [];
+  private rightWristXHistory: number[] = [];
+  private lastUpperBodyMotionTime = 0;
 
   async start(
     videoElement: HTMLVideoElement,
@@ -68,19 +72,51 @@ class VisionService {
           this.onMotion(motion);
         }
       });
+    } catch (error) {
+      console.error('初始化人脸视觉模型失败', error);
+    }
+
+    try {
+      const poseMod: any = await import('@mediapipe/pose');
+      const Pose = poseMod.Pose;
+      this.pose = new Pose({
+        locateFile: (file: string) =>
+          `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+      });
+      this.pose.setOptions({
+        modelComplexity: 0,
+        smoothLandmarks: true,
+        enableSegmentation: false,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+      });
+      this.pose.onResults((results: any) => {
+        const upperMotion = this.detectUpperBodyMotion(results);
+        if (upperMotion && this.onMotion) {
+          this.onMotion(upperMotion);
+        }
+      });
+    } catch (error) {
+      console.error('初始化上半身动作模型失败', error);
+    }
+
+    if (this.faceMesh || this.pose) {
       this.running = true;
       this.loop();
-    } catch (error) {
-      console.error('初始化视觉模型失败', error);
     }
   }
 
   private async loop(): Promise<void> {
-    if (!this.running || !this.video || !this.faceMesh) {
+    if (!this.running || !this.video || (!this.faceMesh && !this.pose)) {
       return;
     }
     try {
-      await this.faceMesh.send({ image: this.video });
+      if (this.faceMesh) {
+        await this.faceMesh.send({ image: this.video });
+      }
+      if (this.pose) {
+        await this.pose.send({ image: this.video });
+      }
     } catch {
     }
     if (this.running) {
@@ -101,10 +137,14 @@ class VisionService {
       this.video = null;
     }
     this.faceMesh = null;
+    this.pose = null;
     this.onEmotion = null;
     this.onMotion = null;
     this.yawHistory = [];
     this.pitchHistory = [];
+    this.leftWristXHistory = [];
+    this.rightWristXHistory = [];
+    this.lastUpperBodyMotionTime = 0;
   }
 
   private computeHeadPose(landmarks: any): { yaw: number; pitch: number } | null {
@@ -162,6 +202,85 @@ class VisionService {
       this.pitchHistory = [];
       return 'shakeHead';
     }
+    return null;
+  }
+
+  private detectUpperBodyMotion(results: any): 'raiseHand' | 'waveHand' | null {
+    const landmarks = results?.poseLandmarks;
+    if (!landmarks || landmarks.length < 17) {
+      return null;
+    }
+
+    const leftShoulder = landmarks[11];
+    const rightShoulder = landmarks[12];
+    const leftWrist = landmarks[15];
+    const rightWrist = landmarks[16];
+
+    if (!leftShoulder || !rightShoulder || !leftWrist || !rightWrist) {
+      return null;
+    }
+
+    const raiseThreshold = 0.05;
+    let handRaised = false;
+
+    if (leftWrist.y < leftShoulder.y - raiseThreshold) {
+      handRaised = true;
+      this.leftWristXHistory.push(leftWrist.x);
+    } else {
+      this.leftWristXHistory = [];
+    }
+
+    if (rightWrist.y < rightShoulder.y - raiseThreshold) {
+      handRaised = true;
+      this.rightWristXHistory.push(rightWrist.x);
+    } else {
+      this.rightWristXHistory = [];
+    }
+
+    if (!handRaised) {
+      return null;
+    }
+
+    if (this.leftWristXHistory.length > 20) {
+      this.leftWristXHistory.shift();
+    }
+    if (this.rightWristXHistory.length > 20) {
+      this.rightWristXHistory.shift();
+    }
+
+    const now = performance.now();
+    if (now - this.lastUpperBodyMotionTime < 800) {
+      return null;
+    }
+
+    const waveThreshold = 0.06;
+    const leftRange =
+      this.leftWristXHistory.length >= 5
+        ? Math.max(...this.leftWristXHistory) - Math.min(...this.leftWristXHistory)
+        : 0;
+    const rightRange =
+      this.rightWristXHistory.length >= 5
+        ? Math.max(...this.rightWristXHistory) - Math.min(...this.rightWristXHistory)
+        : 0;
+
+    if (leftRange > waveThreshold || rightRange > waveThreshold) {
+      this.leftWristXHistory = [];
+      this.rightWristXHistory = [];
+      this.lastUpperBodyMotionTime = now;
+      return 'waveHand';
+    }
+
+    const raiseHistoryThreshold = 10;
+    if (
+      this.leftWristXHistory.length >= raiseHistoryThreshold ||
+      this.rightWristXHistory.length >= raiseHistoryThreshold
+    ) {
+      this.leftWristXHistory = [];
+      this.rightWristXHistory = [];
+      this.lastUpperBodyMotionTime = now;
+      return 'raiseHand';
+    }
+
     return null;
   }
 }
