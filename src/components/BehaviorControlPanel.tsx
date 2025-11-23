@@ -19,8 +19,8 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
     state: 'idle',
     confidence: 0.8,
     lastUpdate: new Date(),
-    activity: '待机',
-    goal: '等待用户交互'
+    activity: 'Standby',
+    goal: 'Waiting for input'
   });
 
   const [isAutoMode, setIsAutoMode] = useState(false);
@@ -30,76 +30,70 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
   const behaviors = [
     {
       name: 'idle',
-      label: '待机',
+      label: 'Idle',
       icon: <Clock size={20} />,
-      color: 'bg-gray-500',
-      description: '基础待机状态',
+      color: 'text-gray-400',
+      description: 'Basic standby loop',
       parameters: { idleTime: 5000, breathing: true }
     },
     {
       name: 'greeting',
-      label: '打招呼',
+      label: 'Greet',
       icon: <Target size={20} />,
-      color: 'bg-green-500',
-      description: '友好的打招呼行为',
+      color: 'text-green-400',
+      description: 'Friendly wave & smile',
       parameters: { wave: true, smile: true, duration: 3000 }
     },
     {
       name: 'listening',
-      label: '倾听',
+      label: 'Listen',
       icon: <Brain size={20} />,
-      color: 'bg-blue-500',
-      description: '专注倾听状态',
+      color: 'text-blue-400',
+      description: 'Active attention focus',
       parameters: { headNod: true, eyeContact: true, attention: 0.9 }
     },
     {
       name: 'thinking',
-      label: '思考',
+      label: 'Think',
       icon: <Activity size={20} />,
-      color: 'bg-yellow-500',
-      description: '思考处理状态',
+      color: 'text-yellow-400',
+      description: 'Processing animation',
       parameters: { headTilt: true, pause: true, processing: true }
     },
     {
       name: 'speaking',
-      label: '说话',
+      label: 'Speak',
       icon: <TrendingUp size={20} />,
-      color: 'bg-purple-500',
-      description: '主动说话状态',
+      color: 'text-purple-400',
+      description: 'Active conversation',
       parameters: { mouthMove: true, gestures: true, emphasis: 0.8 }
     },
     {
       name: 'excited',
-      label: '兴奋',
+      label: 'Excite',
       icon: <Zap size={20} />,
-      color: 'bg-orange-500',
-      description: '兴奋活跃状态',
+      color: 'text-orange-400',
+      description: 'High energy state',
       parameters: { energy: 0.9, movement: true, animation: 'bounce' }
     }
   ];
 
-  // 自动决策模式
+  // Auto Decision Mock
   useEffect(() => {
     if (!isAutoMode) return;
-
     const interval = setInterval(() => {
       makeAutoDecision();
     }, decisionInterval);
-
     return () => clearInterval(interval);
   }, [isAutoMode, decisionInterval]);
 
   const makeAutoDecision = () => {
-    // 基于当前状态和时间做出决策
     const now = new Date();
-    const timeSinceLastUpdate = now.getTime() - behaviorState.lastUpdate.getTime();
-    
     let newBehavior = 'idle';
     let newParameters = {};
     let newConfidence = 0.7;
 
-    // 简单的决策逻辑
-    if (timeSinceLastUpdate > 10000 && Math.random() > 0.7) {
+    if (Math.random() > 0.7) {
       newBehavior = 'greeting';
       newConfidence = 0.8;
     } else if (Math.random() > 0.9) {
@@ -108,16 +102,14 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
     }
 
     const selectedBehavior = behaviors.find(b => b.name === newBehavior);
-    if (selectedBehavior) {
-      newParameters = selectedBehavior.parameters;
-    }
+    if (selectedBehavior) newParameters = selectedBehavior.parameters;
 
     setBehaviorState({
       state: newBehavior,
       confidence: newConfidence,
       lastUpdate: now,
-      activity: behaviors.find(b => b.name === newBehavior)?.label || '未知',
-      goal: `自动切换到${behaviors.find(b => b.name === newBehavior)?.label}状态`
+      activity: behaviors.find(b => b.name === newBehavior)?.label || 'Unknown',
+      goal: `Auto-switch to ${behaviors.find(b => b.name === newBehavior)?.label}`
     });
 
     onBehaviorChange(newBehavior, newParameters);
@@ -132,7 +124,7 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
       confidence: 0.9,
       lastUpdate: new Date(),
       activity: behavior.label,
-      goal: `手动切换到${behavior.label}状态`
+      goal: `Manual override: ${behavior.label}`
     });
 
     onBehaviorChange(behaviorName, parameters);
@@ -140,180 +132,73 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
 
   const toggleAutoMode = () => {
     setIsAutoMode(!isAutoMode);
-    if (!isAutoMode) {
-      setBehaviorState({
-        ...behaviorState,
-        goal: '启用自动决策模式'
-      });
-    } else {
-      setBehaviorState({
-        ...behaviorState,
-        goal: '禁用自动决策模式'
-      });
-    }
-  };
-
-  const resetBehavior = () => {
-    setBehaviorState({
-      state: 'idle',
-      confidence: 0.8,
-      lastUpdate: new Date(),
-      activity: '待机',
-      goal: '重置到默认状态'
-    });
-    onBehaviorChange('idle', { idleTime: 5000, breathing: true });
-    setIsAutoMode(false);
+    setBehaviorState(prev => ({
+      ...prev,
+      goal: !isAutoMode ? 'Auto-Pilot Engaged' : 'Manual Control'
+    }));
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-800">行为控制系统</h3>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between border-b border-white/10 pb-4">
+        <h3 className="text-lg font-medium text-white">Behavior Engine</h3>
         <div className="flex items-center space-x-2">
-          <div className={`w-2 h-2 rounded-full ${
-            behaviorState.state === 'idle' ? 'bg-gray-400' :
-            behaviorState.state === 'greeting' ? 'bg-green-400' :
-            behaviorState.state === 'listening' ? 'bg-blue-400' :
-            behaviorState.state === 'thinking' ? 'bg-yellow-400' :
-            behaviorState.state === 'speaking' ? 'bg-purple-400' :
-            'bg-orange-400'
-          } ${isAutoMode ? 'animate-pulse' : ''}`}></div>
-          <span className="text-sm text-gray-600">{behaviorState.activity}</span>
+          <div className={`w-1.5 h-1.5 rounded-full ${isAutoMode ? 'bg-green-500 animate-pulse' : 'bg-white/20'}`}></div>
+          <span className="text-xs text-white/60">{isAutoMode ? 'AUTO' : 'MANUAL'}</span>
         </div>
       </div>
 
-      {/* 当前状态 */}
-      <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-600">当前状态</span>
-          <span className="text-sm font-semibold text-gray-800 capitalize">{behaviorState.state}</span>
+      {/* State Monitor */}
+      <div className="bg-black/40 rounded-xl p-4 space-y-2 border border-white/5 font-mono text-xs">
+        <div className="flex justify-between">
+          <span className="text-white/40">STATE</span>
+          <span className="text-green-400 uppercase">{behaviorState.state}</span>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-600">置信度</span>
-          <span className="text-sm font-semibold text-gray-800">{Math.round(behaviorState.confidence * 100)}%</span>
+        <div className="flex justify-between">
+          <span className="text-white/40">CONFIDENCE</span>
+          <span className="text-blue-400">{Math.round(behaviorState.confidence * 100)}%</span>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-600">目标</span>
-          <span className="text-sm text-gray-800">{behaviorState.goal}</span>
-        </div>
-      </div>
-
-      {/* 行为选择 */}
-      <div className="space-y-4">
-        <h4 className="text-md font-medium text-gray-700">行为选择</h4>
-        <div className="grid grid-cols-2 gap-3">
-          {behaviors.map((behavior) => (
-            <button
-              key={behavior.name}
-              onClick={() => handleBehaviorClick(behavior.name, behavior.parameters)}
-              className={`flex items-center space-x-3 p-3 rounded-lg border-2 transition-all duration-200 ${
-                currentBehavior === behavior.name
-                  ? 'border-blue-500 bg-blue-50 shadow-md'
-                  : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-              }`}
-            >
-              <div className={`p-2 rounded-full ${behavior.color} text-white`}>
-                {behavior.icon}
-              </div>
-              <div className="text-left">
-                <div className="font-medium text-gray-800">{behavior.label}</div>
-                <div className="text-xs text-gray-600">{behavior.description}</div>
-              </div>
-            </button>
-          ))}
+        <div className="flex justify-between">
+          <span className="text-white/40">GOAL</span>
+          <span className="text-white/60 truncate max-w-[150px] text-right">{behaviorState.goal}</span>
         </div>
       </div>
 
-      {/* 自动模式控制 */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h4 className="text-md font-medium text-gray-700">自动决策模式</h4>
+      {/* Behavior Grid */}
+      <div className="grid grid-cols-2 gap-3">
+        {behaviors.map((behavior) => (
           <button
-            onClick={toggleAutoMode}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              isAutoMode
-                ? 'bg-green-500 hover:bg-green-600 text-white'
-                : 'bg-gray-300 hover:bg-gray-400 text-gray-700'
+            key={behavior.name}
+            onClick={() => handleBehaviorClick(behavior.name, behavior.parameters)}
+            className={`flex items-center space-x-3 p-3 rounded-xl border transition-all text-left ${
+              currentBehavior === behavior.name
+                ? 'border-blue-500/50 bg-blue-500/10'
+                : 'border-white/5 bg-white/5 hover:bg-white/10'
             }`}
           >
-            {isAutoMode ? '关闭自动' : '启用自动'}
+            <div className={`p-2 rounded-lg bg-black/20 ${behavior.color}`}>
+              {behavior.icon}
+            </div>
+            <div>
+              <div className="font-medium text-gray-200 text-sm">{behavior.label}</div>
+              <div className="text-[10px] text-white/40">{behavior.description}</div>
+            </div>
           </button>
-        </div>
-
-        {isAutoMode && (
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">
-                决策间隔: {decisionInterval / 1000}秒
-              </label>
-              <input
-                type="range"
-                min="1000"
-                max="10000"
-                step="500"
-                value={decisionInterval}
-                onChange={(e) => setDecisionInterval(parseInt(e.target.value))}
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">
-                学习率: {learningRate.toFixed(2)}
-              </label>
-              <input
-                type="range"
-                min="0.01"
-                max="0.5"
-                step="0.01"
-                value={learningRate}
-                onChange={(e) => setLearningRate(parseFloat(e.target.value))}
-                className="w-full"
-              />
-            </div>
-          </div>
-        )}
+        ))}
       </div>
 
-      {/* 高级控制 */}
-      <div className="space-y-4">
-        <h4 className="text-md font-medium text-gray-700">高级控制</h4>
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => handleBehaviorClick('listening', { headNod: true, eyeContact: true, attention: 0.9 })}
-            className="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm transition-colors"
+      {/* Auto Switch */}
+      <div className="pt-4 border-t border-white/10">
+         <button
+            onClick={toggleAutoMode}
+            className={`w-full px-4 py-3 rounded-xl text-sm font-medium transition-all border ${
+              isAutoMode
+                ? 'bg-green-500/20 text-green-400 border-green-500/50'
+                : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'
+            }`}
           >
-            专注倾听
+            {isAutoMode ? 'Disengage Auto-Pilot' : 'Engage Auto-Pilot'}
           </button>
-          <button
-            onClick={() => handleBehaviorClick('thinking', { headTilt: true, pause: true, processing: true })}
-            className="px-3 py-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded-lg text-sm transition-colors"
-          >
-            思考模式
-          </button>
-          <button
-            onClick={() => handleBehaviorClick('speaking', { mouthMove: true, gestures: true, emphasis: 0.8 })}
-            className="px-3 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-sm transition-colors"
-          >
-            演讲模式
-          </button>
-          <button
-            onClick={() => handleBehaviorClick('excited', { energy: 0.9, movement: true, animation: 'bounce' })}
-            className="px-3 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg text-sm transition-colors"
-          >
-            活跃模式
-          </button>
-        </div>
-      </div>
-
-      {/* 重置按钮 */}
-      <div className="pt-4 border-t border-gray-200">
-        <button
-          onClick={resetBehavior}
-          className="w-full px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors"
-        >
-          重置行为状态
-        </button>
       </div>
     </div>
   );

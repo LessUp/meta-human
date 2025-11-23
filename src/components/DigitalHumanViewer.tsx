@@ -1,6 +1,6 @@
-import React, { useRef, useEffect, Suspense, useState } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera, Environment, Float, Sparkles, ContactShadows, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 
@@ -11,294 +11,213 @@ interface DigitalHumanViewerProps {
   onModelLoad?: (model: any) => void;
 }
 
-function LoadingFallback() {
-  return (
-    <Html center>
-      <div className="flex flex-col items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        <p className="mt-2 text-gray-600">加载数字人模型中...</p>
-      </div>
-    </Html>
-  );
-}
-
-function DigitalHumanModel({ modelUrl, onModelLoad }: { modelUrl?: string; onModelLoad?: (model: any) => void }) {
-  const meshRef = useRef<THREE.Group>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+// --- Procedural Cyber Avatar Component ---
+function CyberAvatar() {
+  const group = useRef<THREE.Group>(null);
+  const headRef = useRef<THREE.Mesh>(null);
+  const leftEyeRef = useRef<THREE.Mesh>(null);
+  const rightEyeRef = useRef<THREE.Mesh>(null);
+  const ringsRef = useRef<THREE.Group>(null);
+  
   const {
     currentExpression,
-    currentEmotion,
-    currentAnimation,
-    isPlaying,
     isSpeaking,
-    expressionIntensity,
-  } = useDigitalHumanStore((state) => ({
-    currentExpression: state.currentExpression,
-    currentEmotion: state.currentEmotion,
-    currentAnimation: state.currentAnimation,
-    isPlaying: state.isPlaying,
-    isSpeaking: state.isSpeaking,
-    expressionIntensity: state.expressionIntensity,
-  }));
+    currentAnimation,
+    expressionIntensity
+  } = useDigitalHumanStore();
 
-  // 使用默认的立方体作为数字人模型占位符
-  // 在实际应用中，这里应该加载真实的3D模型文件
-  useEffect(() => {
-    console.log('DigitalHumanModel useEffect触发，onModelLoad:', typeof onModelLoad);
+  // Materials
+  const skinMaterial = useMemo(() => new THREE.MeshPhysicalMaterial({
+    color: '#e2e8f0',
+    metalness: 0.6,
+    roughness: 0.2,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.1,
+  }), []);
 
-    if (meshRef.current && typeof meshRef.current.add === 'function') {
-      console.log('开始创建数字人模型...');
+  const glowMaterial = useMemo(() => new THREE.MeshStandardMaterial({
+    color: '#0ea5e9',
+    emissive: '#0ea5e9',
+    emissiveIntensity: 2,
+    toneMapped: false
+  }), []);
 
-      const bodyGeometry = new THREE.BoxGeometry(1, 2, 0.5);
-      const bodyMaterial = new THREE.MeshStandardMaterial({
-        color: 0x4f46e5,
-        metalness: 0.3,
-        roughness: 0.4,
-      });
-      const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+  const ringMaterial = useMemo(() => new THREE.MeshBasicMaterial({
+    color: '#38bdf8',
+    transparent: true,
+    opacity: 0.3,
+    side: THREE.DoubleSide,
+    wireframe: true
+  }), []);
 
-      const headGeometry = new THREE.SphereGeometry(0.3, 16, 16);
-      const headMaterial = new THREE.MeshStandardMaterial({
-        color: 0xfbbf24,
-        metalness: 0.2,
-        roughness: 0.6,
-      });
-      const head = new THREE.Mesh(headGeometry, headMaterial);
-      head.position.y = 1.3;
-
-      const eyeGeometry = new THREE.SphereGeometry(0.05, 8, 8);
-      const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
-
-      const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-      leftEye.position.set(-0.1, 1.4, 0.25);
-
-      const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-      rightEye.position.set(0.1, 1.4, 0.25);
-
-      const armGeometry = new THREE.BoxGeometry(0.2, 1, 0.2);
-      const armMaterial = new THREE.MeshStandardMaterial({
-        color: 0x4f46e5,
-        metalness: 0.3,
-        roughness: 0.4,
-      });
-      const leftArm = new THREE.Mesh(armGeometry, armMaterial);
-      leftArm.position.set(-0.7, 0.3, 0);
-
-      const rightArm = new THREE.Mesh(armGeometry, armMaterial);
-      rightArm.position.set(0.7, 0.3, 0);
-
-      meshRef.current.add(body);
-      meshRef.current.add(head);
-      meshRef.current.add(leftEye);
-      meshRef.current.add(rightEye);
-      meshRef.current.add(leftArm);
-      meshRef.current.add(rightArm);
-
-      (meshRef.current as any).userData = {
-        body,
-        head,
-        leftEye,
-        rightEye,
-        leftArm,
-        rightArm,
-      };
-
-      console.log('模型创建完成，准备调用onModelLoad...');
-
-      // 延迟调用onModelLoad确保组件完全挂载
-      setTimeout(() => {
-        if (onModelLoad && meshRef.current) {
-          console.log('调用onModelLoad回调函数...');
-          onModelLoad(meshRef.current);
-          console.log('onModelLoad回调函数已调用');
-        }
-        setIsLoaded(true);
-      }, 100);
-    }
-  }, [onModelLoad]);
-
-  // 根据 store 中的状态驱动简单动画和表情
   useFrame((state) => {
-    const group = meshRef.current;
-    if (!group) return;
-
-    const { body, head, leftArm, rightArm, leftEye, rightEye } = (group as any).userData || {};
     const t = state.clock.elapsedTime;
-    const intensity = typeof expressionIntensity === 'number' ? expressionIntensity : 0.8;
-    const strength = 0.5 + intensity;
+    const intensity = expressionIntensity ?? 1;
 
-    // 基础重置
-    if (head) {
-      head.rotation.set(0, 0, 0);
-      head.position.y = 1.3;
-      head.scale.set(1, 1, 1);
-    }
-    if (body) {
-      body.scale.set(1, 2, 0.5);
-    }
-    if (leftArm && rightArm) {
-      leftArm.rotation.set(0, 0, 0);
-      rightArm.rotation.set(0, 0, 0);
-    }
-    if (leftEye && rightEye) {
-      leftEye.scale.set(1, 1, 1);
-      rightEye.scale.set(1, 1, 1);
+    // Idle Floating Logic is handled by <Float>, we handle specific animations here
+    
+    if (group.current) {
+      // Subtle breathing/idle motion for the whole group if not handled by Float
     }
 
-    // 表情：用简单的头部形变和姿态模拟
-    if (head) {
-      switch (currentExpression) {
-        case 'neutral':
-          break;
-        case 'smile':
-          head.scale.set(1 + 0.05 * strength, 1 + 0.05 * strength, 1 + 0.05 * strength);
-          head.position.y = 1.3 + 0.02 * strength;
-          break;
-        case 'laugh':
-          head.scale.set(1 + 0.12 * strength, 1 + 0.12 * strength, 1 + 0.12 * strength);
-          head.position.y = 1.32 + 0.03 * strength;
-          break;
-        case 'surprise':
-          head.scale.set(1 + 0.1 * strength, 1 + 0.1 * strength, 1 + 0.1 * strength);
-          head.position.y = 1.35 + 0.02 * strength;
-          if (leftEye && rightEye) {
-            leftEye.scale.set(1.5 * strength, 1.5 * strength, 1.5 * strength);
-            rightEye.scale.set(1.5 * strength, 1.5 * strength, 1.5 * strength);
-          }
-          break;
-        case 'sad':
-          head.scale.set(1 - 0.08 * strength, 1 - 0.12 * strength, 1 - 0.08 * strength);
-          head.position.y = 1.25 - 0.02 * strength;
-          head.rotation.x = 0.15 * strength;
-          break;
-        case 'angry':
-          head.rotation.z = 0.15 * strength;
-          head.position.y = 1.28;
-          break;
-        case 'blink':
-        case 'eye_blink': {
-          const blink = 0.2 + 0.8 * (1 - Math.abs(Math.sin(t * 8 * strength)));
-          if (leftEye && rightEye) {
-            leftEye.scale.y = blink;
-            rightEye.scale.y = blink;
-          }
-          break;
-        }
-        case 'eyebrow_raise':
-          head.position.y = 1.35 + 0.05 * strength;
-          break;
-        case 'mouth_open':
-          head.scale.set(1 + 0.05 * strength, 1 + 0.15 * strength, 1 + 0.05 * strength);
-          break;
-        case 'head_nod':
-          head.rotation.x = Math.sin(t * 4 * strength) * 0.3;
-          break;
-        default:
-          break;
+    // Rings Animation
+    if (ringsRef.current) {
+      ringsRef.current.rotation.y = t * 0.2;
+      ringsRef.current.rotation.z = Math.sin(t * 0.5) * 0.1;
+    }
+
+    // Speaking Animation (Jaw/Head Bob)
+    if (isSpeaking && headRef.current) {
+      headRef.current.rotation.x = Math.sin(t * 15) * 0.05;
+    }
+
+    // Expressions
+    if (leftEyeRef.current && rightEyeRef.current) {
+      let scaleY = 1;
+      
+      // Blink Logic
+      const blink = Math.sin(t * 3);
+      if (blink > 0.98 || currentExpression === 'blink') {
+        scaleY = 0.1;
       }
-    }
 
-    // 未播放时，仅保持静态表情
-    if (!isPlaying) {
-      return;
-    }
+      // Emotional Logic
+      if (currentExpression === 'smile') {
+        scaleY = 0.5; // Happy eyes (squint)
+      } else if (currentExpression === 'surprise') {
+        scaleY = 1.3; // Wide eyes
+      }
 
-    // 全局轻微摇摆 + 呼吸
-    group.rotation.y = Math.sin(t * 0.5) * 0.1;
-    if (body) {
-      body.scale.y = 2 + Math.sin(t * 2) * 0.05;
+      leftEyeRef.current.scale.y = THREE.MathUtils.lerp(leftEyeRef.current.scale.y, scaleY, 0.2);
+      rightEyeRef.current.scale.y = THREE.MathUtils.lerp(rightEyeRef.current.scale.y, scaleY, 0.2);
     }
-
-    // 头部相关动作
-    if (head) {
+    
+    // Head movement based on animation state
+    if (group.current) {
       if (currentAnimation === 'nod') {
-        head.rotation.x = Math.sin(t * 4) * 0.4;
+        group.current.rotation.x = Math.sin(t * 5) * 0.2;
       } else if (currentAnimation === 'shakeHead') {
-        head.rotation.y = Math.sin(t * 4) * 0.4;
-      } else if (currentAnimation === 'listening') {
-        head.rotation.z = Math.sin(t * 1.5) * 0.1;
-      } else if (currentAnimation === 'thinking') {
-        head.rotation.x = -0.2 + Math.sin(t * 1.5) * 0.05;
-      } else if (currentAnimation === 'speaking') {
-        head.rotation.x = Math.sin(t * 6) * 0.1;
+        group.current.rotation.y = Math.sin(t * 5) * 0.3;
       }
-    }
-
-    // 手臂相关动作：举手 / 挥手 / 兴奋
-    if (leftArm && rightArm) {
-      if (currentAnimation === 'raiseHand') {
-        rightArm.rotation.x = -Math.PI / 3;
-      } else if (currentAnimation === 'waveHand' || currentAnimation === 'greeting') {
-        rightArm.rotation.x = -Math.PI / 3;
-        rightArm.rotation.z = Math.sin(t * 6) * 0.6;
-      } else if (currentAnimation === 'excited') {
-        leftArm.rotation.x = -Math.PI / 3 + Math.sin(t * 8) * 0.4;
-        rightArm.rotation.x = -Math.PI / 3 + Math.cos(t * 8) * 0.4;
-      }
-    }
-
-    // 说话时头部轻微点动
-    if (isSpeaking && head) {
-      head.rotation.x += Math.sin(t * 8) * 0.05;
     }
   });
 
-  return <group ref={meshRef} />;
+  return (
+    <group ref={group}>
+      {/* Floating Container */}
+      <Float speed={2} rotationIntensity={0.2} floatIntensity={0.5}>
+        
+        {/* --- HEAD --- */}
+        <mesh ref={headRef} position={[0, 0, 0]} castShadow receiveShadow material={skinMaterial}>
+          {/* Main Head Shape - A smooth capsule/sphere hybrid */}
+          <sphereGeometry args={[0.8, 64, 64]} />
+        </mesh>
+
+        {/* --- EYES --- */}
+        <group position={[0, 0.1, 0.75]}>
+          <mesh ref={leftEyeRef} position={[-0.25, 0, 0]}>
+            <capsuleGeometry args={[0.08, 0.2, 4, 8]} />
+            <primitive object={glowMaterial} />
+            <meshBasicMaterial color="#000" /> {/* Black backing */}
+          </mesh>
+          <mesh ref={rightEyeRef} position={[0.25, 0, 0]}>
+            <capsuleGeometry args={[0.08, 0.2, 4, 8]} />
+            <primitive object={glowMaterial} />
+          </mesh>
+          {/* Eye Glow Spheres (Pupils) */}
+          <mesh position={[-0.25, 0, 0.05]} scale={[1, 0.1, 1]}>
+             <sphereGeometry args={[0.09, 16, 16]} />
+             <meshStandardMaterial color="#0ea5e9" emissive="#0ea5e9" emissiveIntensity={4} />
+          </mesh>
+          <mesh position={[0.25, 0, 0.05]} scale={[1, 0.1, 1]}>
+             <sphereGeometry args={[0.09, 16, 16]} />
+             <meshStandardMaterial color="#0ea5e9" emissive="#0ea5e9" emissiveIntensity={4} />
+          </mesh>
+        </group>
+
+        {/* --- NECK / BASE --- */}
+        <mesh position={[0, -1, 0]}>
+          <cylinderGeometry args={[0.3, 0.4, 0.8, 32]} />
+          <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.2} />
+        </mesh>
+
+        {/* --- HOLO RINGS --- */}
+        <group ref={ringsRef}>
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[1.2, 0.02, 16, 100]} />
+            <primitive object={ringMaterial} />
+          </mesh>
+          <mesh rotation={[Math.PI / 2.2, 0, 0]}>
+            <torusGeometry args={[1.4, 0.01, 16, 100]} />
+            <primitive object={ringMaterial} />
+          </mesh>
+        </group>
+
+        {/* --- EARS / HEADPHONES --- */}
+        <mesh position={[0.8, 0, 0]}>
+           <cylinderGeometry args={[0.2, 0.2, 0.3, 32]} rotation={[0, 0, Math.PI/2]} />
+           <meshStandardMaterial color="#475569" />
+        </mesh>
+        <mesh position={[-0.8, 0, 0]}>
+           <cylinderGeometry args={[0.2, 0.2, 0.3, 32]} rotation={[0, 0, Math.PI/2]} />
+           <meshStandardMaterial color="#475569" />
+        </mesh>
+
+      </Float>
+    </group>
+  );
 }
 
-function Scene({ modelUrl, autoRotate, showControls, onModelLoad }: DigitalHumanViewerProps) {
+function Scene({ autoRotate }: { autoRotate?: boolean }) {
   return (
     <>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
-      <pointLight position={[-10, -10, -10]} intensity={0.5} />
+      <PerspectiveCamera makeDefault position={[0, 0, 6]} fov={45} />
       
-      <DigitalHumanModel modelUrl={modelUrl} onModelLoad={onModelLoad} />
+      {/* Lighting */}
+      <ambientLight intensity={0.5} color="#ffffff" />
+      <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={2} castShadow />
+      <pointLight position={[-10, -10, -10]} intensity={1} color="#3b82f6" />
       
-      {showControls && <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} autoRotate={autoRotate} />}
+      {/* Environment Reflections */}
+      <Environment preset="city" />
       
-      {/* 简化环境设置，避免外部资源加载 */}
-      <color attach="background" args={['#1a1a2e']} />
-      <fog attach="fog" args={['#1a1a2e', 10, 50]} />
+      {/* The Avatar */}
+      <CyberAvatar />
       
-      {/* 添加网格地板 */}
-      <gridHelper args={[10, 10]} position={[0, -1, 0]} />
+      {/* Particles */}
+      <Sparkles count={100} scale={8} size={2} speed={0.4} opacity={0.5} color="#bae6fd" />
+      
+      {/* Shadows */}
+      <ContactShadows resolution={1024} scale={10} blur={2} opacity={0.5} far={10} color="#000000" />
+
+      <OrbitControls 
+        enablePan={false} 
+        minPolarAngle={Math.PI / 2.5} 
+        maxPolarAngle={Math.PI / 1.8}
+        enableZoom={true}
+        minDistance={3}
+        maxDistance={10}
+        autoRotate={autoRotate}
+        autoRotateSpeed={0.5}
+      />
     </>
   );
 }
 
 export default function DigitalHumanViewer({ 
-  modelUrl, 
   autoRotate = false, 
-  showControls = true, 
   onModelLoad 
 }: DigitalHumanViewerProps) {
-  console.log('DigitalHumanViewer渲染，onModelLoad:', typeof onModelLoad);
-  
+  // Trigger load callback instantly since we are procedural
+  useEffect(() => {
+    if (onModelLoad) onModelLoad({ type: 'procedural-cyber-avatar' });
+  }, [onModelLoad]);
+
   return (
-    <div className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-700 rounded-lg overflow-hidden">
-      <Canvas
-        camera={{ position: [0, 2, 5], fov: 50 }}
-        shadows
-        gl={{ antialias: true, alpha: true }}
-      >
-        <Scene 
-          modelUrl={modelUrl} 
-          autoRotate={autoRotate} 
-          showControls={showControls}
-          onModelLoad={onModelLoad}
-        />
+    <div className="w-full h-full bg-transparent">
+      <Canvas shadows dpr={[1, 2]}>
+        <Scene autoRotate={autoRotate} />
       </Canvas>
-      
-      {/* 控制面板 */}
-      <div className="absolute top-4 left-4 bg-black bg-opacity-50 rounded-lg p-3 text-white">
-        <h3 className="text-sm font-semibold mb-2">数字人控制</h3>
-        <div className="space-y-2 text-xs">
-          <div>模型状态: <span className="text-green-400">已加载</span></div>
-          <div>渲染引擎: <span className="text-blue-400">Three.js</span></div>
-          <div>自动旋转: <span className="text-yellow-400">{autoRotate ? '开启' : '关闭'}</span></div>
-        </div>
-      </div>
     </div>
   );
 }
