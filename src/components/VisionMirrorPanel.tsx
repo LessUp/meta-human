@@ -12,6 +12,7 @@ export default function VisionMirrorPanel({ onEmotionChange, onHeadMotion }: Vis
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [currentEmotion, setCurrentEmotion] = useState<UserEmotion>('neutral');
+  const [lastMotion, setLastMotion] = useState<string | null>(null);
 
   useEffect(() => {
     return () => {
@@ -19,12 +20,20 @@ export default function VisionMirrorPanel({ onEmotionChange, onHeadMotion }: Vis
     };
   }, []);
 
+  useEffect(() => {
+    if (lastMotion) {
+      const timer = setTimeout(() => setLastMotion(null), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [lastMotion]);
+
   const handleToggleCamera = async () => {
     if (isCameraOn) {
       visionService.stop();
       setIsCameraOn(false);
       setCurrentEmotion('neutral');
       onEmotionChange('neutral');
+      setLastMotion(null);
     } else {
       if (videoRef.current) {
         await visionService.start(
@@ -34,6 +43,7 @@ export default function VisionMirrorPanel({ onEmotionChange, onHeadMotion }: Vis
             onEmotionChange(emotion);
           },
           (motion) => {
+            setLastMotion(motion);
             if (onHeadMotion) {
               onHeadMotion(motion);
             }
@@ -63,22 +73,32 @@ export default function VisionMirrorPanel({ onEmotionChange, onHeadMotion }: Vis
         )}
         <video
           ref={videoRef}
-          className={`w-full h-full object-cover transition-opacity ${isCameraOn ? 'opacity-100' : 'opacity-0'}`}
+          className={`w-full h-full object-cover transition-opacity ${isCameraOn ? 'opacity-100' : 'opacity-0'} transform scale-x-[-1]`} // Mirror effect
           autoPlay
           playsInline
           muted
         />
         {isCameraOn && (
-            <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur rounded text-[10px] text-white/80 border border-white/10">
-                AI TRACKING
-            </div>
+            <>
+              <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur rounded text-[10px] text-white/80 border border-white/10">
+                  AI TRACKING
+              </div>
+              {lastMotion && (
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 bg-blue-500/80 backdrop-blur rounded-full text-xs text-white font-medium animate-fade-in-up">
+                  {lastMotion.toUpperCase()} DETECTED
+                </div>
+              )}
+            </>
         )}
       </div>
 
       <div className="flex justify-between items-center">
         <div className="text-xs text-white/60">
             Detected Emotion:
-            <span className="ml-2 font-mono text-blue-400 uppercase">
+            <span className={`ml-2 font-mono uppercase ${
+              currentEmotion === 'happy' ? 'text-green-400' : 
+              currentEmotion === 'surprised' ? 'text-yellow-400' : 'text-blue-400'
+            }`}>
             {currentEmotion}
             </span>
         </div>

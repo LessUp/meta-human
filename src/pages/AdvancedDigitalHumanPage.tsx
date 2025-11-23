@@ -218,7 +218,22 @@ export default function AdvancedDigitalHumanPage() {
              {activeTab === 'vision' && (
                <div className="text-sm text-gray-400 p-4 border border-white/10 rounded-xl bg-white/5">
                   Vision Mirror Module requires camera access.
-                  <VisionMirrorPanel onEmotionChange={()=>{}} onHeadMotion={()=>{}} />
+                  <VisionMirrorPanel 
+                    onEmotionChange={(emotion) => {
+                      if (emotion === 'happy') {
+                        digitalHumanEngine.setExpression('smile');
+                      } else if (emotion === 'surprised') {
+                        digitalHumanEngine.setExpression('surprise');
+                      } else {
+                        digitalHumanEngine.setExpression('neutral');
+                      }
+                      digitalHumanEngine.setEmotion(emotion);
+                    }} 
+                    onHeadMotion={(motion) => {
+                      digitalHumanEngine.playAnimation(motion);
+                      toast(`Motion Detected: ${motion}`, { icon: '📸' });
+                    }} 
+                  />
                </div>
             )}
           </div>

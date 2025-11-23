@@ -60,10 +60,13 @@ function CyberAvatar() {
       // Subtle breathing/idle motion for the whole group if not handled by Float
     }
 
-    // Rings Animation
-    if (ringsRef.current) {
-      ringsRef.current.rotation.y = t * 0.2;
-      ringsRef.current.rotation.z = Math.sin(t * 0.5) * 0.1;
+    // Head movement based on animation state
+    if (group.current) {
+      if (currentAnimation === 'nod') {
+        group.current.rotation.x = Math.sin(t * 5) * 0.2;
+      } else if (currentAnimation === 'shakeHead') {
+        group.current.rotation.y = Math.sin(t * 5) * 0.3;
+      }
     }
 
     // Speaking Animation (Jaw/Head Bob)
@@ -91,14 +94,26 @@ function CyberAvatar() {
       leftEyeRef.current.scale.y = THREE.MathUtils.lerp(leftEyeRef.current.scale.y, scaleY, 0.2);
       rightEyeRef.current.scale.y = THREE.MathUtils.lerp(rightEyeRef.current.scale.y, scaleY, 0.2);
     }
-    
-    // Head movement based on animation state
-    if (group.current) {
-      if (currentAnimation === 'nod') {
-        group.current.rotation.x = Math.sin(t * 5) * 0.2;
-      } else if (currentAnimation === 'shakeHead') {
-        group.current.rotation.y = Math.sin(t * 5) * 0.3;
+
+    // Rings Animation (Enhanced for Motion)
+    if (ringsRef.current) {
+      let ringSpeed = 0.2;
+      let ringTilt = 0;
+      let ringWobble = 0;
+
+      if (currentAnimation === 'waveHand') {
+        ringSpeed = 2.0;
+        ringWobble = 0.5;
+      } else if (currentAnimation === 'raiseHand') {
+        ringTilt = Math.PI / 6;
+        ringSpeed = 0.5;
+      } else if (currentAnimation === 'excited') {
+        ringSpeed = 3.0;
       }
+
+      ringsRef.current.rotation.y += ringSpeed * 0.05; // Accumulate rotation
+      ringsRef.current.rotation.z = Math.sin(t * 0.5 + ringSpeed) * 0.1 + Math.sin(t * 10) * ringWobble;
+      ringsRef.current.rotation.x = THREE.MathUtils.lerp(ringsRef.current.rotation.x, ringTilt, 0.1);
     }
   });
 
