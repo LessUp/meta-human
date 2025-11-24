@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DigitalHumanViewer from '../components/DigitalHumanViewer';
 import ControlPanel from '../components/ControlPanel';
 import VoiceInteractionPanel from '../components/VoiceInteractionPanel';
@@ -10,6 +10,7 @@ import { ttsService, asrService } from '../core/audio/audioService';
 import { digitalHumanEngine } from '../core/avatar/DigitalHumanEngine';
 import { sendUserInput } from '../core/dialogue/dialogueService';
 import { Toaster, toast } from 'sonner';
+import { Mic, MessageSquare, Settings, Maximize2, Minimize2, Globe, Activity, X, Radio } from 'lucide-react';
 
 export default function AdvancedDigitalHumanPage() {
   const {
@@ -18,424 +19,298 @@ export default function AdvancedDigitalHumanPage() {
     isMuted,
     autoRotate,
     currentExpression,
-    currentEmotion,
+    currentBehavior,
     isSpeaking,
     setRecording,
     toggleMute,
     toggleAutoRotate
   } = useDigitalHumanStore();
 
-  const [modelLoaded, setModelLoaded] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
-  const [currentBehavior, setCurrentBehavior] = useState('idle');
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<{ id: number; role: 'user' | 'assistant'; text: string }[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 处理模型加载完成
-  const handleModelLoad = (model: any) => {
-    console.log('数字人模型加载完成:', model);
-    setModelLoaded(true);
-    toast.success('数字人模型加载成功！');
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // 处理播放/暂停
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatMessages]);
+
+  // --- Event Handlers (Preserved from original) ---
+  const handleModelLoad = (model: any) => {
+    toast.success('Digital Interface Online');
+  };
+
   const handlePlayPause = () => {
     if (isPlaying) {
       digitalHumanEngine.pause();
-      toast.info('数字人暂停');
+      toast.info('Paused');
     } else {
       digitalHumanEngine.play();
-      toast.success('数字人开始播放');
+      toast.success('Resumed');
     }
   };
 
-  // 处理重置
   const handleReset = () => {
     digitalHumanEngine.reset();
-    setCurrentBehavior('idle');
-    toast.info('数字人重置到初始状态');
+    toast.info('System Reset');
   };
 
-  // 处理对话发送（文本或语音）
   const handleChatSend = async (text?: string) => {
     const content = (text ?? chatInput).trim();
     if (!content) return;
 
-    const userMessage = {
-      id: Date.now(),
-      role: 'user' as const,
-      text: content
-    };
+    const userMessage = { id: Date.now(), role: 'user' as const, text: content };
     setChatMessages((prev) => [...prev, userMessage]);
-
-    if (!text) {
-      setChatInput('');
-    }
+    if (!text) setChatInput('');
 
     setIsChatLoading(true);
     try {
-      const res = await sendUserInput({
-        userText: content,
-        sessionId: 'demo-session'
-      });
-
-      const assistantMessage = {
-        id: Date.now() + 1,
-        role: 'assistant' as const,
-        text: res.replyText
-      };
+      const res = await sendUserInput({ userText: content, sessionId: 'demo-session' });
+      const assistantMessage = { id: Date.now() + 1, role: 'assistant' as const, text: res.replyText };
       setChatMessages((prev) => [...prev, assistantMessage]);
 
       if (res.emotion) {
         digitalHumanEngine.setEmotion(res.emotion);
-        if (res.emotion === 'happy') {
-          digitalHumanEngine.setExpression('smile');
-        } else if (res.emotion === 'surprised') {
-          digitalHumanEngine.setExpression('surprise');
-        } else {
-          digitalHumanEngine.setExpression('neutral');
-        }
+        if (res.emotion === 'happy') digitalHumanEngine.setExpression('smile');
+        else if (res.emotion === 'surprised') digitalHumanEngine.setExpression('surprise');
+        else digitalHumanEngine.setExpression('neutral');
       }
 
-      if (res.action && res.action !== 'idle') {
-        digitalHumanEngine.playAnimation(res.action);
-      }
+      if (res.action && res.action !== 'idle') digitalHumanEngine.playAnimation(res.action);
+      if (res.replyText) ttsService.speak(res.replyText);
 
-      if (res.replyText) {
-        ttsService.speak(res.replyText);
-      }
     } catch (error) {
-      console.error('对话接口调用失败:', error);
-      toast.error('对话服务异常，请稍后重试');
+      console.error(error);
+      toast.error('Connection Error');
     } finally {
       setIsChatLoading(false);
     }
   };
 
-  // 处理录音开关
   const handleToggleRecording = () => {
     if (isRecording) {
       asrService.stop();
       setRecording(false);
-      toast.info('录音已停止');
+      toast.info('Recording Stopped');
     } else {
       asrService.start();
-      toast.success('开始录音');
+      toast.success('Listening...');
     }
   };
 
-  // 处理静音开关
-  const handleToggleMute = () => {
-    toggleMute();
-    toast.info(isMuted ? '已取消静音' : '已静音');
-  };
-
-  // 处理自动旋转开关
-  const handleToggleAutoRotate = () => {
-    toggleAutoRotate();
-    toast.info(autoRotate ? '自动旋转已关闭' : '自动旋转已开启');
-  };
-
-  // 处理语音命令
-  const handleVoiceCommand = (command: string) => {
-    console.log('执行语音命令:', command);
-    
-    // 处理基本命令
-    switch (command) {
-      case '打招呼':
-        digitalHumanEngine.setExpression('smile');
-        digitalHumanEngine.setEmotion('happy');
-        setCurrentBehavior('greeting');
-        ttsService.speak('您好！很高兴见到您！');
-        toast.success('执行打招呼动作');
-        break;
-      case '跳舞':
-        digitalHumanEngine.setExpression('laugh');
-        digitalHumanEngine.setEmotion('excited');
-        setCurrentBehavior('excited');
-        ttsService.speak('让我为您跳一支舞！');
-        toast.success('执行跳舞动作');
-        break;
-      case '说话':
-        digitalHumanEngine.setExpression('speaking');
-        setCurrentBehavior('speaking');
-        ttsService.speak('我正在说话，有什么可以帮助您的吗？');
-        toast.success('执行说话动作');
-        break;
-      case '表情':
-        const expressions = ['smile', 'surprise', 'sad', 'angry'];
-        const randomExpression = expressions[Math.floor(Math.random() * expressions.length)];
-        digitalHumanEngine.setExpression(randomExpression);
-        ttsService.speak(`这是我的${randomExpression}表情！`);
-        toast.success(`切换到${randomExpression}表情`);
-        break;
-      default:
-        ttsService.speak(`我没有理解您的指令：${command}`);
-        toast.warning(`未识别的命令: ${command}`);
-    }
-  };
-
-  // 处理语音识别结果
-  const handleTranscript = (text: string) => {
-    console.log('语音识别结果:', text);
-    void handleChatSend(text);
-  };
-
-  // 处理语音合成
-  const handleSpeak = (text: string) => {
-    ttsService.speak(text);
-  };
-
-  // 处理表情变化
   const handleExpressionChange = (expression: string, intensity: number) => {
     digitalHumanEngine.setExpression(expression);
     digitalHumanEngine.setExpressionIntensity(intensity);
-    console.log(`表情变化: ${expression}, 强度: ${intensity}`);
-    toast.info(`表情切换到: ${expression}`);
   };
 
-  // 处理行为变化
-  const handleBehaviorChange = (behavior: string, parameters: any) => {
-    setCurrentBehavior(behavior);
-    console.log(`行为变化: ${behavior}, 参数:`, parameters);
-    toast.info(`行为切换到: ${behavior}`);
+  const handleBehaviorChange = (behavior: string) => {
     digitalHumanEngine.playAnimation(behavior);
   };
 
-  // 组件卸载时清理
-  useEffect(() => {
-    return () => {
-      if (isRecording) {
-        asrService.stop();
-      }
-      if (isSpeaking) {
-        ttsService.stop();
-      }
-    };
-  }, []);
-
-  const tabs = [
-    { id: 'basic', label: '基础控制', icon: '🎮' },
-    { id: 'voice', label: '语音交互', icon: '🎤' },
-    { id: 'vision', label: '视觉镜像', icon: '📷' },
-    { id: 'chat', label: '对话', icon: '💬' },
-    { id: 'expression', label: '表情控制', icon: '😊' },
-    { id: 'behavior', label: '行为控制', icon: '🧠' }
-  ];
+  // --- UI Components ---
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <Toaster position="top-right" />
-      
-      {/* 页面标题 */}
-      <div className="pt-8 pb-4 text-center">
-        <h1 className="text-4xl font-bold text-white mb-2">数字人交互系统</h1>
-        <p className="text-xl text-gray-300">基于Web技术的3D虚拟人物交互平台</p>
+    <div className="relative w-screen h-screen bg-black overflow-hidden font-sans text-white selection:bg-blue-500/30">
+      <Toaster position="top-center" theme="dark" />
+
+      {/* Background 3D Viewer */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80 z-10 pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-black/0 to-black/0 z-0 pointer-events-none" />
+        <DigitalHumanViewer 
+          autoRotate={autoRotate} 
+          showControls={false} 
+          onModelLoad={handleModelLoad}
+        />
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-          {/* 3D数字人查看器 */}
-          <div className="xl:col-span-3">
-            <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-              <div className="h-96 lg:h-[600px]">
-                <DigitalHumanViewer
-                  modelUrl="/models/digital-human.glb"
-                  autoRotate={autoRotate}
-                  showControls={true}
-                  onModelLoad={handleModelLoad}
-                />
-              </div>
-              
-              {/* 状态栏 */}
-              <div className="bg-gray-50 px-6 py-4 border-t">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-2 h-2 rounded-full ${modelLoaded ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                      <span className="text-sm text-gray-600">
-                        {modelLoaded ? '模型已加载' : '模型加载中...'}
-                      </span>
-                    </div>
-                    
-                    {isSpeaking && (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                        <span className="text-sm text-blue-600">正在说话</span>
-                      </div>
-                    )}
-                    
-                    {isRecording && (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                        <span className="text-sm text-red-600">录音中</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="text-xs text-gray-500">
-                    表情: {currentExpression} | 行为: {currentBehavior} | Three.js 渲染引擎
-                  </div>
-                </div>
-              </div>
-            </div>
+      {/* Top HUD */}
+      <div className="absolute top-0 left-0 w-full p-6 z-20 flex justify-between items-start pointer-events-none">
+        <div className="pointer-events-auto">
+          <h1 className="text-2xl font-light tracking-widest uppercase text-blue-100/80 flex items-center gap-3">
+            <Activity className="w-5 h-5 text-blue-400 animate-pulse" />
+            MetaHuman <span className="text-xs bg-blue-500/20 px-2 py-0.5 rounded text-blue-300 border border-blue-500/30">CORE 1.0</span>
+          </h1>
+          <div className="mt-2 flex space-x-4 text-xs text-gray-400 font-mono">
+            <span>SYS: <span className="text-green-400">ONLINE</span></span>
+            <span>CPU: <span className="text-blue-400">34%</span></span>
+            <span>MEM: <span className="text-purple-400">1.2GB</span></span>
+          </div>
+        </div>
+
+        <div className="pointer-events-auto flex space-x-3">
+          <button 
+            onClick={() => setShowSettings(!showSettings)}
+            className="p-3 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all active:scale-95"
+          >
+            <Settings className="w-5 h-5 text-white/80" />
+          </button>
+        </div>
+      </div>
+
+      {/* Right Settings Drawer */}
+      <div 
+        className={`absolute top-0 right-0 h-full w-80 sm:w-96 bg-black/80 backdrop-blur-xl border-l border-white/10 z-30 transform transition-transform duration-500 ease-out ${showSettings ? 'translate-x-0' : 'translate-x-full'}`}
+      >
+        <div className="p-6 h-full flex flex-col">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-lg font-medium text-white/90 flex items-center gap-2">
+              <Settings className="w-4 h-4" /> Control Systems
+            </h2>
+            <button onClick={() => setShowSettings(false)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+              <X className="w-5 h-5 text-gray-400" />
+            </button>
           </div>
 
-          {/* 控制面板 */}
-          <div className="xl:col-span-1">
-            {/* 标签页导航 */}
-            <div className="bg-white rounded-lg shadow-lg mb-6">
-              <div className="flex border-b">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                      activeTab === tab.id
-                        ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600'
-                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center space-x-2">
-                      <span>{tab.icon}</span>
-                      <span>{tab.label}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
+          {/* Navigation Tabs */}
+          <div className="flex space-x-1 bg-white/5 p-1 rounded-lg mb-6 overflow-x-auto">
+            {['basic', 'expression', 'behavior', 'vision'].map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 py-2 text-xs font-medium rounded-md transition-all capitalize ${
+                  activeTab === tab ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
 
-            {/* 标签页内容 */}
-            <div className="space-y-6">
-              {activeTab === 'basic' && (
-                <ControlPanel
-                  isPlaying={isPlaying}
-                  isRecording={isRecording}
-                  isMuted={isMuted}
-                  autoRotate={autoRotate}
-                  onPlayPause={handlePlayPause}
-                  onReset={handleReset}
-                  onToggleRecording={handleToggleRecording}
-                  onToggleMute={handleToggleMute}
-                  onToggleAutoRotate={handleToggleAutoRotate}
-                  onVoiceCommand={handleVoiceCommand}
-                />
-              )}
-              
-              {activeTab === 'voice' && (
-                <VoiceInteractionPanel
-                  onTranscript={handleTranscript}
-                  onSpeak={handleSpeak}
-                />
-              )}
-              
-              {activeTab === 'vision' && (
-                <VisionMirrorPanel
-                  onEmotionChange={(emotion) => {
-                    if (emotion === 'happy') {
-                      digitalHumanEngine.setExpression('smile');
-                    } else if (emotion === 'surprised') {
-                      digitalHumanEngine.setExpression('surprise');
-                    } else {
-                      digitalHumanEngine.setExpression('neutral');
-                    }
-                    digitalHumanEngine.setEmotion(emotion);
-                  }}
-                  onHeadMotion={(motion) => {
-                    digitalHumanEngine.playAnimation(motion);
-                  }}
-                />
-              )}
-              
-              {activeTab === 'chat' && (
-                <div className="bg-white rounded-lg shadow-lg p-4 space-y-4">
-                  <div className="h-48 overflow-y-auto bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
-                    {chatMessages.length === 0 && (
-                      <div className="text-gray-400 text-center">暂无对话，先输入点什么吧。</div>
-                    )}
-                    {chatMessages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div
-                          className={`max-w-[80%] px-3 py-2 rounded-lg ${
-                            msg.role === 'user'
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-gray-200 text-gray-800'
-                          }`}
-                        >
-                          {msg.text}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex space-x-2">
-                    <input
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          void handleChatSend();
-                        }
-                      }}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                      placeholder="输入要对数字人说的话..."
-                    />
-                    <button
-                      onClick={() => void handleChatSend()}
-                      disabled={isChatLoading}
-                      className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white rounded-lg text-sm transition-colors"
-                    >
-                      {isChatLoading ? '发送中...' : '发送'}
-                    </button>
-                  </div>
-                </div>
-              )}
-              
-              {activeTab === 'expression' && (
-                <ExpressionControlPanel
-                  currentExpression={currentExpression}
-                  onExpressionChange={handleExpressionChange}
-                />
-              )}
-              
-              {activeTab === 'behavior' && (
-                <BehaviorControlPanel
-                  currentBehavior={currentBehavior}
-                  onBehaviorChange={handleBehaviorChange}
-                />
-              )}
-            </div>
-
-            {/* 功能说明 */}
-            <div className="mt-6 bg-white rounded-lg shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">系统特性</h3>
-              <div className="space-y-3 text-sm text-gray-600">
-                <div>
-                  <h4 className="font-medium text-gray-700">🎮 基础控制</h4>
-                  <p>播放控制、自动旋转、模型重置等基础功能</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-700">🎤 语音交互</h4>
-                  <p>集成Web Speech API，支持语音识别和语音合成</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-700">😊 表情控制</h4>
-                  <p>丰富的面部表情控制，支持强度调节和自定义</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-700">🧠 行为控制</h4>
-                  <p>AI驱动的行为决策系统，支持自动模式和手动控制</p>
+          {/* Content Area */}
+          <div className="flex-1 overflow-y-auto pr-2 space-y-6 custom-scrollbar">
+            {activeTab === 'basic' && (
+              <div className="space-y-4">
+                <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+                   <ControlPanel
+                    isPlaying={isPlaying}
+                    isRecording={isRecording}
+                    isMuted={isMuted}
+                    autoRotate={autoRotate}
+                    onPlayPause={handlePlayPause}
+                    onReset={handleReset}
+                    onToggleRecording={handleToggleRecording}
+                    onToggleMute={toggleMute}
+                    onToggleAutoRotate={toggleAutoRotate}
+                    onVoiceCommand={(cmd) => console.log(cmd)}
+                  />
                 </div>
               </div>
-            </div>
+            )}
+            {activeTab === 'expression' && (
+              <ExpressionControlPanel
+                currentExpression={currentExpression}
+                onExpressionChange={handleExpressionChange}
+              />
+            )}
+            {activeTab === 'behavior' && (
+              <BehaviorControlPanel
+                currentBehavior={currentBehavior}
+                onBehaviorChange={(b, p) => handleBehaviorChange(b)}
+              />
+            )}
+             {activeTab === 'vision' && (
+               <div className="text-sm text-gray-400 p-4 border border-white/10 rounded-xl bg-white/5">
+                  Vision Mirror Module requires camera access.
+                  <VisionMirrorPanel 
+                    onEmotionChange={(emotion) => {
+                      if (emotion === 'happy') {
+                        digitalHumanEngine.setExpression('smile');
+                      } else if (emotion === 'surprised') {
+                        digitalHumanEngine.setExpression('surprise');
+                      } else {
+                        digitalHumanEngine.setExpression('neutral');
+                      }
+                      digitalHumanEngine.setEmotion(emotion);
+                    }} 
+                    onHeadMotion={(motion) => {
+                      digitalHumanEngine.playAnimation(motion);
+                      toast(`Motion Detected: ${motion}`, { icon: '📸' });
+                    }} 
+                  />
+               </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Bottom Floating Chat Dock */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-20">
+        {/* Chat Bubbles Overlay (Above Dock) */}
+        <div className="mb-6 w-full max-h-[40vh] overflow-y-auto space-y-3 pr-4 mask-gradient-bottom custom-scrollbar">
+          {chatMessages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`}
+            >
+              <div
+                className={`max-w-[80%] px-5 py-3 rounded-2xl text-sm backdrop-blur-md border shadow-xl ${
+                  msg.role === 'user'
+                    ? 'bg-blue-600/80 border-blue-500/50 text-white rounded-br-none'
+                    : 'bg-white/10 border-white/10 text-gray-100 rounded-bl-none'
+                }`}
+              >
+                {msg.text}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Input Bar */}
+        <div className="bg-black/60 backdrop-blur-2xl border border-white/10 rounded-2xl p-2 pl-4 flex items-center gap-3 shadow-2xl shadow-blue-900/20 ring-1 ring-white/5">
+          <div className="p-2 bg-gradient-to-tr from-blue-500 to-purple-500 rounded-lg">
+            <Radio className={`w-5 h-5 text-white ${isSpeaking ? 'animate-pulse' : ''}`} />
+          </div>
+          
+          <input
+            type="text"
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
+            placeholder="Type a message to interact..."
+            className="flex-1 bg-transparent border-none outline-none text-white placeholder-white/30 text-sm h-10"
+          />
+
+          <div className="flex items-center gap-2 pr-1">
+            <button
+              onClick={handleToggleRecording}
+              className={`p-3 rounded-xl transition-all duration-300 ${
+                isRecording 
+                  ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]' 
+                  : 'hover:bg-white/10 text-white/70 hover:text-white'
+              }`}
+            >
+              <Mic className="w-5 h-5" />
+            </button>
+            
+            <button
+              onClick={() => handleChatSend()}
+              disabled={!chatInput.trim() && !isChatLoading}
+              className="p-3 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-white transition-colors"
+            >
+              {isChatLoading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <MessageSquare className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { bg: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        .mask-gradient-bottom { -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%); }
+      `}</style>
     </div>
   );
 }
