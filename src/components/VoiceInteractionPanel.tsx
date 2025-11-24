@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Volume2, VolumeX, Play, Square } from 'lucide-react';
+import { ttsService, asrService } from '../core/audio/audioService';
 
 interface VoiceInteractionPanelProps {
   onTranscript: (text: string) => void;
@@ -16,9 +17,6 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
   const [rate, setRate] = useState(1.0);
   const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
-  
-  const recognitionRef = useRef<any>(null);
-  const synthRef = useRef<SpeechSynthesis | null>(null);
 
   // 初始化语音识别和合成
   useEffect(() => {
@@ -29,29 +27,17 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
     setIsSupported(hasSpeechRecognition && hasSpeechSynthesis);
     
     if (hasSpeechSynthesis) {
-      synthRef.current = window.speechSynthesis;
       loadVoices();
     }
     
-    if (hasSpeechRecognition) {
-      initSpeechRecognition();
-    }
-    
     return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-      if (synthRef.current) {
-        synthRef.current.cancel();
-      }
+      asrService.stop();
     };
   }, []);
 
   // 加载语音
   const loadVoices = () => {
-    if (!synthRef.current) return;
-    
-    const voices = synthRef.current.getVoices();
+    const voices = ttsService.getVoices();
     setAvailableVoices(voices);
     
     // 优先选择中文语音
@@ -65,88 +51,41 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
 
   // 初始化语音识别
   const initSpeechRecognition = () => {
-    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-    recognitionRef.current = new SpeechRecognition();
-    
-    recognitionRef.current.continuous = false;
-    recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = 'zh-CN';
-    
-    recognitionRef.current.onstart = () => {
-      console.log('语音识别开始');
-      setTranscript('');
-    };
-    
-    recognitionRef.current.onresult = (event: any) => {
-      let finalTranscript = '';
-      let interimTranscript = '';
-      
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript;
-        } else {
-          interimTranscript += transcript;
-        }
-      }
-      
-      if (finalTranscript) {
-        setTranscript(finalTranscript);
-        onTranscript(finalTranscript);
-      }
-    };
-    
-    recognitionRef.current.onerror = (event: any) => {
-      console.error('语音识别错误:', event.error);
-      setIsRecording(false);
-    };
-    
-    recognitionRef.current.onend = () => {
-      console.log('语音识别结束');
-      setIsRecording(false);
-    };
+    // 识别逻辑由统一的 ASRService 管理，此处保留占位
   };
 
   // 开始/停止录音
   const toggleRecording = () => {
-    if (!recognitionRef.current || !isSupported) return;
+    if (!isSupported) return;
     
     if (isRecording) {
-      recognitionRef.current.stop();
+      asrService.stop();
+      setIsRecording(false);
     } else {
-      recognitionRef.current.start();
+      asrService.start({
+        mode: 'dictation',
+        onResult: (text: string) => {
+          setTranscript(text);
+          onTranscript(text);
+        }
+      });
       setIsRecording(true);
     }
   };
 
   // 语音合成
   const speakText = (text: string) => {
-    if (!synthRef.current || !voice || isMuted) return;
+    if (isMuted) return;
     
-    if (synthRef.current.speaking) {
-      synthRef.current.cancel();
-    }
+    ttsService.speakWithOptions(text, {
+      lang: 'zh-CN',
+      volume,
+      pitch,
+      rate,
+      voiceName: voice?.name
+    });
     
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.voice = voice;
-    utterance.volume = volume;
-    utterance.pitch = pitch;
-    utterance.rate = rate;
-    utterance.lang = 'zh-CN';
-    
-    utterance.onstart = () => {
-      console.log('语音合成开始');
-    };
-    
-    utterance.onend = () => {
-      console.log('语音合成结束');
-    };
-    
-    utterance.onerror = (event) => {
-      console.error('语音合成错误:', event);
-    };
-    
-    synthRef.current.speak(utterance);
+    onSpeak(text);
   };
 
   // 测试语音

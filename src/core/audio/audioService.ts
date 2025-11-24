@@ -19,22 +19,47 @@ export class TTSService {
       };
     }
   }
+
+  getVoices() {
+    return this.voices;
+  }
   
   speak(text: string, lang: string = 'zh-CN') {
+    this.speakWithOptions(text, { lang });
+  }
+
+  speakWithOptions(
+    text: string,
+    options: { lang?: string; rate?: number; pitch?: number; volume?: number; voiceName?: string } = {}
+  ) {
+    const {
+      lang = 'zh-CN',
+      rate = 1.0,
+      pitch = 1.0,
+      volume = 0.8,
+      voiceName,
+    } = options;
+
     if (this.synth.speaking) {
       this.synth.cancel();
     }
     
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = lang;
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    utterance.volume = 0.8;
+    utterance.rate = rate;
+    utterance.pitch = pitch;
+    utterance.volume = volume;
     
-    // 选择中文语音
-    const chineseVoice = this.voices.find(voice => voice.lang.includes('zh'));
-    if (chineseVoice) {
-      utterance.voice = chineseVoice;
+    // 选择中文语音或指定语音
+    let selectedVoice: SpeechSynthesisVoice | undefined;
+    if (voiceName) {
+      selectedVoice = this.voices.find((voice) => voice.name === voiceName);
+    }
+    if (!selectedVoice) {
+      selectedVoice = this.voices.find(voice => voice.lang.includes('zh'));
+    }
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
     }
     
     utterance.onstart = () => {
@@ -64,6 +89,8 @@ export class TTSService {
 export class ASRService {
   private recognition: any;
   private isSupported: boolean;
+  private onResultCallback: ((text: string) => void) | null = null;
+  private mode: 'command' | 'dictation' = 'command';
   
   constructor() {
     this.isSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
@@ -87,7 +114,12 @@ export class ASRService {
     this.recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
       console.log('识别结果:', transcript);
-      this.processVoiceCommand(transcript);
+      if (this.onResultCallback) {
+        this.onResultCallback(transcript);
+      }
+      if (this.mode === 'command') {
+        this.processVoiceCommand(transcript);
+      }
     };
     
     this.recognition.onerror = (event: any) => {
@@ -102,12 +134,15 @@ export class ASRService {
     };
   }
   
-  start() {
+  start(options?: { onResult?: (text: string) => void; mode?: 'command' | 'dictation' }) {
     if (!this.isSupported) {
       console.warn('浏览器不支持语音识别');
       useDigitalHumanStore.getState().setError('浏览器不支持语音识别功能');
       return;
     }
+
+    this.onResultCallback = options?.onResult ?? null;
+    this.mode = options?.mode ?? 'command';
     
     try {
       this.recognition.start();
@@ -123,6 +158,8 @@ export class ASRService {
     if (this.recognition && this.isSupported) {
       this.recognition.stop();
     }
+    this.onResultCallback = null;
+    this.mode = 'command';
   }
   
   private processVoiceCommand(command: string) {
