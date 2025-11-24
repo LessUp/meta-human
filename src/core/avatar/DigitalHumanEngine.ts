@@ -31,6 +31,35 @@ export class DigitalHumanEngine {
     setEmotion(emotion);
   }
 
+  setBehavior(behavior: string, params?: any) {
+    const { setBehavior, setAnimation, setPlaying } = useDigitalHumanStore.getState();
+    setBehavior(behavior);
+
+    let animationName = behavior;
+    switch (behavior) {
+      case 'greeting':
+        animationName = 'waveHand';
+        break;
+      case 'listening':
+        animationName = 'nod';
+        break;
+      case 'thinking':
+        animationName = 'shakeHead';
+        break;
+      case 'speaking':
+        animationName = 'nod';
+        break;
+      case 'excited':
+        animationName = 'excited';
+        break;
+      default:
+        animationName = 'idle';
+    }
+
+    setAnimation(animationName);
+    setPlaying(animationName !== 'idle');
+  }
+
   playAnimation(name: string) {
     const { setAnimation, setPlaying } = useDigitalHumanStore.getState();
     setAnimation(name);

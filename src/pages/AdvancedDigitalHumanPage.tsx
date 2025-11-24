@@ -109,8 +109,8 @@ export default function AdvancedDigitalHumanPage() {
     digitalHumanEngine.setExpressionIntensity(intensity);
   };
 
-  const handleBehaviorChange = (behavior: string) => {
-    digitalHumanEngine.playAnimation(behavior);
+  const handleBehaviorChange = (behavior: string, params: any) => {
+    digitalHumanEngine.setBehavior(behavior, params);
   };
 
   // --- UI Components ---
@@ -212,7 +212,7 @@ export default function AdvancedDigitalHumanPage() {
             {activeTab === 'behavior' && (
               <BehaviorControlPanel
                 currentBehavior={currentBehavior}
-                onBehaviorChange={(b, p) => handleBehaviorChange(b)}
+                onBehaviorChange={handleBehaviorChange}
               />
             )}
              {activeTab === 'vision' && (
