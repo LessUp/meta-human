@@ -72,6 +72,7 @@ export default function AdvancedDigitalHumanPage() {
     setIsChatLoading(true);
     try {
       const res = await sendUserInput({ userText: content, sessionId: 'demo-session' });
+      console.debug('LLM response', { emotion: res.emotion, action: res.action });
       const assistantMessage = { id: Date.now() + 1, role: 'assistant' as const, text: res.replyText };
       setChatMessages((prev) => [...prev, assistantMessage]);
 
@@ -94,6 +95,7 @@ export default function AdvancedDigitalHumanPage() {
   };
 
   const handleToggleRecording = () => {
+    console.debug('Toggle recording', { from: isRecording });
     if (isRecording) {
       asrService.stop();
       setRecording(false);
@@ -282,15 +284,22 @@ export default function AdvancedDigitalHumanPage() {
             type="text"
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
-            placeholder="Type a message to interact..."
+            onKeyDown={(e) => e.key === 'Enter' && !isChatLoading && !isRecording && handleChatSend()}
+            placeholder={
+              isRecording
+                ? 'Listening... press mic again to stop'
+                : isChatLoading
+                  ? 'Thinking...'
+                  : 'Type a message to interact...'
+            }
             className="flex-1 bg-transparent border-none outline-none text-white placeholder-white/30 text-sm h-10"
           />
 
           <div className="flex items-center gap-2 pr-1">
             <button
               onClick={handleToggleRecording}
-              className={`p-3 rounded-xl transition-all duration-300 ${
+              disabled={isChatLoading}
+              className={`p-3 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
                 isRecording 
                   ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]' 
                   : 'hover:bg-white/10 text-white/70 hover:text-white'
@@ -301,7 +310,7 @@ export default function AdvancedDigitalHumanPage() {
             
             <button
               onClick={() => handleChatSend()}
-              disabled={!chatInput.trim() && !isChatLoading}
+              disabled={isChatLoading || !chatInput.trim()}
               className="p-3 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-white transition-colors"
             >
               {isChatLoading ? (

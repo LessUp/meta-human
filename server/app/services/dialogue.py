@@ -13,6 +13,8 @@ class DialogueService:
   def __init__(self) -> None:
     self.api_key = os.getenv("OPENAI_API_KEY")
     self.model = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+    self.provider = os.getenv("LLM_PROVIDER", "openai").lower()
+    self.base_url = os.getenv("LLM_BASE_URL")
     self._session_messages: dict[str, list[dict[str, str]]] = {}
     try:
       self.max_session_messages = int(os.getenv("DIALOGUE_MAX_SESSION_MESSAGES", "10"))
@@ -87,21 +89,7 @@ class DialogueService:
       )
 
     try:
-      async with httpx.AsyncClient(timeout=20.0) as client:
-        resp = await client.post(
-          "https://api.openai.com/v1/chat/completions",
-          headers={
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-          },
-          json={
-            "model": self.model,
-            "messages": messages,
-            "temperature": 0.7,
-          },
-        )
-      resp.raise_for_status()
-      data = resp.json()
+      data = await self._call_llm(messages)
       content = data["choices"][0]["message"]["content"]
 
       try:
@@ -146,6 +134,29 @@ class DialogueService:
         "action": "idle",
       }
 
+  async def _call_llm(self, messages: list[dict[str, str]]) -> Dict[str, Any]:
+    provider = (self.provider or "openai").lower()
+    logger.debug("Calling LLM provider=%s model=%s messages=%d", provider, self.model, len(messages))
+
+    if provider != "openai":
+      logger.warning("LLM_PROVIDER=%s 未实现，暂时使用 openai 作为回退", provider)
+
+    url = self.base_url or "https://api.openai.com/v1/chat/completions"
+    headers = {
+      "Authorization": f"Bearer {self.api_key}",
+      "Content-Type": "application/json",
+    }
+    payload = {
+      "model": self.model,
+      "messages": messages,
+      "temperature": 0.7,
+    }
+
+    async with httpx.AsyncClient(timeout=20.0) as client:
+      resp = await client.post(url, headers=headers, json=payload)
+    resp.raise_for_status()
+    return resp.json()
+
   def _get_session_messages(self, session_id: str) -> list[dict[str, str]]:
     return self._session_messages.get(session_id, [])
 
@@ -158,9 +169,17 @@ class DialogueService:
       return
     history = self._session_messages.get(session_id, [])
     history.extend(new_messages)
+    truncated = False
     if len(history) > self.max_session_messages:
       history = history[-self.max_session_messages :]
+      truncated = True
     self._session_messages[session_id] = history
+    logger.debug(
+      "Session %s history size=%d%s",
+      session_id,
+      len(history),
+      " (truncated)" if truncated else "",
+    )
 
 
 dialogue_service = DialogueService()

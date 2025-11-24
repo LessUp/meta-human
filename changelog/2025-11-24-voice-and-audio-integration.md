@@ -82,3 +82,36 @@
     - 一般说话但希望有一定口型/动态时用 `speak`；
     - 只有在没有合适动作或需要静止时才用 `idle`。
   - 强调：**无论何种情况严禁输出 JSON 以外的任何文字、注释或解释**，确保前端解析稳定。
+
+## 多 LLM Provider 抽象（预留扩展点）
+
+- 在 `DialogueService` 中引入轻量级 Provider 抽象：
+  - 新增环境变量：
+    - `LLM_PROVIDER`：当前使用的 LLM 提供方标识，默认 `openai`；
+    - `LLM_BASE_URL`：可选，覆盖默认的 OpenAI Chat Completions URL，方便对接 OpenAI 兼容网关。
+  - 新增私有方法 `_call_llm(messages)`：
+    - 统一封装 HTTP 请求逻辑，当前实现为调用 OpenAI Chat Completions 接口；
+    - 记录调试日志：`provider`、`model`、`messages` 数量等；
+    - 当 `LLM_PROVIDER` 不是 `openai` 时，会输出告警日志并暂时回退到 OpenAI，实现“先有接口，再慢慢接其他 Provider”的策略。
+
+## 前端交互与调试体验微调
+
+- 高级页面 Chat Dock：
+  - 输入框回车发送逻辑增加防抖：在 `isChatLoading` 或 `isRecording` 时禁止再次触发 `handleChatSend`，避免重复请求。
+  - 输入框占位文案根据状态切换：
+    - 录音中：显示 `Listening... press mic again to stop`；
+    - 加载中：显示 `Thinking...`；
+    - 其他情况：保持原有 `Type a message to interact...`。
+  - 发送按钮：
+    - 在 `isChatLoading` 为 `true` 时禁用按钮，防止重复发送；
+    - 同时保留加载态的圆形 spinner。
+  - 录音按钮：
+    - 在 `isChatLoading` 时禁用，避免在模型回复过程中开启新的录音；
+    - 增加 `disabled` 的视觉反馈（透明度和光标样式）。
+- 调试日志：
+  - 在前端 `AdvancedDigitalHumanPage` 中：
+    - 对每次 LLM 返回的 `emotion`/`action` 输出 `console.debug`，便于在 DevTools 中观察映射效果；
+    - 在切换录音状态时输出 `console.debug`，方便排查麦克风交互问题。
+  - 在后端 `DialogueService` 中：
+    - 每次调用 LLM 时输出 provider、model 与消息数量；
+    - 在会话历史被截断时输出包含 `session_id` 和最终长度的调试日志，便于观察内存行为。
