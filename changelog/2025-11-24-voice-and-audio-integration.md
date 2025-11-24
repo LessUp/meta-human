@@ -46,6 +46,7 @@
 - 现有基于 `ttsService`/`asrService` 的调用保持兼容；
 - `VoiceInteractionPanel` 现在作为统一语音 UI 层，可以在页面中按需挂载，不会再与全局语音状态产生冲突；
 - 行为状态 `currentBehavior` 与 `BehaviorControlPanel`、`DigitalHumanEngine` 已经贯通，为后续接入 LLM 决策（根据对话内容自动切换行为）打下基础。
+- 在高级页面中新增 `voice` 控制 Tab，将 `VoiceInteractionPanel` 的语音识别结果通过 `onTranscript` 直接接入对话链路（调用同一个 `handleChatSend`），实现“语音→文本→LLM→表情/行为”的统一管线。
 
 ## 后端对话大脑增强（OpenAI + 会话记忆）
 

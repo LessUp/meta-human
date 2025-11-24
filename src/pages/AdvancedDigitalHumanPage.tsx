@@ -170,7 +170,7 @@ export default function AdvancedDigitalHumanPage() {
 
           {/* Navigation Tabs */}
           <div className="flex space-x-1 bg-white/5 p-1 rounded-lg mb-6 overflow-x-auto">
-            {['basic', 'expression', 'behavior', 'vision'].map(tab => (
+            {['basic', 'expression', 'behavior', 'vision', 'voice'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -215,7 +215,7 @@ export default function AdvancedDigitalHumanPage() {
                 onBehaviorChange={handleBehaviorChange}
               />
             )}
-             {activeTab === 'vision' && (
+            {activeTab === 'vision' && (
                <div className="text-sm text-gray-400 p-4 border border-white/10 rounded-xl bg-white/5">
                   Vision Mirror Module requires camera access.
                   <VisionMirrorPanel 
@@ -235,6 +235,16 @@ export default function AdvancedDigitalHumanPage() {
                     }} 
                   />
                </div>
+            )}
+            {activeTab === 'voice' && (
+              <div className="space-y-4">
+                <VoiceInteractionPanel
+                  onTranscript={(text) => handleChatSend(text)}
+                  onSpeak={(text) => {
+                    console.log('VoiceInteractionPanel TTS test:', text);
+                  }}
+                />
+              </div>
             )}
           </div>
         </div>
