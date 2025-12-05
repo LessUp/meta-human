@@ -71,12 +71,25 @@ const generateSessionId = (): string => {
   return `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 };
 
+const getSafeLocalStorage = (): Storage | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+};
+
 // 从 localStorage 获取或创建会话ID
 const getOrCreateSessionId = (): string => {
-  const stored = localStorage.getItem('metahuman_session_id');
+  const storage = getSafeLocalStorage();
+  if (!storage) {
+    return generateSessionId();
+  }
+  const stored = storage.getItem('metahuman_session_id');
   if (stored) return stored;
   const newId = generateSessionId();
-  localStorage.setItem('metahuman_session_id', newId);
+  storage.setItem('metahuman_session_id', newId);
   return newId;
 };
 
@@ -123,7 +136,10 @@ export const useDigitalHumanStore = create<DigitalHumanState>((set, get) => ({
   // 会话管理
   initSession: () => {
     const newId = generateSessionId();
-    localStorage.setItem('metahuman_session_id', newId);
+    const storage = getSafeLocalStorage();
+    if (storage) {
+      storage.setItem('metahuman_session_id', newId);
+    }
     set({ sessionId: newId, chatHistory: [] });
   },
   
