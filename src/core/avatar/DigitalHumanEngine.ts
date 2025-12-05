@@ -22,7 +22,7 @@ const ANIMATION_DURATIONS: Record<string, number> = {
 };
 
 export class DigitalHumanEngine {
-  private animationTimeout: NodeJS.Timeout | null = null;
+  private animationTimeout: ReturnType<typeof setTimeout> | null = null;
 
   play(): void {
     const { play } = useDigitalHumanStore.getState();

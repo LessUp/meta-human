@@ -1,5 +1,6 @@
 import { useDigitalHumanStore } from '../../store/digitalHumanStore';
 import { sendUserInput } from '../dialogue/dialogueService';
+import { handleDialogueResponse } from '../dialogue/dialogueOrchestrator';
 
 // TTS 配置接口
 export interface TTSConfig {
@@ -430,38 +431,10 @@ export class ASRService {
         sessionId: store.sessionId,
       });
       
-      store.addChatMessage('assistant', response.replyText);
-      
-      // 应用情感
-      if (response.emotion) {
-        const emotionMap: Record<string, any> = {
-          'happy': { emotion: 'happy', expression: 'smile' },
-          'surprised': { emotion: 'surprised', expression: 'surprise' },
-          'sad': { emotion: 'sad', expression: 'sad' },
-          'angry': { emotion: 'angry', expression: 'angry' },
-          'neutral': { emotion: 'neutral', expression: 'neutral' },
-        };
-        const mapping = emotionMap[response.emotion] || emotionMap['neutral'];
-        store.setEmotion(mapping.emotion);
-        store.setExpression(mapping.expression);
-      }
-      
-      // 执行动作
-      if (response.action && response.action !== 'idle') {
-        store.setAnimation(response.action);
-        store.setBehavior(response.action as any);
-      }
-      
-      // 语音播放回复
-      if (response.replyText && !store.isMuted) {
-        await this.tts.speak(response.replyText);
-      }
-      
-      // 恢复状态
-      setTimeout(() => {
-        store.setBehavior('idle');
-        store.setAnimation('idle');
-      }, 3000);
+      await handleDialogueResponse(response, {
+        isMuted: store.isMuted,
+        speakWith: (textToSpeak) => this.tts.speak(textToSpeak),
+      });
       
     } catch (error: any) {
       console.error('对话服务错误:', error);

@@ -9,6 +9,7 @@ import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { ttsService, asrService } from '../core/audio/audioService';
 import { digitalHumanEngine } from '../core/avatar/DigitalHumanEngine';
 import { sendUserInput, checkServerHealth } from '../core/dialogue/dialogueService';
+import { handleDialogueResponse } from '../core/dialogue/dialogueOrchestrator';
 import { Toaster, toast } from 'sonner';
 import { Mic, MessageSquare, Settings, Activity, X, Radio, AlertCircle, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 
@@ -70,7 +71,6 @@ export default function AdvancedDigitalHumanPage() {
   // 自动清除错误
   useEffect(() => {
     if (error) {
-      toast.error(error);
       errorTimeoutRef.current = setTimeout(() => {
         clearError();
       }, 5000);
@@ -132,7 +132,7 @@ export default function AdvancedDigitalHumanPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isMuted, toggleMute]);
+  }, [isMuted, toggleMute, handlePlayPause, handleReset, handleToggleRecording, handleVoiceCommand]);
 
   // --- Event Handlers ---
   const handleModelLoad = useCallback((model: unknown) => {
@@ -171,31 +171,10 @@ export default function AdvancedDigitalHumanPage() {
       });
       console.debug('LLM response', { emotion: res.emotion, action: res.action });
       
-      // 添加助手消息到 store
-      addChatMessage('assistant', res.replyText);
-
-      // 应用情感和表情
-      if (res.emotion) {
-        digitalHumanEngine.setEmotion(res.emotion);
-        const expressionMap: Record<string, string> = {
-          'happy': 'smile',
-          'surprised': 'surprise',
-          'sad': 'sad',
-          'angry': 'angry',
-          'neutral': 'neutral'
-        };
-        digitalHumanEngine.setExpression(expressionMap[res.emotion] || 'neutral');
-      }
-
-      // 执行动作
-      if (res.action && res.action !== 'idle') {
-        digitalHumanEngine.playAnimation(res.action);
-      }
-      
-      // 语音播放（非静音状态）
-      if (res.replyText && !isMuted) {
-        await ttsService.speak(res.replyText);
-      }
+      await handleDialogueResponse(res, {
+        isMuted,
+        speakWith: (textToSpeak) => ttsService.speak(textToSpeak),
+      });
 
     } catch (err: any) {
       console.error('发送消息失败:', err);
