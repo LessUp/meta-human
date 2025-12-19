@@ -11,7 +11,7 @@ import { digitalHumanEngine } from '../core/avatar/DigitalHumanEngine';
 import { sendUserInput, checkServerHealth } from '../core/dialogue/dialogueService';
 import { handleDialogueResponse } from '../core/dialogue/dialogueOrchestrator';
 import { Toaster, toast } from 'sonner';
-import { Mic, MessageSquare, Settings, Activity, X, Radio, AlertCircle, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { Mic, MessageSquare, Settings, Activity, X, Radio, AlertCircle, Wifi, WifiOff, RefreshCw, RotateCcw } from 'lucide-react';
 
 export default function AdvancedDigitalHumanPage() {
   const {
@@ -82,58 +82,6 @@ export default function AdvancedDigitalHumanPage() {
     };
   }, [error, clearError]);
 
-  // 键盘快捷键支持
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // 如果在输入框中，不处理快捷键
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-
-      switch (e.key.toLowerCase()) {
-        case ' ': // 空格：播放/暂停
-          e.preventDefault();
-          handlePlayPause();
-          break;
-        case 'r': // R：重置
-          if (!e.ctrlKey && !e.metaKey) {
-            handleReset();
-          }
-          break;
-        case 'm': // M：静音切换
-          toggleMute();
-          toast.info(isMuted ? '已取消静音' : '已静音');
-          break;
-        case 'v': // V：录音切换
-          handleToggleRecording();
-          break;
-        case 's': // S：设置面板
-          if (!e.ctrlKey && !e.metaKey) {
-            setShowSettings(prev => !prev);
-          }
-          break;
-        case 'escape': // ESC：关闭设置面板
-          setShowSettings(false);
-          break;
-        case '1': // 1：打招呼
-          handleVoiceCommand('打招呼');
-          break;
-        case '2': // 2：跳舞
-          handleVoiceCommand('跳舞');
-          break;
-        case '3': // 3：说话
-          handleVoiceCommand('说话');
-          break;
-        case '4': // 4：表情
-          handleVoiceCommand('表情');
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isMuted, toggleMute, handlePlayPause, handleReset, handleToggleRecording, handleVoiceCommand]);
-
   // --- Event Handlers ---
   const handleModelLoad = useCallback((model: unknown) => {
     toast.success('数字人接口已上线');
@@ -169,7 +117,6 @@ export default function AdvancedDigitalHumanPage() {
         sessionId: sessionId,
         meta: { timestamp: Date.now() }
       });
-      console.debug('LLM response', { emotion: res.emotion, action: res.action });
       
       await handleDialogueResponse(res, {
         isMuted,
@@ -186,7 +133,6 @@ export default function AdvancedDigitalHumanPage() {
   }, [chatInput, isChatLoading, sessionId, isMuted, addChatMessage]);
 
   const handleToggleRecording = useCallback(() => {
-    console.debug('Toggle recording', { from: isRecording });
     if (isRecording) {
       asrService.stop();
       setRecording(false);
@@ -249,6 +195,58 @@ export default function AdvancedDigitalHumanPage() {
     }
   }, [setConnectionStatus]);
 
+  // 键盘快捷键支持
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 如果在输入框中，不处理快捷键
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (e.key.toLowerCase()) {
+        case ' ': // 空格：播放/暂停
+          e.preventDefault();
+          handlePlayPause();
+          break;
+        case 'r': // R：重置
+          if (!e.ctrlKey && !e.metaKey) {
+            handleReset();
+          }
+          break;
+        case 'm': // M：静音切换
+          toggleMute();
+          toast.info(isMuted ? '已取消静音' : '已静音');
+          break;
+        case 'v': // V：录音切换
+          handleToggleRecording();
+          break;
+        case 's': // S：设置面板
+          if (!e.ctrlKey && !e.metaKey) {
+            setShowSettings(prev => !prev);
+          }
+          break;
+        case 'escape': // ESC：关闭设置面板
+          setShowSettings(false);
+          break;
+        case '1': // 1：打招呼
+          handleVoiceCommand('打招呼');
+          break;
+        case '2': // 2：跳舞
+          handleVoiceCommand('跳舞');
+          break;
+        case '3': // 3：说话
+          handleVoiceCommand('说话');
+          break;
+        case '4': // 4：表情
+          handleVoiceCommand('表情');
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handlePlayPause, handleReset, handleToggleRecording, handleVoiceCommand, isMuted, toggleMute]);
+
   // --- UI Components ---
 
   return (
@@ -298,6 +296,17 @@ export default function AdvancedDigitalHumanPage() {
               <RefreshCw className={`w-5 h-5 text-yellow-400 ${connectionStatus === 'connecting' ? 'animate-spin' : ''}`} />
             </button>
           )}
+          <button
+            onClick={() => {
+              initSession();
+              setChatInput('');
+              toast.success('已开启新会话');
+            }}
+            className="p-3 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all active:scale-95"
+            title="新会话"
+          >
+            <RotateCcw className="w-5 h-5 text-white/80" />
+          </button>
           <button 
             onClick={() => setShowSettings(!showSettings)}
             className="p-3 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all active:scale-95"
@@ -393,9 +402,6 @@ export default function AdvancedDigitalHumanPage() {
               <div className="space-y-4">
                 <VoiceInteractionPanel
                   onTranscript={(text) => handleChatSend(text)}
-                  onSpeak={(text) => {
-                    console.log('VoiceInteractionPanel TTS test:', text);
-                  }}
                 />
               </div>
             )}

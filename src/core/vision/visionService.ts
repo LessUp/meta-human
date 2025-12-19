@@ -238,7 +238,6 @@ class VisionService {
       }
     } catch (error) {
       // 单帧错误不影响继续运行
-      console.debug('视觉处理帧错误:', error);
     }
     
     if (this.running) {

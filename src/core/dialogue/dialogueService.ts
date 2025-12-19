@@ -137,7 +137,6 @@ export async function sendUserInput(
       // 更新连接状态
       if (attempt > 0) {
         store.setConnectionStatus('connecting');
-        console.log(`对话服务重试 ${attempt}/${maxRetries}`);
       }
 
       const response = await fetchWithTimeout(

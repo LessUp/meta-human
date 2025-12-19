@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment, Float, Sparkles, ContactShadows, Html } from '@react-three/drei';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 
@@ -266,10 +266,16 @@ export default function DigitalHumanViewer({
       (error) => {
         if (cancelled) return;
         console.error('模型加载失败', error);
+        const message =
+          error instanceof Error
+            ? error.message
+            : typeof error === 'object' && error && 'message' in error
+              ? String((error as { message: unknown }).message)
+              : '未知错误';
         setModelScene(null);
         setLoadStatus('error');
-        setLoadError(error.message);
-        onModelLoad?.({ type: 'procedural-fallback', error: error.message });
+        setLoadError(message);
+        onModelLoad?.({ type: 'procedural-fallback', error: message });
       }
     );
 

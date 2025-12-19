@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Mic, MicOff, Volume2, VolumeX, Play } from 'lucide-react';
 import { ttsService, asrService } from '../core/audio/audioService';
+import { useDigitalHumanStore } from '../store/digitalHumanStore';
 
 interface VoiceInteractionPanelProps {
   onTranscript: (text: string) => void;
-  onSpeak: (text: string) => void;
+  onSpeak?: (text: string) => void;
 }
 
 export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceInteractionPanelProps) {
-  const [isRecording, setIsRecording] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const { isRecording, isMuted, setRecording, toggleMute } = useDigitalHumanStore();
   const [transcript, setTranscript] = useState('');
   const [isSupported, setIsSupported] = useState(false);
   const [volume, setVolume] = useState(0.8);
@@ -55,7 +55,7 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
     
     if (isRecording) {
       asrService.stop();
-      setIsRecording(false);
+      setRecording(false);
     } else {
       asrService.start({
         mode: 'dictation',
@@ -64,7 +64,6 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
           onTranscript(text);
         }
       });
-      setIsRecording(true);
     }
   };
 
@@ -80,7 +79,7 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
       voiceName: voice?.name
     });
     
-    onSpeak(text);
+    onSpeak?.(text);
   };
 
   // 测试语音
@@ -128,7 +127,7 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
           </button>
           
           <button
-            onClick={() => setIsMuted(!isMuted)}
+            onClick={toggleMute}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
               isMuted 
                 ? 'bg-gray-300 hover:bg-gray-400 text-gray-700' 

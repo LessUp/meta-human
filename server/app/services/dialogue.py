@@ -5,6 +5,7 @@ import os
 import random
 from datetime import datetime
 from collections import defaultdict
+from urllib.parse import urlparse, urlunparse
 
 import httpx
 
@@ -21,7 +22,7 @@ class DialogueService:
   def __init__(self) -> None:
     self.api_key = os.getenv("OPENAI_API_KEY")
     self.model = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
-    self.base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1/chat/completions")
+    self.base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
     self.provider = os.getenv("LLM_PROVIDER", "openai").lower()
     self._session_messages: dict[str, list[dict[str, str]]] = {}
     try:
@@ -176,7 +177,27 @@ class DialogueService:
         "action": action,
       }
     except httpx.TimeoutException:
-      logger.warning("LLM 请求超时，使用智能 Mock 回复")
+      logger.warning(
+        "LLM 请求超时 url=%s，将使用智能 Mock 回复",
+        self._get_openai_chat_completions_url(),
+      )
+      return self._get_smart_mock_reply(user_text)
+    except httpx.HTTPStatusError as exc:
+      body_preview = (exc.response.text or "")[:500]
+      logger.error(
+        "LLM 请求失败 status=%s url=%s body=%s，将使用智能 Mock 回复",
+        exc.response.status_code,
+        str(exc.request.url),
+        body_preview,
+      )
+      return self._get_smart_mock_reply(user_text)
+    except httpx.RequestError as exc:
+      req_url = str(exc.request.url) if exc.request else self._get_openai_chat_completions_url()
+      logger.error(
+        "LLM 请求异常 url=%s error=%s，将使用智能 Mock 回复",
+        req_url,
+        exc,
+      )
       return self._get_smart_mock_reply(user_text)
     except Exception as exc:
       logger.exception("调用 LLM 失败，将使用智能 Mock 回复: %s", exc)
@@ -193,6 +214,36 @@ class DialogueService:
     """获取指定会话的历史记录"""
     return session_histories.get(session_id, [])
 
+  def _get_openai_chat_completions_url(self) -> str:
+    base_url = (self.base_url or "").strip()
+    if not base_url:
+      return "https://api.openai.com/v1/chat/completions"
+
+    base_url = base_url.rstrip("/")
+    parsed = urlparse(base_url)
+    if not parsed.scheme:
+      base_url = f"https://{base_url.lstrip('/')}"
+      parsed = urlparse(base_url)
+
+    path = (parsed.path or "").rstrip("/")
+
+    if path.endswith("/chat/completions"):
+      final_path = path
+    elif path.endswith("/v1/chat") or path.endswith("/chat"):
+      final_path = f"{path}/completions"
+    elif path.endswith("/v1"):
+      final_path = f"{path}/chat/completions"
+    else:
+      segments = [seg for seg in path.split("/") if seg]
+      if not segments:
+        final_path = "/v1/chat/completions"
+      elif "v1" in segments:
+        final_path = f"{path}/chat/completions"
+      else:
+        final_path = f"{path}/v1/chat/completions"
+
+    return urlunparse(parsed._replace(path=final_path))
+
   async def _call_llm(self, messages: list[dict[str, str]]) -> Dict[str, Any]:
     provider = (self.provider or "openai").lower()
     logger.debug("Calling LLM provider=%s model=%s messages=%d", provider, self.model, len(messages))
@@ -200,7 +251,7 @@ class DialogueService:
     if provider != "openai":
       logger.warning("LLM_PROVIDER=%s 未实现，暂时使用 openai 作为回退", provider)
 
-    url = self.base_url or "https://api.openai.com/v1/chat/completions"
+    url = self._get_openai_chat_completions_url()
     headers = {
       "Authorization": f"Bearer {self.api_key}",
       "Content-Type": "application/json",

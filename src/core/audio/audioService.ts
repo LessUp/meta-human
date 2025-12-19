@@ -297,7 +297,6 @@ export class ASRService {
       
       // 处理最终结果
       if (finalTranscript) {
-        console.log('识别结果:', finalTranscript);
         this.callbacks.onTranscript?.(finalTranscript, true);
         if (this.onResultCallback) {
           this.onResultCallback(finalTranscript);
@@ -392,9 +391,6 @@ export class ASRService {
   
   // 处理语音输入 - 整合本地命令和后端对话
   private async processVoiceInput(text: string): Promise<void> {
-    const store = useDigitalHumanStore.getState();
-
-    
     // 首先检查是否是本地命令
     const isLocalCommand = this.tryLocalCommand(text);
     
