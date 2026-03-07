@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, Brain, Zap, Target, Clock, TrendingUp } from 'lucide-react';
+import { Activity, Brain, Zap, Target, Clock, TrendingUp, Hand, ThumbsUp, Eye, ArrowUp, HelpCircle, PartyPopper, Moon, Crosshair, Pointer } from 'lucide-react';
 
 interface BehaviorState {
   state: string;
@@ -78,6 +78,86 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
         description: '高能量状态',
         parameters: { energy: 0.9, movement: true, animation: 'bounce' },
       },
+      {
+        name: 'bow',
+        label: '鞠躬',
+        icon: <ArrowUp size={20} className="rotate-180" />,
+        color: 'text-cyan-400',
+        description: '礼貌鞠躬致意',
+        parameters: { depth: 0.8, duration: 3000 },
+      },
+      {
+        name: 'clap',
+        label: '拍手',
+        icon: <Hand size={20} />,
+        color: 'text-pink-400',
+        description: '鼓掌赞赏',
+        parameters: { speed: 1, duration: 3000 },
+      },
+      {
+        name: 'thumbsUp',
+        label: '点赞',
+        icon: <ThumbsUp size={20} />,
+        color: 'text-emerald-400',
+        description: '竖起大拇指',
+        parameters: { hand: 'right', duration: 3000 },
+      },
+      {
+        name: 'headTilt',
+        label: '歪头',
+        icon: <HelpCircle size={20} />,
+        color: 'text-amber-400',
+        description: '好奇歪头动作',
+        parameters: { angle: 0.25, duration: 2500 },
+      },
+      {
+        name: 'shrug',
+        label: '耸肩',
+        icon: <HelpCircle size={20} />,
+        color: 'text-slate-400',
+        description: '不确定耸肩',
+        parameters: { intensity: 0.8, duration: 2500 },
+      },
+      {
+        name: 'lookAround',
+        label: '张望',
+        icon: <Eye size={20} />,
+        color: 'text-teal-400',
+        description: '左右环顾张望',
+        parameters: { range: 0.5, duration: 4000 },
+      },
+      {
+        name: 'cheer',
+        label: '欢呼',
+        icon: <PartyPopper size={20} />,
+        color: 'text-rose-400',
+        description: '双手举起欢呼',
+        parameters: { energy: 1, duration: 4000 },
+      },
+      {
+        name: 'sleep',
+        label: '打瞌睡',
+        icon: <Moon size={20} />,
+        color: 'text-indigo-400',
+        description: '低头打瞌睡',
+        parameters: { depth: 0.6, duration: 5000 },
+      },
+      {
+        name: 'crossArms',
+        label: '抱臂',
+        icon: <Crosshair size={20} />,
+        color: 'text-red-400',
+        description: '双手交叉抱胸',
+        parameters: { stance: 'firm', duration: 3000 },
+      },
+      {
+        name: 'point',
+        label: '指向',
+        icon: <Pointer size={20} />,
+        color: 'text-sky-400',
+        description: '伸手指向前方',
+        parameters: { direction: 'forward', duration: 3000 },
+      },
     ],
     []
   );
@@ -144,61 +224,58 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-white/10 pb-4">
-        <h3 className="text-lg font-medium text-white">行为引擎</h3>
+      <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-4">
+        <h3 className="text-lg font-medium text-slate-800 dark:text-white">行为引擎</h3>
         <div className="flex items-center space-x-2">
-          <div className={`w-1.5 h-1.5 rounded-full ${isAutoMode ? 'bg-green-500 animate-pulse' : 'bg-white/20'}`}></div>
-          <span className="text-xs text-white/60">{isAutoMode ? '自动' : '手动'}</span>
+          <div className={`w-1.5 h-1.5 rounded-full ${isAutoMode ? 'bg-green-500 animate-pulse' : 'bg-slate-300 dark:bg-white/20'}`}></div>
+          <span className="text-xs text-slate-500 dark:text-white/60">{isAutoMode ? '自动' : '手动'}</span>
         </div>
       </div>
 
       {/* 状态监控 */}
-      <div className="bg-black/40 rounded-xl p-4 space-y-2 border border-white/5 font-mono text-xs">
+      <div className="bg-slate-50 dark:bg-black/40 rounded-xl p-4 space-y-2 border border-slate-200 dark:border-white/5 font-mono text-xs">
         <div className="flex justify-between">
-          <span className="text-white/40">状态</span>
-          <span className="text-green-400 uppercase">{behaviorState.state}</span>
+          <span className="text-slate-400 dark:text-white/40">状态</span>
+          <span className="text-green-500 dark:text-green-400 uppercase">{behaviorState.state}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-white/40">置信度</span>
-          <span className="text-blue-400">{Math.round(behaviorState.confidence * 100)}%</span>
+          <span className="text-slate-400 dark:text-white/40">置信度</span>
+          <span className="text-blue-500 dark:text-blue-400">{Math.round(behaviorState.confidence * 100)}%</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-white/40">目标</span>
-          <span className="text-white/60 truncate max-w-[150px] text-right">{behaviorState.goal}</span>
+          <span className="text-slate-400 dark:text-white/40">目标</span>
+          <span className="text-slate-500 dark:text-white/60 truncate max-w-[150px] text-right">{behaviorState.goal}</span>
         </div>
       </div>
 
       {/* 行为网格 */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-2">
         {behaviors.map((behavior) => (
           <button
             key={behavior.name}
             onClick={() => handleBehaviorClick(behavior.name, behavior.parameters)}
-            className={`flex items-center space-x-3 p-3 rounded-xl border transition-all text-left ${
+            className={`flex flex-col items-center p-3 rounded-xl border transition-all text-center ${
               currentBehavior === behavior.name
                 ? 'border-blue-500/50 bg-blue-500/10'
-                : 'border-white/5 bg-white/5 hover:bg-white/10'
+                : 'border-slate-200 dark:border-white/5 bg-white/50 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10'
             }`}
           >
-            <div className={`p-2 rounded-lg bg-black/20 ${behavior.color}`}>
+            <div className={`p-2 rounded-lg bg-slate-100 dark:bg-black/20 ${behavior.color} mb-1.5`}>
               {behavior.icon}
             </div>
-            <div>
-              <div className="font-medium text-gray-200 text-sm">{behavior.label}</div>
-              <div className="text-[10px] text-white/40">{behavior.description}</div>
-            </div>
+            <div className="font-medium text-slate-700 dark:text-gray-200 text-xs">{behavior.label}</div>
           </button>
         ))}
       </div>
 
       {/* 自动切换 */}
-      <div className="pt-4 border-t border-white/10">
+      <div className="pt-4 border-t border-slate-200 dark:border-white/10">
          <button
             onClick={toggleAutoMode}
             className={`w-full px-4 py-3 rounded-xl text-sm font-medium transition-all border ${
               isAutoMode
-                ? 'bg-green-500/20 text-green-400 border-green-500/50'
-                : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'
+                ? 'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/50'
+                : 'bg-white/50 dark:bg-white/5 text-slate-500 dark:text-white/60 border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10'
             }`}
           >
             {isAutoMode ? '关闭自动驾驶' : '开启自动驾驶'}

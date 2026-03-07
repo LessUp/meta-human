@@ -1,5 +1,39 @@
-# Logs
-logs
+# ========================
+# 依赖
+# ========================
+node_modules/
+.pnp/
+.pnp.js
+
+# ========================
+# 构建产物
+# ========================
+dist/
+dist-ssr/
+build/
+*.tsbuildinfo
+
+# ========================
+# 环境变量（敏感信息）
+# ========================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.local
+
+# ========================
+# 测试 & 覆盖率
+# ========================
+coverage/
+*.lcov
+.nyc_output/
+
+# ========================
+# 日志
+# ========================
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,21 +41,57 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# ========================
+# 编辑器 & IDE
+# ========================
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+!.vscode/settings.json
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.code-workspace
 
+# ========================
+# 操作系统
+# ========================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.lnk
+
+# ========================
+# Python 后端
+# ========================
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+*.egg
+server/venv/
+server/.venv/
+server/.env
+
+# ========================
+# 缓存
+# ========================
+.cache/
+.parcel-cache/
+.vite/
+*.tgz
+
+# ========================
+# Vercel
+# ========================
+.vercel/
+
+# ========================
+# AI 工具（本地配置）
+# ========================
+.trae/
+.kiro/

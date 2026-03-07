@@ -1,0 +1,110 @@
+# MetaHuman 项目 Windsurf Rules
+
+## 项目概述
+
+MetaHuman 是基于 Web 的 3D 数字人交互平台，支持实时 3D 渲染、语音交互、表情控制和智能行为系统。全中文界面，深色/浅色双主题。
+
+## 技术栈
+
+- **前端**: React 18 + TypeScript 5 + Vite 5
+- **3D 渲染**: Three.js r158 + @react-three/fiber + @react-three/drei
+- **状态管理**: Zustand 4
+- **样式**: Tailwind CSS 3（`darkMode: "class"`，默认深色）
+- **图标**: Lucide React
+- **通知**: Sonner（`toast`）
+- **路由**: React Router DOM 6
+- **测试**: Vitest + @testing-library/react + fast-check
+- **部署**: Vercel
+
+## 关键规则
+
+### 1. 语言
+
+- 所有回复使用中文
+- UI 界面文案为中文
+- 代码注释使用中文
+
+### 2. 双主题样式（强制）
+
+所有 UI 组件**必须**同时支持浅色和深色两套样式：
+- 浅色：直接写 class（如 `bg-white text-slate-800`）
+- 深色：使用 `dark:` 前缀（如 `dark:bg-slate-900 dark:text-white`）
+- **禁止**写只有深色或只有浅色的硬编码样式
+
+### 3. 3D 渲染规范
+
+- CyberAvatar 使用 `headGroupRef`（头部）和 `group`（身体）分离控制
+- 动画通过 `animState` ref + `THREE.MathUtils.lerp` 插值，**禁止直接设值**
+- 材质使用 `useMemo` 共享（`skinMat` / `armorMat` / `frameMat` / `glowCyan`）
+- `@react-three/fiber` 和 `@react-three/drei` 的类型声明警告**可忽略**，不影响编译运行
+
+### 4. 状态管理规范
+
+- 高频状态更新（如 FPS）使用 `debouncedSetState`（限制 10 次/秒）
+- UI 交互走正常 Zustand `set()`
+- 新增行为类型时，**必须同步更新**以下位置：
+  - `digitalHumanStore.ts` → `BehaviorType` 联合类型
+  - `DigitalHumanEngine.ts` → `VALID_BEHAVIORS` 数组
+  - `DigitalHumanEngine.ts` → `ANIMATION_DURATIONS` 配置
+  - `DigitalHumanEngine.ts` → 两处 `behaviorMap` 映射
+  - `DigitalHumanEngine.ts` → 添加 `perform<Action>()` 组合方法
+
+### 5. 新增动作的完整流程
+
+需要修改 3 层文件：
+
+1. **状态层**: `digitalHumanStore.ts` + `DigitalHumanEngine.ts`
+2. **渲染层**: `DigitalHumanViewer.enhanced.tsx` 的 `useFrame` 中添加头部/身体/手臂/光环/灯光动画分支
+3. **UI 层**: `BehaviorControlPanel.new.tsx` 添加按钮 + `AdvancedDigitalHumanPage.tsx` 添加键盘快捷键 + `KeyboardShortcutsHelp.tsx` 更新列表
+
+### 6. 代码风格
+
+- 路径别名：`@/*` → `./src/*`
+- 使用 `cn()` 工具函数合并 className（`@/lib/utils`）
+- 面板组件使用 3 列网格布局
+- 组合动作方法命名：`perform<ActionName>()`
+- 组件文件命名：`.new.tsx` = 中文化重构版，`.dark.tsx` = 深色主题版
+- 提交规范：Conventional Commits（`feat:` / `fix:` / `docs:` / `style:` / `refactor:`）
+
+### 7. 测试规范
+
+- 测试框架：Vitest + @testing-library/react
+- 测试环境：jsdom
+- 属性测试使用 fast-check（`__tests__/properties/`）
+- 运行命令：`npm run test:run`（单次）/ `npm run test`（watch）
+
+### 8. 禁止事项
+
+- 禁止删除或修改已有测试用例（除非明确要求）
+- 禁止在 3D 动画中直接设值（必须通过 lerp 插值）
+- 禁止创建只支持单一主题的 UI 组件
+- 禁止在组件内部重复创建 Three.js 材质（使用共享 useMemo 材质）
+- 禁止使用非 Lucide 的图标库
+
+## 项目结构
+
+```
+src/
+├── pages/                    # 页面组件
+├── components/               # UI + 3D 组件
+├── core/
+│   ├── avatar/               # 数字人行为引擎
+│   ├── audio/                # TTS/ASR 语音服务
+│   ├── dialogue/             # 对话服务
+│   ├── vision/               # 视觉识别
+│   └── performance/          # 性能监控
+├── store/                    # Zustand 状态管理
+├── hooks/                    # 自定义 Hooks
+├── __tests__/                # 测试文件
+└── lib/                      # 工具函数
+server/                       # Python Flask 后端（独立运行）
+```
+
+## 常用命令
+
+```bash
+npm run dev          # 开发服务器 (localhost:5173)
+npm run build        # 构建
+npm run test:run     # 单次测试
+npm run lint         # ESLint 检查
+```

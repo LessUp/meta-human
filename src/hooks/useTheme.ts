@@ -8,7 +8,7 @@ export function useTheme() {
     if (savedTheme) {
       return savedTheme;
     }
-    return 'light';
+    return 'dark';
   });
 
   useEffect(() => {

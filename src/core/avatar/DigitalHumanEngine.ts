@@ -19,6 +19,16 @@ const ANIMATION_DURATIONS: Record<string, number> = {
   'think': 3000,
   'speak': 0,
   'idle': 0,
+  'bow': 3000,
+  'clap': 3000,
+  'thumbsUp': 3000,
+  'headTilt': 2500,
+  'shrug': 2500,
+  'lookAround': 4000,
+  'cheer': 4000,
+  'sleep': 5000,
+  'crossArms': 3000,
+  'point': 3000,
 };
 
 // 有效的表情类型
@@ -33,7 +43,8 @@ const VALID_EMOTIONS: EmotionType[] = ['neutral', 'happy', 'surprised', 'sad', '
 // 有效的行为类型
 const VALID_BEHAVIORS: BehaviorType[] = [
   'idle', 'greeting', 'listening', 'thinking', 'speaking', 'excited',
-  'wave', 'greet', 'think', 'nod', 'shakeHead', 'dance', 'speak', 'waveHand', 'raiseHand'
+  'wave', 'greet', 'think', 'nod', 'shakeHead', 'dance', 'speak', 'waveHand', 'raiseHand',
+  'bow', 'clap', 'thumbsUp', 'headTilt', 'shrug', 'lookAround', 'cheer', 'sleep', 'crossArms', 'point'
 ];
 
 // 动画队列项接口
@@ -156,6 +167,16 @@ export class DigitalHumanEngine {
         'dance': 'excited',
         'think': 'thinking',
         'speak': 'speaking',
+        'bow': 'bow',
+        'clap': 'clap',
+        'thumbsUp': 'thumbsUp',
+        'headTilt': 'headTilt',
+        'shrug': 'shrug',
+        'lookAround': 'lookAround',
+        'cheer': 'cheer',
+        'sleep': 'sleep',
+        'crossArms': 'crossArms',
+        'point': 'point',
       };
 
       if (behaviorMap[name]) {
@@ -172,10 +193,8 @@ export class DigitalHumanEngine {
           resolve();
         }, duration);
       } else if (duration === 0) {
-        // 无持续时间的动画立即完成
         resolve();
       } else {
-        // 不自动重置，但仍需要在持续时间后 resolve
         this.animationTimeout = setTimeout(() => {
           this.notifyAnimationComplete();
           resolve();
@@ -184,14 +203,12 @@ export class DigitalHumanEngine {
     });
   }
 
-  // 通知动画完成
   private notifyAnimationComplete(): void {
     const callbacks = [...this.animationCompleteCallbacks];
     this.animationCompleteCallbacks = [];
     callbacks.forEach(cb => cb());
   }
 
-  // 等待当前动画完成
   waitForCurrentAnimation(): Promise<void> {
     return new Promise((resolve) => {
       if (this.currentAnimation === 'idle' || !this.animationTimeout) {
@@ -202,11 +219,9 @@ export class DigitalHumanEngine {
     });
   }
 
-  // 播放动画（支持立即播放或队列）
   playAnimation(name: string, autoReset: boolean = true): void {
     const store = useDigitalHumanStore.getState();
 
-    // 立即播放，清空队列
     this.clearAnimationQueue();
     this.clearAnimationTimeout();
     this.currentAnimation = name;
@@ -214,7 +229,6 @@ export class DigitalHumanEngine {
     store.setAnimation(name);
     store.setPlaying(true);
 
-    // 设置对应的行为状态
     const behaviorMap: Record<string, BehaviorType> = {
       'wave': 'greeting',
       'greet': 'greeting',
@@ -223,6 +237,16 @@ export class DigitalHumanEngine {
       'dance': 'excited',
       'think': 'thinking',
       'speak': 'speaking',
+      'bow': 'bow',
+      'clap': 'clap',
+      'thumbsUp': 'thumbsUp',
+      'headTilt': 'headTilt',
+      'shrug': 'shrug',
+      'lookAround': 'lookAround',
+      'cheer': 'cheer',
+      'sleep': 'sleep',
+      'crossArms': 'crossArms',
+      'point': 'point',
     };
 
     if (behaviorMap[name]) {
@@ -314,6 +338,44 @@ export class DigitalHumanEngine {
     this.setEmotion('neutral');
     this.setBehavior('listening');
     this.playAnimation('nod', false);
+  }
+
+  // 组合动作：鞠躬
+  performBow(): void {
+    this.setEmotion('neutral');
+    this.playAnimation('bow');
+  }
+
+  // 组合动作：拍手
+  performClap(): void {
+    this.setEmotion('happy');
+    this.playAnimation('clap');
+  }
+
+  // 组合动作：竖大拇指
+  performThumbsUp(): void {
+    this.setEmotion('happy');
+    this.playAnimation('thumbsUp');
+  }
+
+  // 组合动作：欢呼
+  performCheer(): void {
+    this.setEmotion('happy');
+    this.setExpression('laugh');
+    this.playAnimation('cheer');
+  }
+
+  // 组合动作：耸肩
+  performShrug(): void {
+    this.setEmotion('surprised');
+    this.playAnimation('shrug');
+  }
+
+  // 组合动作：睡觉
+  performSleep(): void {
+    this.setEmotion('neutral');
+    this.setExpression('sad');
+    this.playAnimation('sleep');
   }
 
   private clearAnimationTimeout(): void {

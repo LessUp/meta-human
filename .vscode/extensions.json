@@ -1,0 +1,27 @@
+{
+  "recommendations": [
+    // TypeScript & React
+    "ms-vscode.vscode-typescript-next",
+    "dsznajder.es7-react-js-snippets",
+
+    // 样式
+    "bradlc.vscode-tailwindcss",
+
+    // 代码质量
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "editorconfig.editorconfig",
+
+    // Git
+    "eamodio.gitlens",
+    "mhutchie.git-graph",
+
+    // 工具
+    "christian-kohler.path-intellisense",
+    "formulahendry.auto-rename-tag",
+    "naumovs.color-highlight",
+
+    // 测试
+    "vitest.explorer"
+  ]
+}

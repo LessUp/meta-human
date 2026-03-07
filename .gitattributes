@@ -1,0 +1,61 @@
+# ========================
+# 换行符统一（LF）
+# ========================
+* text=auto eol=lf
+
+# ========================
+# 前端源文件
+# ========================
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# ========================
+# 配置文件
+# ========================
+*.editorconfig text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+.windsurfrules text eol=lf
+.env* text eol=lf
+
+# ========================
+# Python 后端
+# ========================
+*.py text eol=lf
+*.txt text eol=lf
+requirements*.txt text eol=lf
+
+# ========================
+# 二进制文件（禁止 diff / merge）
+# ========================
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.svg text eol=lf
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.mp3 binary
+*.mp4 binary
+*.wav binary
+*.glb binary
+*.gltf text eol=lf
+
+# ========================
+# 锁文件（不做 diff，减少冲突噪音）
+# ========================
+package-lock.json -diff linguist-generated=true
+pnpm-lock.yaml -diff linguist-generated=true
+yarn.lock -diff linguist-generated=true

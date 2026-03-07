@@ -4,6 +4,7 @@ import { OrbitControls, PerspectiveCamera, Environment, Float, Sparkles, Contact
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
+import VRMAvatar from './VRMAvatar';
 
 // 模型缓存
 const modelCache = new Map<string, THREE.Group>();
@@ -109,6 +110,8 @@ const EMOTION_LIGHT_COLORS: Record<string, string> = {
 // ============================================================
 function CyberAvatar() {
   const group = useRef<THREE.Group>(null);
+  const headGroupRef = useRef<THREE.Group>(null);
+  const bodyGroupRef = useRef<THREE.Group>(null);
   const headRef = useRef<THREE.Mesh>(null);
   const leftEyeRef = useRef<THREE.Mesh>(null);
   const rightEyeRef = useRef<THREE.Mesh>(null);
@@ -128,13 +131,20 @@ function CyberAvatar() {
     headRotX: 0,
     headRotY: 0,
     headRotZ: 0,
+    bodyRotX: 0,
+    bodyRotZ: 0,
+    bodyPosY: 0,
     mouthOpen: 0,
     leftEyeScaleY: 1,
     rightEyeScaleY: 1,
     leftBrowY: 0,
     rightBrowY: 0,
+    leftBrowRotZ: 0.08,
+    rightBrowRotZ: -0.08,
     leftArmRotZ: 0,
     rightArmRotZ: 0,
+    leftArmRotX: 0,
+    rightArmRotX: 0,
     bodyScale: 1,
   });
 
@@ -154,33 +164,109 @@ function CyberAvatar() {
     const lerp = THREE.MathUtils.lerp;
     const anim = animState.current;
 
-    // ---- 鼠标跟踪 (轻微头部跟随) ----
+    // ---- 目标值初始化 ----
     let targetHeadRotY = mouse.current.x * 0.15;
     let targetHeadRotX = -mouse.current.y * 0.1;
     let targetHeadRotZ = 0;
+    let targetBodyRotX = 0;
+    let targetBodyRotZ = 0;
+    let targetBodyPosY = 0;
+    let targetLeftBrowRotZ = 0.08;
+    let targetRightBrowRotZ = -0.08;
 
-    // ---- 行为/动画覆盖 ----
-    if (currentAnimation === 'nod' || currentBehavior === 'listening') {
-      targetHeadRotX = Math.sin(t * 4) * 0.15;
-    } else if (currentAnimation === 'shakeHead') {
-      targetHeadRotY = Math.sin(t * 5) * 0.3;
+    const isAnim = (name: string) => currentAnimation === name || currentBehavior === name;
+
+    // ---- 行为/动画覆盖（头部 + 身体联动） ----
+    if (isAnim('nod') || currentBehavior === 'listening') {
+      targetHeadRotX = Math.sin(t * 3.5) * 0.18;
+      targetBodyRotX = Math.sin(t * 3.5) * 0.03;
+    } else if (isAnim('shakeHead')) {
+      targetHeadRotY = Math.sin(t * 5) * 0.35;
+      targetBodyRotZ = Math.sin(t * 5) * 0.02;
     } else if (currentBehavior === 'thinking') {
-      targetHeadRotZ = Math.sin(t * 0.8) * 0.08;
-      targetHeadRotY = -0.1 + Math.sin(t * 0.5) * 0.05;
+      targetHeadRotZ = Math.sin(t * 0.8) * 0.12;
+      targetHeadRotY = -0.15 + Math.sin(t * 0.5) * 0.08;
+      targetHeadRotX = 0.05;
+      targetBodyRotZ = Math.sin(t * 0.8) * 0.02;
+    } else if (currentBehavior === 'greeting' || isAnim('wave') || isAnim('waveHand')) {
+      // 打招呼：头微侧+微笑方向看，身体轻微侧倾
+      targetHeadRotZ = Math.sin(t * 2.5) * 0.1;
+      targetHeadRotY = 0.1 + Math.sin(t * 3) * 0.05;
+      targetHeadRotX = 0.05;
+      targetBodyRotZ = -0.03;
+      targetBodyPosY = Math.sin(t * 3) * 0.02;
+    } else if (isAnim('bow')) {
+      // 鞠躬：头和身体都前倾
+      targetHeadRotX = -0.25;
+      targetBodyRotX = -0.2 + Math.sin(t * 1.2) * 0.02;
+    } else if (isAnim('headTilt')) {
+      targetHeadRotZ = 0.3 + Math.sin(t * 1.5) * 0.06;
+      targetHeadRotY = 0.12;
+      targetHeadRotX = 0.05;
+    } else if (isAnim('lookAround')) {
+      targetHeadRotY = Math.sin(t * 1.2) * 0.55;
+      targetHeadRotX = Math.sin(t * 2) * 0.1;
+      targetBodyRotZ = Math.sin(t * 1.2) * 0.03;
+    } else if (isAnim('sleep')) {
+      targetHeadRotX = -0.35 + Math.sin(t * 0.4) * 0.03;
+      targetHeadRotZ = 0.2 + Math.sin(t * 0.6) * 0.03;
+      targetBodyRotX = -0.08;
+    } else if (isAnim('shrug')) {
+      targetHeadRotZ = Math.sin(t * 2.5) * 0.12;
+      targetHeadRotY = Math.sin(t * 1.8) * 0.05;
+      targetBodyPosY = 0.05;
+    } else if (isAnim('cheer')) {
+      // 欢呼：仰头+身体上下弹跳
+      targetHeadRotX = 0.2;
+      targetHeadRotZ = Math.sin(t * 7) * 0.1;
+      targetBodyPosY = Math.abs(Math.sin(t * 5)) * 0.12;
+      targetBodyRotZ = Math.sin(t * 7) * 0.03;
+    } else if (isAnim('point')) {
+      targetHeadRotY = 0.25;
       targetHeadRotX = -0.05;
-    } else if (currentBehavior === 'greeting' || currentAnimation === 'wave') {
-      targetHeadRotZ = Math.sin(t * 2) * 0.05;
+      targetBodyRotZ = -0.04;
+    } else if (isAnim('clap')) {
+      targetHeadRotX = 0.08;
+      targetBodyPosY = Math.abs(Math.sin(t * 4)) * 0.03;
+    } else if (isAnim('thumbsUp')) {
+      targetHeadRotZ = -0.08;
+      targetHeadRotY = 0.1;
+    } else if (isAnim('crossArms')) {
+      targetHeadRotX = 0.05;
+      targetBodyRotX = 0.02;
+    } else if (isAnim('excited') || currentBehavior === 'excited') {
+      targetBodyPosY = Math.abs(Math.sin(t * 6)) * 0.15;
+      targetHeadRotZ = Math.sin(t * 8) * 0.08;
+    } else if (currentBehavior === 'speaking' || isSpeaking) {
+      targetHeadRotY = mouse.current.x * 0.1 + Math.sin(t * 1.5) * 0.05;
+      targetHeadRotX = -mouse.current.y * 0.05 + Math.sin(t * 2) * 0.03;
+      targetBodyRotZ = Math.sin(t * 1.5) * 0.01;
     }
 
-    // 平滑插值头部旋转
-    anim.headRotX = lerp(anim.headRotX, targetHeadRotX, 0.08);
-    anim.headRotY = lerp(anim.headRotY, targetHeadRotY, 0.08);
-    anim.headRotZ = lerp(anim.headRotZ, targetHeadRotZ, 0.08);
+    // 平滑插值 — 头部
+    const headLerp = 0.1;
+    anim.headRotX = lerp(anim.headRotX, targetHeadRotX, headLerp);
+    anim.headRotY = lerp(anim.headRotY, targetHeadRotY, headLerp);
+    anim.headRotZ = lerp(anim.headRotZ, targetHeadRotZ, headLerp);
 
+    // 平滑插值 — 身体
+    const bodyLerp = 0.06;
+    anim.bodyRotX = lerp(anim.bodyRotX, targetBodyRotX, bodyLerp);
+    anim.bodyRotZ = lerp(anim.bodyRotZ, targetBodyRotZ, bodyLerp);
+    anim.bodyPosY = lerp(anim.bodyPosY, targetBodyPosY, 0.12);
+
+    // 应用头部旋转（仅头部组）
+    if (headGroupRef.current) {
+      headGroupRef.current.rotation.x = anim.headRotX;
+      headGroupRef.current.rotation.y = anim.headRotY;
+      headGroupRef.current.rotation.z = anim.headRotZ;
+    }
+
+    // 应用身体整体倾斜和位移
     if (group.current) {
-      group.current.rotation.x = anim.headRotX;
-      group.current.rotation.y = anim.headRotY;
-      group.current.rotation.z = anim.headRotZ;
+      group.current.rotation.x = anim.bodyRotX;
+      group.current.rotation.z = anim.bodyRotZ;
+      group.current.position.y = anim.bodyPosY;
     }
 
     // ---- 嘴巴动画 ----
@@ -263,30 +349,129 @@ function CyberAvatar() {
     if (leftBrowRef.current) leftBrowRef.current.position.y = 0.32 + anim.leftBrowY;
     if (rightBrowRef.current) rightBrowRef.current.position.y = 0.32 + anim.rightBrowY;
 
-    // ---- 手臂动画 ----
-    let targetLeftArmRotZ = Math.PI * 0.1;
-    let targetRightArmRotZ = -Math.PI * 0.1;
-
-    if (currentBehavior === 'greeting' || currentAnimation === 'wave' || currentAnimation === 'waveHand') {
-      targetRightArmRotZ = -Math.PI * 0.7 + Math.sin(t * 6) * 0.3;
-    } else if (currentAnimation === 'raiseHand') {
-      targetRightArmRotZ = -Math.PI * 0.6;
-    } else if (currentBehavior === 'speaking' || isSpeaking) {
-      targetLeftArmRotZ = Math.PI * 0.15 + Math.sin(t * 2) * 0.05;
-      targetRightArmRotZ = -Math.PI * 0.15 - Math.sin(t * 2 + 1) * 0.05;
-    } else if (currentBehavior === 'excited' || currentAnimation === 'excited') {
-      targetLeftArmRotZ = Math.PI * 0.5 + Math.sin(t * 8) * 0.2;
-      targetRightArmRotZ = -Math.PI * 0.5 - Math.sin(t * 8 + 0.5) * 0.2;
+    // ---- 眉毛表情联动 ----
+    if (isAnim('cheer') || isAnim('thumbsUp')) {
+      targetLeftBrowY = 0.06;
+      targetRightBrowY = 0.06;
+    } else if (isAnim('sleep')) {
+      targetLeftBrowY = -0.04;
+      targetRightBrowY = -0.04;
+    } else if (isAnim('headTilt')) {
+      targetLeftBrowY = 0.05;
+      targetRightBrowRotZ = -0.2;
     }
 
-    anim.leftArmRotZ = lerp(anim.leftArmRotZ, targetLeftArmRotZ, 0.06);
-    anim.rightArmRotZ = lerp(anim.rightArmRotZ, targetRightArmRotZ, 0.06);
+    anim.leftBrowRotZ = lerp(anim.leftBrowRotZ, targetLeftBrowRotZ, 0.1);
+    anim.rightBrowRotZ = lerp(anim.rightBrowRotZ, targetRightBrowRotZ, 0.1);
+    if (leftBrowRef.current) leftBrowRef.current.rotation.z = anim.leftBrowRotZ;
+    if (rightBrowRef.current) rightBrowRef.current.rotation.z = anim.rightBrowRotZ;
 
-    if (leftArmRef.current) leftArmRef.current.rotation.z = anim.leftArmRotZ;
-    if (rightArmRef.current) rightArmRef.current.rotation.z = anim.rightArmRotZ;
+    // ---- 手臂动画（Z轴侧展 + X轴前后摆） ----
+    let targetLeftArmRotZ = Math.PI * 0.1;
+    let targetRightArmRotZ = -Math.PI * 0.1;
+    let targetLeftArmRotX = 0;
+    let targetRightArmRotX = 0;
+    const armLerp = 0.08;
+
+    if (currentBehavior === 'greeting' || isAnim('wave') || isAnim('waveHand')) {
+      // 打招呼：右手高举左右摇摆，左手微动
+      targetRightArmRotZ = -Math.PI * 0.78 + Math.sin(t * 5) * 0.25;
+      targetRightArmRotX = Math.sin(t * 5) * 0.15;
+      targetLeftArmRotZ = Math.PI * 0.12 + Math.sin(t * 2) * 0.03;
+    } else if (isAnim('raiseHand')) {
+      targetRightArmRotZ = -Math.PI * 0.65;
+    } else if (currentBehavior === 'speaking' || isSpeaking) {
+      // 说话：双手小幅度自然手势
+      targetLeftArmRotZ = Math.PI * 0.18 + Math.sin(t * 2.5) * 0.06;
+      targetRightArmRotZ = -Math.PI * 0.18 - Math.sin(t * 2.5 + 1.2) * 0.06;
+      targetLeftArmRotX = Math.sin(t * 3) * 0.08;
+      targetRightArmRotX = Math.sin(t * 3 + 1) * 0.08;
+    } else if (isAnim('excited') || currentBehavior === 'excited') {
+      targetLeftArmRotZ = Math.PI * 0.55 + Math.sin(t * 7) * 0.2;
+      targetRightArmRotZ = -Math.PI * 0.55 - Math.sin(t * 7 + 0.5) * 0.2;
+      targetLeftArmRotX = Math.sin(t * 8) * 0.15;
+      targetRightArmRotX = Math.sin(t * 8 + 0.3) * 0.15;
+    } else if (isAnim('bow')) {
+      // 鞠躬：双手贴身
+      targetLeftArmRotZ = Math.PI * 0.03;
+      targetRightArmRotZ = -Math.PI * 0.03;
+      targetLeftArmRotX = -0.15;
+      targetRightArmRotX = -0.15;
+    } else if (isAnim('clap')) {
+      // 拍手：双手在身前合拢/分开
+      const clapPhase = Math.sin(t * 10);
+      targetLeftArmRotZ = Math.PI * 0.3 + clapPhase * 0.12;
+      targetRightArmRotZ = -Math.PI * 0.3 - clapPhase * 0.12;
+      targetLeftArmRotX = -0.5 + clapPhase * 0.08;
+      targetRightArmRotX = -0.5 + clapPhase * 0.08;
+    } else if (isAnim('thumbsUp')) {
+      // 点赞：右手高举前伸
+      targetRightArmRotZ = -Math.PI * 0.6;
+      targetRightArmRotX = -0.3;
+      targetLeftArmRotZ = Math.PI * 0.1;
+    } else if (isAnim('shrug')) {
+      // 耸肩：双手展开上抬
+      targetLeftArmRotZ = Math.PI * 0.4 + Math.sin(t * 2) * 0.04;
+      targetRightArmRotZ = -Math.PI * 0.4 - Math.sin(t * 2) * 0.04;
+      targetLeftArmRotX = -0.2;
+      targetRightArmRotX = -0.2;
+    } else if (isAnim('cheer')) {
+      // 欢呼：双手高举挥动
+      targetLeftArmRotZ = Math.PI * 0.8 + Math.sin(t * 5) * 0.12;
+      targetRightArmRotZ = -Math.PI * 0.8 - Math.sin(t * 5 + 0.4) * 0.12;
+      targetLeftArmRotX = Math.sin(t * 6) * 0.15;
+      targetRightArmRotX = Math.sin(t * 6 + 0.5) * 0.15;
+    } else if (isAnim('sleep')) {
+      targetLeftArmRotZ = Math.PI * 0.04;
+      targetRightArmRotZ = -Math.PI * 0.04;
+    } else if (isAnim('crossArms')) {
+      // 抱臂：双手交叉在胸前
+      targetLeftArmRotZ = Math.PI * 0.3;
+      targetRightArmRotZ = -Math.PI * 0.3;
+      targetLeftArmRotX = -0.4;
+      targetRightArmRotX = -0.4;
+    } else if (isAnim('point')) {
+      // 指向：右手前伸指向
+      targetRightArmRotZ = -Math.PI * 0.45;
+      targetRightArmRotX = -0.55;
+      targetLeftArmRotZ = Math.PI * 0.1;
+    } else if (isAnim('lookAround')) {
+      targetLeftArmRotZ = Math.PI * 0.12;
+      targetRightArmRotZ = -Math.PI * 0.12;
+    } else if (isAnim('dance')) {
+      // 跳舞：节奏性双臂摆动+弹跳
+      targetLeftArmRotZ = Math.PI * 0.4 + Math.sin(t * 4) * 0.3;
+      targetRightArmRotZ = -Math.PI * 0.4 - Math.sin(t * 4 + Math.PI) * 0.3;
+      targetLeftArmRotX = Math.sin(t * 4) * 0.2;
+      targetRightArmRotX = Math.sin(t * 4 + Math.PI) * 0.2;
+      targetBodyPosY = Math.abs(Math.sin(t * 4)) * 0.1;
+      targetBodyRotZ = Math.sin(t * 4) * 0.04;
+    }
+
+    anim.leftArmRotZ = lerp(anim.leftArmRotZ, targetLeftArmRotZ, armLerp);
+    anim.rightArmRotZ = lerp(anim.rightArmRotZ, targetRightArmRotZ, armLerp);
+    anim.leftArmRotX = lerp(anim.leftArmRotX, targetLeftArmRotX, armLerp);
+    anim.rightArmRotX = lerp(anim.rightArmRotX, targetRightArmRotX, armLerp);
+
+    if (leftArmRef.current) {
+      leftArmRef.current.rotation.z = anim.leftArmRotZ;
+      leftArmRef.current.rotation.x = anim.leftArmRotX;
+    }
+    if (rightArmRef.current) {
+      rightArmRef.current.rotation.z = anim.rightArmRotZ;
+      rightArmRef.current.rotation.x = anim.rightArmRotX;
+    }
+
+    // 重新计算身体位移（dance 等需要在手臂阶段更新）
+    anim.bodyPosY = lerp(anim.bodyPosY, targetBodyPosY, 0.12);
+    anim.bodyRotZ = lerp(anim.bodyRotZ, targetBodyRotZ, bodyLerp);
+    if (group.current) {
+      group.current.position.y = anim.bodyPosY;
+      group.current.rotation.z = anim.bodyRotZ;
+    }
 
     // ---- 身体呼吸 ----
-    const breathScale = 1 + Math.sin(t * 1.5) * 0.01;
+    const breathScale = 1 + Math.sin(t * 1.5) * 0.015;
     if (bodyRef.current) {
       bodyRef.current.scale.x = breathScale;
       bodyRef.current.scale.z = breathScale;
@@ -297,12 +482,27 @@ function CyberAvatar() {
       let ringSpeed = 0.2;
       let ringWobble = 0;
 
-      if (currentAnimation === 'waveHand' || currentBehavior === 'greeting') {
+      if (isAnim('wave') || isAnim('waveHand') || currentBehavior === 'greeting') {
         ringSpeed = 1.5;
         ringWobble = 0.3;
-      } else if (currentBehavior === 'excited' || currentAnimation === 'excited') {
+      } else if (isAnim('excited') || currentBehavior === 'excited') {
         ringSpeed = 3.0;
         ringWobble = 0.5;
+      } else if (isAnim('cheer')) {
+        ringSpeed = 2.5;
+        ringWobble = 0.4;
+      } else if (isAnim('dance')) {
+        ringSpeed = 2.0;
+        ringWobble = 0.3;
+      } else if (isAnim('clap')) {
+        ringSpeed = 1.8;
+        ringWobble = 0.2;
+      } else if (isAnim('thumbsUp') || isAnim('point')) {
+        ringSpeed = 1.0;
+      } else if (isAnim('bow')) {
+        ringSpeed = 0.4;
+      } else if (isAnim('sleep')) {
+        ringSpeed = 0.1;
       } else if (currentBehavior === 'thinking') {
         ringSpeed = 0.8;
       } else if (isSpeaking) {
@@ -318,165 +518,327 @@ function CyberAvatar() {
       const emotionColor = EMOTION_LIGHT_COLORS[currentEmotion] || EMOTION_LIGHT_COLORS.neutral;
       const targetColor = new THREE.Color(emotionColor);
       emotionLightRef.current.color.lerp(targetColor, 0.05);
-      emotionLightRef.current.intensity = lerp(emotionLightRef.current.intensity,
-        isSpeaking ? 3 : (currentBehavior === 'excited' ? 4 : 2), 0.05);
+
+      let targetLightIntensity = 2;
+      if (isSpeaking) targetLightIntensity = 3;
+      if (isAnim('excited') || isAnim('cheer') || isAnim('dance')) targetLightIntensity = 4;
+      if (isAnim('sleep')) targetLightIntensity = 0.8;
+      if (isAnim('bow')) targetLightIntensity = 1.5;
+
+      emotionLightRef.current.intensity = lerp(emotionLightRef.current.intensity, targetLightIntensity, 0.05);
     }
   });
 
-  // 眼睛材质 (共享)
-  const eyeMaterial = useMemo(() => (
-    <meshStandardMaterial
-      color="#0ea5e9"
-      emissive="#0ea5e9"
-      emissiveIntensity={2}
-      toneMapped={false}
-    />
+  // 共享材质
+  const skinMat = useMemo(() => (
+    <meshPhysicalMaterial color="#e8edf5" metalness={0.3} roughness={0.2} clearcoat={1} clearcoatRoughness={0.05} envMapIntensity={2.5} />
+  ), []);
+  const armorMat = useMemo(() => (
+    <meshPhysicalMaterial color="#1a2332" metalness={0.9} roughness={0.1} clearcoat={1} clearcoatRoughness={0.03} envMapIntensity={2} />
+  ), []);
+  const frameMat = useMemo(() => (
+    <meshStandardMaterial color="#3a4a5c" metalness={0.85} roughness={0.15} />
+  ), []);
+  const glowCyan = useMemo(() => (
+    <meshStandardMaterial color="#22d3ee" emissive="#22d3ee" emissiveIntensity={3} toneMapped={false} />
   ), []);
 
   return (
     <group ref={group}>
-      {/* 情绪氛围灯 */}
-      <pointLight ref={emotionLightRef} position={[0, 0, 2]} intensity={2} color="#3b82f6" distance={8} />
+      <pointLight ref={emotionLightRef} position={[0, 0, 2.5]} intensity={2} color="#3b82f6" distance={8} />
 
-      <Float speed={2} rotationIntensity={0.15} floatIntensity={0.4}>
+      <Float speed={2} rotationIntensity={0.12} floatIntensity={0.35}>
 
-        {/* === 头部 === */}
-        <mesh ref={headRef} position={[0, 0, 0]} castShadow receiveShadow>
-          <sphereGeometry args={[0.8, 64, 64]} />
-          <meshPhysicalMaterial
-            color="#e2e8f0"
-            metalness={0.6}
-            roughness={0.2}
-            clearcoat={1}
-            clearcoatRoughness={0.1}
-            envMapIntensity={1.5}
-          />
-        </mesh>
+        {/* ========== 头部组（独立旋转） ========== */}
+        <group ref={headGroupRef}>
+          {/* 颅骨主体 — 单一光滑椭球 */}
+          <mesh ref={headRef} position={[0, 0, 0]} castShadow receiveShadow>
+            <sphereGeometry args={[0.82, 64, 64]} />
+            {skinMat}
+          </mesh>
+          {/* 下颌过渡（微妙融合，不突兀） */}
+          <mesh position={[0, -0.32, 0.12]} castShadow scale={[0.92, 0.7, 0.88]}>
+            <sphereGeometry args={[0.62, 32, 32]} />
+            {skinMat}
+          </mesh>
+          {/* 额头装饰弧线 */}
+          <mesh position={[0, 0.58, 0.52]} rotation={[0.3, 0, 0]}>
+            <boxGeometry args={[0.55, 0.018, 0.018]} />
+            {glowCyan}
+          </mesh>
+          <mesh position={[0, 0.52, 0.58]} rotation={[0.2, 0, 0]}>
+            <boxGeometry args={[0.3, 0.012, 0.012]} />
+            {glowCyan}
+          </mesh>
 
-        {/* === 眼睛 === */}
-        <group position={[0, 0.1, 0.75]}>
-          {/* 左眼 */}
-          <mesh ref={leftEyeRef} position={[-0.25, 0, 0]}>
-            <capsuleGeometry args={[0.08, 0.2, 4, 8]} />
-            {eyeMaterial}
+          {/* 鼻梁（微妙弧形，不突兀） */}
+          <mesh position={[0, -0.1, 0.8]} scale={[0.7, 1, 0.5]}>
+            <sphereGeometry args={[0.06, 16, 16]} />
+            {skinMat}
           </mesh>
-          {/* 右眼 */}
-          <mesh ref={rightEyeRef} position={[0.25, 0, 0]}>
-            <capsuleGeometry args={[0.08, 0.2, 4, 8]} />
-            {eyeMaterial}
+
+        {/* ========== 眼睛（多层结构） ========== */}
+        <group position={[0, 0.08, 0.68]}>
+          {/* 眼眶凹陷（柔和渐变，不阴暗） */}
+          <mesh position={[-0.24, 0, 0.06]} scale={[1.3, 1, 0.45]}>
+            <sphereGeometry args={[0.13, 16, 16]} />
+            <meshStandardMaterial color="#2a3444" metalness={0.4} roughness={0.4} />
           </mesh>
-          {/* 瞳孔发光 */}
-          <mesh position={[-0.25, 0, 0.05]} scale={[1, 0.1, 1]}>
-            <sphereGeometry args={[0.09, 16, 16]} />
-            <meshStandardMaterial color="#0ea5e9" emissive="#0ea5e9" emissiveIntensity={4} toneMapped={false} />
+          <mesh position={[0.24, 0, 0.06]} scale={[1.3, 1, 0.45]}>
+            <sphereGeometry args={[0.13, 16, 16]} />
+            <meshStandardMaterial color="#2a3444" metalness={0.4} roughness={0.4} />
           </mesh>
-          <mesh position={[0.25, 0, 0.05]} scale={[1, 0.1, 1]}>
-            <sphereGeometry args={[0.09, 16, 16]} />
-            <meshStandardMaterial color="#0ea5e9" emissive="#0ea5e9" emissiveIntensity={4} toneMapped={false} />
+          {/* 巩膜（白眼球） */}
+          <mesh ref={leftEyeRef} position={[-0.24, 0, 0.08]} scale={[1.2, 1, 0.6]}>
+            <sphereGeometry args={[0.1, 24, 24]} />
+            <meshStandardMaterial color="#e2e8f0" metalness={0.1} roughness={0.3} />
+          </mesh>
+          <mesh ref={rightEyeRef} position={[0.24, 0, 0.08]} scale={[1.2, 1, 0.6]}>
+            <sphereGeometry args={[0.1, 24, 24]} />
+            <meshStandardMaterial color="#e2e8f0" metalness={0.1} roughness={0.3} />
+          </mesh>
+          {/* 虹膜 */}
+          <mesh position={[-0.24, 0, 0.12]} scale={[1, 1, 0.3]}>
+            <sphereGeometry args={[0.065, 24, 24]} />
+            <meshStandardMaterial color="#38bdf8" emissive="#38bdf8" emissiveIntensity={2} toneMapped={false} />
+          </mesh>
+          <mesh position={[0.24, 0, 0.12]} scale={[1, 1, 0.3]}>
+            <sphereGeometry args={[0.065, 24, 24]} />
+            <meshStandardMaterial color="#38bdf8" emissive="#38bdf8" emissiveIntensity={2} toneMapped={false} />
+          </mesh>
+          {/* 瞳孔 */}
+          <mesh position={[-0.24, 0, 0.14]} scale={[1, 1, 0.2]}>
+            <sphereGeometry args={[0.035, 16, 16]} />
+            <meshStandardMaterial color="#0284c7" emissive="#22d3ee" emissiveIntensity={5} toneMapped={false} />
+          </mesh>
+          <mesh position={[0.24, 0, 0.14]} scale={[1, 1, 0.2]}>
+            <sphereGeometry args={[0.035, 16, 16]} />
+            <meshStandardMaterial color="#0284c7" emissive="#22d3ee" emissiveIntensity={5} toneMapped={false} />
+          </mesh>
+          {/* 高光点 */}
+          <mesh position={[-0.22, 0.02, 0.15]}>
+            <sphereGeometry args={[0.012, 8, 8]} />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          <mesh position={[0.26, 0.02, 0.15]}>
+            <sphereGeometry args={[0.012, 8, 8]} />
+            <meshBasicMaterial color="#ffffff" />
           </mesh>
         </group>
 
-        {/* === 眉毛 === */}
-        <group position={[0, 0.1, 0.76]}>
-          <mesh ref={leftBrowRef} position={[-0.25, 0.32, 0]} rotation={[0, 0, 0.1]}>
-            <boxGeometry args={[0.2, 0.03, 0.02]} />
-            <meshStandardMaterial color="#475569" metalness={0.5} roughness={0.3} />
+        {/* ========== 眉毛 ========== */}
+        <group position={[0, 0.08, 0.72]}>
+          <mesh ref={leftBrowRef} position={[-0.24, 0.3, 0]} rotation={[0, 0, 0.08]}>
+            <boxGeometry args={[0.22, 0.035, 0.04]} />
+            {frameMat}
           </mesh>
-          <mesh ref={rightBrowRef} position={[0.25, 0.32, 0]} rotation={[0, 0, -0.1]}>
-            <boxGeometry args={[0.2, 0.03, 0.02]} />
-            <meshStandardMaterial color="#475569" metalness={0.5} roughness={0.3} />
+          <mesh ref={rightBrowRef} position={[0.24, 0.3, 0]} rotation={[0, 0, -0.08]}>
+            <boxGeometry args={[0.22, 0.035, 0.04]} />
+            {frameMat}
           </mesh>
         </group>
 
-        {/* === 嘴巴 === */}
-        <mesh ref={mouthRef} position={[0, -0.3, 0.72]}>
-          <capsuleGeometry args={[0.06, 0.15, 4, 8]} />
-          <meshStandardMaterial
-            color="#0ea5e9"
-            emissive="#0ea5e9"
-            emissiveIntensity={1}
-            toneMapped={false}
-            transparent
-            opacity={0.8}
-          />
+        {/* ========== 嘴巴 ========== */}
+        <mesh ref={mouthRef} position={[0, -0.38, 0.68]}>
+          <capsuleGeometry args={[0.04, 0.18, 8, 16]} />
+          <meshStandardMaterial color="#38bdf8" emissive="#38bdf8" emissiveIntensity={1.2} toneMapped={false} transparent opacity={0.75} />
         </mesh>
 
-        {/* === 脖子 === */}
-        <mesh position={[0, -1, 0]}>
-          <cylinderGeometry args={[0.3, 0.4, 0.8, 32]} />
-          <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.2} />
+        {/* ========== 耳机（跟随头部旋转） ========== */}
+        {/* 耳罩 */}
+        <mesh position={[0.82, 0.05, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.18, 0.2, 0.2, 32]} />
+          {armorMat}
+        </mesh>
+        <mesh position={[0.92, 0.05, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.1, 0.1, 0.04, 32]} />
+          {glowCyan}
+        </mesh>
+        <mesh position={[-0.82, 0.05, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.18, 0.2, 0.2, 32]} />
+          {armorMat}
+        </mesh>
+        <mesh position={[-0.92, 0.05, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.1, 0.1, 0.04, 32]} />
+          {glowCyan}
+        </mesh>
+        {/* 头带 */}
+        <mesh position={[0, 0.73, 0]}>
+          <torusGeometry args={[0.82, 0.025, 8, 32, Math.PI]} />
+          {armorMat}
+        </mesh>
+        {/* 麦克风支臂 */}
+        <mesh position={[0.75, -0.12, 0.2]} rotation={[0.3, 0.5, 0]}>
+          <cylinderGeometry args={[0.012, 0.012, 0.4, 8]} />
+          {frameMat}
+        </mesh>
+        {/* 麦克风头 */}
+        <mesh position={[0.55, -0.25, 0.38]}>
+          <sphereGeometry args={[0.04, 12, 12]} />
+          <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={2} toneMapped={false} />
         </mesh>
 
-        {/* === 身体 === */}
-        <mesh ref={bodyRef} position={[0, -2, 0]} castShadow>
-          <capsuleGeometry args={[0.5, 1.2, 8, 16]} />
-          <meshPhysicalMaterial
-            color="#1e293b"
-            metalness={0.7}
-            roughness={0.3}
-            clearcoat={0.5}
-          />
-        </mesh>
+        </group>{/* 关闭 headGroupRef */}
 
-        {/* === 手臂 === */}
-        <group ref={leftArmRef} position={[0.7, -1.5, 0]}>
-          <mesh position={[0, -0.4, 0]}>
-            <capsuleGeometry args={[0.1, 0.6, 4, 8]} />
-            <meshStandardMaterial color="#334155" metalness={0.6} roughness={0.3} />
-          </mesh>
-          {/* 手 */}
+        {/* ========== 脖子 ========== */}
+        <group>
           <mesh position={[0, -0.85, 0]}>
-            <sphereGeometry args={[0.12, 16, 16]} />
-            <meshStandardMaterial color="#e2e8f0" metalness={0.5} roughness={0.2} />
+            <cylinderGeometry args={[0.22, 0.28, 0.5, 32]} />
+            {frameMat}
+          </mesh>
+          {/* 脖子发光环 */}
+          <mesh position={[0, -0.7, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.26, 0.015, 8, 32]} />
+            {glowCyan}
           </mesh>
         </group>
 
-        <group ref={rightArmRef} position={[-0.7, -1.5, 0]}>
-          <mesh position={[0, -0.4, 0]}>
-            <capsuleGeometry args={[0.1, 0.6, 4, 8]} />
-            <meshStandardMaterial color="#334155" metalness={0.6} roughness={0.3} />
+        {/* ========== 身体躯干 ========== */}
+        <group>
+          {/* 胸部主体 — 更修长 */}
+          <mesh ref={bodyRef} position={[0, -1.7, 0]} castShadow>
+            <capsuleGeometry args={[0.42, 1.05, 12, 24]} />
+            {armorMat}
           </mesh>
-          {/* 手 */}
-          <mesh position={[0, -0.85, 0]}>
-            <sphereGeometry args={[0.12, 16, 16]} />
-            <meshStandardMaterial color="#e2e8f0" metalness={0.5} roughness={0.2} />
+          {/* 胸甲 — 圆角更精致 */}
+          <mesh position={[0, -1.35, 0.22]}>
+            <boxGeometry args={[0.55, 0.45, 0.12]} />
+            <meshPhysicalMaterial color="#1a2332" metalness={0.95} roughness={0.08} clearcoat={1} />
+          </mesh>
+          {/* 能量核心 — 更亮更精致 */}
+          <mesh position={[0, -1.38, 0.3]}>
+            <sphereGeometry args={[0.07, 24, 24]} />
+            <meshStandardMaterial color="#22d3ee" emissive="#67e8f9" emissiveIntensity={6} toneMapped={false} />
+          </mesh>
+          <mesh position={[0, -1.38, 0.3]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.11, 0.006, 12, 48]} />
+            <meshStandardMaterial color="#22d3ee" emissive="#22d3ee" emissiveIntensity={3} toneMapped={false} />
+          </mesh>
+          {/* 腰带 */}
+          <mesh position={[0, -2.05, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.42, 0.03, 8, 32]} />
+            {frameMat}
+          </mesh>
+          {/* 腰带发光 */}
+          <mesh position={[0, -2.05, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.42, 0.012, 8, 32]} />
+            {glowCyan}
           </mesh>
         </group>
 
-        {/* === 全息光环 === */}
+        {/* ========== 肩甲 — 更圆润流线型 ========== */}
+        <mesh position={[0.58, -1.15, 0]} rotation={[0, 0, -0.25]}>
+          <capsuleGeometry args={[0.08, 0.18, 8, 12]} />
+          {armorMat}
+        </mesh>
+        <mesh position={[0.58, -1.15, 0.02]} rotation={[0, 0, -0.25]}>
+          <boxGeometry args={[0.14, 0.018, 0.1]} />
+          {glowCyan}
+        </mesh>
+        <mesh position={[-0.58, -1.15, 0]} rotation={[0, 0, 0.25]}>
+          <capsuleGeometry args={[0.08, 0.18, 8, 12]} />
+          {armorMat}
+        </mesh>
+        <mesh position={[-0.58, -1.15, 0.02]} rotation={[0, 0, 0.25]}>
+          <boxGeometry args={[0.14, 0.018, 0.1]} />
+          {glowCyan}
+        </mesh>
+
+        {/* ========== 手臂 ========== */}
+        <group ref={leftArmRef} position={[0.72, -1.35, 0]}>
+          {/* 上臂 */}
+          <mesh position={[0, -0.25, 0]}>
+            <capsuleGeometry args={[0.09, 0.35, 8, 12]} />
+            {frameMat}
+          </mesh>
+          {/* 肘关节 */}
+          <mesh position={[0, -0.5, 0]}>
+            <sphereGeometry args={[0.1, 16, 16]} />
+            {armorMat}
+          </mesh>
+          {/* 前臂 */}
+          <mesh position={[0, -0.72, 0]}>
+            <capsuleGeometry args={[0.08, 0.3, 8, 12]} />
+            {frameMat}
+          </mesh>
+          {/* 手腕环 */}
+          <mesh position={[0, -0.92, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.085, 0.012, 8, 16]} />
+            {glowCyan}
+          </mesh>
+          {/* 手掌 */}
+          <mesh position={[0, -1.0, 0]}>
+            <sphereGeometry args={[0.09, 16, 16]} />
+            {skinMat}
+          </mesh>
+        </group>
+
+        <group ref={rightArmRef} position={[-0.72, -1.35, 0]}>
+          <mesh position={[0, -0.25, 0]}>
+            <capsuleGeometry args={[0.09, 0.35, 8, 12]} />
+            {frameMat}
+          </mesh>
+          <mesh position={[0, -0.5, 0]}>
+            <sphereGeometry args={[0.1, 16, 16]} />
+            {armorMat}
+          </mesh>
+          <mesh position={[0, -0.72, 0]}>
+            <capsuleGeometry args={[0.08, 0.3, 8, 12]} />
+            {frameMat}
+          </mesh>
+          <mesh position={[0, -0.92, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.085, 0.012, 8, 16]} />
+            {glowCyan}
+          </mesh>
+          <mesh position={[0, -1.0, 0]}>
+            <sphereGeometry args={[0.09, 16, 16]} />
+            {skinMat}
+          </mesh>
+        </group>
+
+        {/* ========== 全息光环 — 更优雅 ========== */}
         <group ref={ringsRef}>
           <mesh rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[1.2, 0.02, 16, 100]} />
-            <meshBasicMaterial color="#38bdf8" transparent opacity={0.3} side={THREE.DoubleSide} wireframe />
+            <torusGeometry args={[1.2, 0.012, 16, 128]} />
+            <meshBasicMaterial color="#7dd3fc" transparent opacity={0.3} side={THREE.DoubleSide} wireframe />
           </mesh>
-          <mesh rotation={[Math.PI / 2.2, 0, 0]}>
-            <torusGeometry args={[1.4, 0.01, 16, 100]} />
-            <meshBasicMaterial color="#38bdf8" transparent opacity={0.2} side={THREE.DoubleSide} wireframe />
+          <mesh rotation={[Math.PI / 2.12, 0, 0]}>
+            <torusGeometry args={[1.4, 0.006, 16, 128]} />
+            <meshBasicMaterial color="#7dd3fc" transparent opacity={0.18} side={THREE.DoubleSide} wireframe />
           </mesh>
-          <mesh rotation={[Math.PI / 1.9, 0, 0.3]}>
-            <torusGeometry args={[1.6, 0.008, 16, 100]} />
-            <meshBasicMaterial color="#818cf8" transparent opacity={0.15} side={THREE.DoubleSide} wireframe />
+          <mesh rotation={[Math.PI / 1.88, 0, 0.2]}>
+            <torusGeometry args={[1.6, 0.004, 16, 128]} />
+            <meshBasicMaterial color="#a5b4fc" transparent opacity={0.1} side={THREE.DoubleSide} wireframe />
+          </mesh>
+          {/* 内环（实心发光） */}
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[1.05, 0.003, 8, 64]} />
+            {glowCyan}
           </mesh>
         </group>
-
-        {/* === 耳机 === */}
-        <mesh position={[0.82, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[0.2, 0.2, 0.3, 32]} />
-          <meshStandardMaterial color="#475569" metalness={0.7} roughness={0.2} />
-        </mesh>
-        <mesh position={[-0.82, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[0.2, 0.2, 0.3, 32]} />
-          <meshStandardMaterial color="#475569" metalness={0.7} roughness={0.2} />
-        </mesh>
-        {/* 耳机头带 */}
-        <mesh position={[0, 0.75, 0]} rotation={[0, 0, 0]}>
-          <torusGeometry args={[0.82, 0.03, 8, 32, Math.PI]} />
-          <meshStandardMaterial color="#475569" metalness={0.6} roughness={0.3} />
-        </mesh>
 
       </Float>
     </group>
   );
+}
+
+// ============================================================
+// 角色切换组件 — 根据 avatarType 显示不同角色
+// ============================================================
+function AvatarSwitch() {
+  const { avatarType, vrmModelUrl } = useDigitalHumanStore();
+
+  if (avatarType === 'vrm' && vrmModelUrl) {
+    return (
+      <VRMAvatar
+        url={vrmModelUrl}
+        onLoad={(vrm) => console.log('VRM 模型已加载:', vrm.meta)}
+        onError={(err) => console.error('VRM 加载失败:', err)}
+      />
+    );
+  }
+
+  return <CyberAvatar />;
 }
 
 // ============================================================
@@ -499,7 +861,7 @@ function Scene({
       <VisibilityOptimizer autoRotate={autoRotate ?? false} />
 
       {/* 主光源 */}
-      <ambientLight intensity={0.4} color="#e0e7ff" />
+      <ambientLight intensity={0.6} color="#e0e7ff" />
       <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1.8} castShadow shadow-mapSize={2048} />
       <pointLight position={[-10, -10, -10]} intensity={0.8} color="#3b82f6" />
 
@@ -510,11 +872,11 @@ function Scene({
       {/* 环境反射 */}
       <Environment preset="city" />
 
-      {/* 模型 / 内置角色 */}
+      {/* 模型 / 内置角色 / VRM */}
       {modelScene ? (
         <primitive object={modelScene} position={[0, -1.2, 0]} />
       ) : (
-        <CyberAvatar />
+        <AvatarSwitch />
       )}
 
       {/* 粒子效果 */}
@@ -526,9 +888,9 @@ function Scene({
         resolution={1024}
         scale={10}
         blur={2.5}
-        opacity={0.6}
+        opacity={0.3}
         far={10}
-        color="#000000"
+        color="#94a3b8"
         position={[0, -3.2, 0]}
       />
 
@@ -561,6 +923,7 @@ interface DigitalHumanViewerProps {
   autoRotate?: boolean;
   showControls?: boolean;
   showFPS?: boolean;
+  isDark?: boolean;
   onModelLoad?: (model: unknown) => void;
   onFPSUpdate?: (fps: number) => void;
 }
@@ -570,6 +933,7 @@ export default function DigitalHumanViewer({
   autoRotate = false,
   showControls = true,
   showFPS = false,
+  isDark = true,
   onModelLoad,
   onFPSUpdate
 }: DigitalHumanViewerProps) {
@@ -648,27 +1012,29 @@ export default function DigitalHumanViewer({
     <div className="w-full h-full bg-transparent relative">
       {/* FPS 显示 */}
       {showFPS && (
-        <div className="absolute top-2 right-2 z-10 px-2 py-1 rounded bg-black/50 text-white text-xs font-mono backdrop-blur-sm border border-white/10">
+        <div className="absolute top-2 right-2 z-10 px-2 py-1 rounded bg-white/70 text-slate-600 text-xs font-mono backdrop-blur-sm border border-slate-200 shadow-sm">
           {currentFPS} FPS
           {currentFPS < 30 && <span className="text-yellow-400 ml-1">⚠</span>}
         </div>
       )}
 
-      <Canvas shadows dpr={[1, 2]} gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2 }}>
+      <Canvas shadows dpr={[1, 2]} gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2 }}
+        scene={{ background: new THREE.Color(isDark ? '#0a0a0a' : '#e8edf5') }}
+      >
         {(loadStatus === 'loading' || loadStatus === 'error') && (
           <Html center>
             {loadStatus === 'loading' ? (
               <div className="flex flex-col items-center gap-3">
-                <div className="w-48 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div className="w-48 h-1.5 bg-slate-200 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-300"
                     style={{ width: `${loadProgress}%` }}
                   />
                 </div>
-                <span className="text-white/60 text-xs font-mono">{loadProgress}%</span>
+                <span className="text-slate-500 text-xs font-mono">{loadProgress}%</span>
               </div>
             ) : (
-              <div className="px-4 py-2 rounded-xl bg-black/70 text-white text-sm border border-white/10 shadow-lg">
+              <div className="px-4 py-2 rounded-xl bg-white/90 text-slate-600 text-sm border border-slate-200 shadow-lg">
                 加载失败，使用内置模型
               </div>
             )}
@@ -678,31 +1044,31 @@ export default function DigitalHumanViewer({
       </Canvas>
 
       {showControls && (
-        <div className="absolute bottom-4 left-4 right-4 bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-4 space-y-3 text-white">
+        <div className="absolute bottom-4 left-4 right-4 bg-white/80 backdrop-blur-lg border border-slate-200 rounded-2xl p-4 space-y-3 text-slate-800 shadow-lg">
           <h2 className="text-lg font-semibold">数字人控制</h2>
           <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
             <div className="flex items-center gap-2">
-              <span className="text-white/50">模型:</span>
-              <span className={loadStatus === 'ready' ? 'text-green-400' : 'text-yellow-300'}>
+              <span className="text-slate-400">模型:</span>
+              <span className={loadStatus === 'ready' ? 'text-green-600' : 'text-yellow-600'}>
                 {loadStatus === 'ready' ? '已加载' : loadStatus === 'loading' ? `${loadProgress}%` : '内置模型'}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-white/50">引擎:</span>
-              <span className="text-blue-300">Three.js R3F</span>
+              <span className="text-slate-400">引擎:</span>
+              <span className="text-blue-600">Three.js R3F</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-white/50">帧率:</span>
-              <span className={currentFPS >= 30 ? 'text-green-400' : 'text-yellow-400'}>
+              <span className="text-slate-400">帧率:</span>
+              <span className={currentFPS >= 30 ? 'text-green-600' : 'text-yellow-600'}>
                 {currentFPS} FPS
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-white/50">旋转:</span>
-              <span className="text-white">{autoRotate ? '开启' : '关闭'}</span>
+              <span className="text-slate-400">旋转:</span>
+              <span className="text-slate-700">{autoRotate ? '开启' : '关闭'}</span>
             </div>
             {loadError && (
-              <div className="col-span-2 text-xs text-red-200 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+              <div className="col-span-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
                 {loadError}
               </div>
             )}

@@ -3,8 +3,9 @@ import { create } from 'zustand';
 // 表情类型定义
 export type EmotionType = 'neutral' | 'happy' | 'surprised' | 'sad' | 'angry';
 export type ExpressionType = 'neutral' | 'smile' | 'laugh' | 'surprise' | 'sad' | 'angry' | 'blink' | 'eyebrow_raise' | 'eye_blink' | 'mouth_open' | 'head_nod';
-export type BehaviorType = 'idle' | 'greeting' | 'listening' | 'thinking' | 'speaking' | 'excited' | 'wave' | 'greet' | 'think' | 'nod' | 'shakeHead' | 'dance' | 'speak' | 'waveHand' | 'raiseHand';
+export type BehaviorType = 'idle' | 'greeting' | 'listening' | 'thinking' | 'speaking' | 'excited' | 'wave' | 'greet' | 'think' | 'nod' | 'shakeHead' | 'dance' | 'speak' | 'waveHand' | 'raiseHand' | 'bow' | 'clap' | 'thumbsUp' | 'headTilt' | 'shrug' | 'lookAround' | 'cheer' | 'sleep' | 'crossArms' | 'point';
 export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'error';
+export type AvatarType = 'cyber' | 'vrm';
 
 // 错误项接口
 export interface ErrorItem {
@@ -108,6 +109,8 @@ interface DigitalHumanState {
   isPlaying: boolean;
   autoRotate: boolean;
   currentAnimation: string;
+  avatarType: AvatarType;
+  vrmModelUrl: string | null;
 
   // 语音状态
   isRecording: boolean;
@@ -144,6 +147,8 @@ interface DigitalHumanState {
   setPlaying: (playing: boolean) => void;
   setAutoRotate: (rotate: boolean) => void;
   setAnimation: (animation: string) => void;
+  setAvatarType: (type: AvatarType) => void;
+  setVrmModelUrl: (url: string | null) => void;
   setRecording: (recording: boolean) => void;
   setMuted: (muted: boolean) => void;
   setSpeaking: (speaking: boolean) => void;
@@ -231,6 +236,8 @@ export const useDigitalHumanStore = create<DigitalHumanState>((set, get) => ({
   isPlaying: false,
   autoRotate: false,
   currentAnimation: 'idle',
+  avatarType: 'cyber',
+  vrmModelUrl: null,
   isRecording: false,
   isMuted: false,
   isSpeaking: false,
@@ -263,6 +270,8 @@ export const useDigitalHumanStore = create<DigitalHumanState>((set, get) => ({
   setPlaying: (playing) => set({ isPlaying: playing }),
   setAutoRotate: (rotate) => set({ autoRotate: rotate }),
   setAnimation: (animation) => set({ currentAnimation: animation }),
+  setAvatarType: (type) => set({ avatarType: type }),
+  setVrmModelUrl: (url) => set({ vrmModelUrl: url, avatarType: url ? 'vrm' : 'cyber' }),
   setRecording: (recording) => set({ isRecording: recording }),
   setMuted: (muted) => set({ isMuted: muted }),
   setSpeaking: (speaking) => set({ isSpeaking: speaking }),

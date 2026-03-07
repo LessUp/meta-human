@@ -1,0 +1,64 @@
+{
+  // 编辑器基础设置
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "never"
+  },
+
+  // 文件设置
+  "files.eol": "\n",
+  "files.encoding": "utf8",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.exclude": {
+    "node_modules": true,
+    "dist": true,
+    ".git": true,
+    "coverage": true
+  },
+
+  // TypeScript
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+  "typescript.suggest.autoImports": true,
+  "typescript.tsdk": "node_modules/typescript/lib",
+
+  // Tailwind CSS IntelliSense
+  "tailwindCSS.includeLanguages": {
+    "typescriptreact": "html"
+  },
+  "tailwindCSS.experimental.classRegex": [
+    ["cn\\(([^)]*)\\)", "'([^']*)'"],
+    ["cn\\(([^)]*)\\)", "\"([^\"]*)\""],
+    ["cn\\(([^)]*)\\)", "`([^`]*)`"]
+  ],
+
+  // ESLint
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+
+  // 搜索排除
+  "search.exclude": {
+    "node_modules": true,
+    "dist": true,
+    "coverage": true,
+    "package-lock.json": true
+  },
+
+  // Emmet（JSX 支持）
+  "emmet.includeLanguages": {
+    "typescriptreact": "html"
+  },
+
+  // 文件关联
+  "files.associations": {
+    "*.css": "tailwindcss"
+  }
+}
