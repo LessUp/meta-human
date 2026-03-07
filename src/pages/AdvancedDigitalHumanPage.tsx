@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import DigitalHumanViewer from '../components/DigitalHumanViewer';
+import DigitalHumanViewer from '../components/DigitalHumanViewer.enhanced';
 import ControlPanel from '../components/ControlPanel';
-import VoiceInteractionPanel from '../components/VoiceInteractionPanel';
+import VoiceInteractionPanel from '../components/VoiceInteractionPanel.dark';
 import VisionMirrorPanel from '../components/VisionMirrorPanel';
-import ExpressionControlPanel from '../components/ExpressionControlPanel';
-import BehaviorControlPanel from '../components/BehaviorControlPanel';
+import ExpressionControlPanel from '../components/ExpressionControlPanel.new';
+import BehaviorControlPanel from '../components/BehaviorControlPanel.new';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { ttsService, asrService } from '../core/audio/audioService';
 import { digitalHumanEngine } from '../core/avatar/DigitalHumanEngine';
@@ -12,6 +12,7 @@ import { sendUserInput, checkServerHealth } from '../core/dialogue/dialogueServi
 import { handleDialogueResponse } from '../core/dialogue/dialogueOrchestrator';
 import { usePageVisibility } from '../hooks/usePerformance';
 import { Toaster, toast } from 'sonner';
+import KeyboardShortcutsHelp from '../components/KeyboardShortcutsHelp';
 import { Mic, MessageSquare, Settings, Activity, X, Radio, AlertCircle, Wifi, WifiOff, RefreshCw, RotateCcw } from 'lucide-react';
 
 export default function AdvancedDigitalHumanPage() {
@@ -81,9 +82,9 @@ export default function AdvancedDigitalHumanPage() {
   // 初始化：检查服务器连接
   useEffect(() => {
     const checkConnection = async () => {
-      const isHealthy = await checkServerHealth();
-      setConnectionStatus(isHealthy ? 'connected' : 'disconnected');
-      if (!isHealthy) {
+      const result = await checkServerHealth();
+      setConnectionStatus(result.healthy ? 'connected' : 'disconnected');
+      if (!result.healthy) {
         toast.warning('服务器连接不稳定，部分功能可能受限');
       }
     };
@@ -212,9 +213,9 @@ export default function AdvancedDigitalHumanPage() {
   const handleReconnect = useCallback(async () => {
     setConnectionStatus('connecting');
     toast.loading('正在重新连接...');
-    const isHealthy = await checkServerHealth();
-    setConnectionStatus(isHealthy ? 'connected' : 'error');
-    if (isHealthy) {
+    const result = await checkServerHealth();
+    setConnectionStatus(result.healthy ? 'connected' : 'error');
+    if (result.healthy) {
       toast.success('连接成功');
     } else {
       toast.error('连接失败，请稍后重试');
@@ -335,6 +336,7 @@ export default function AdvancedDigitalHumanPage() {
           >
             <RotateCcw className="w-5 h-5 text-white/80" />
           </button>
+          <KeyboardShortcutsHelp />
           <button
             onClick={() => setShowSettings(!showSettings)}
             className="p-3 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all active:scale-95"
@@ -351,7 +353,7 @@ export default function AdvancedDigitalHumanPage() {
         <div className="p-6 h-full flex flex-col">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-lg font-medium text-white/90 flex items-center gap-2">
-              <Settings className="w-4 h-4" /> Control Systems
+              <Settings className="w-4 h-4" /> 控制系统
             </h2>
             <button onClick={() => setShowSettings(false)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
               <X className="w-5 h-5 text-gray-400" />
@@ -360,14 +362,14 @@ export default function AdvancedDigitalHumanPage() {
 
           {/* Navigation Tabs */}
           <div className="flex space-x-1 bg-white/5 p-1 rounded-lg mb-6 overflow-x-auto">
-            {['basic', 'expression', 'behavior', 'vision', 'voice'].map(tab => (
+            {[{key:'basic',label:'基础'},{key:'expression',label:'表情'},{key:'behavior',label:'行为'},{key:'vision',label:'视觉'},{key:'voice',label:'语音'}].map(tab => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-2 text-xs font-medium rounded-md transition-all capitalize ${activeTab === tab ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex-1 py-2 text-xs font-medium rounded-md transition-all ${activeTab === tab.key ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}
               >
-                {tab}
+                {tab.label}
               </button>
             ))}
           </div>
@@ -406,7 +408,7 @@ export default function AdvancedDigitalHumanPage() {
             )}
             {activeTab === 'vision' && (
               <div className="text-sm text-gray-400 p-4 border border-white/10 rounded-xl bg-white/5">
-                Vision Mirror Module requires camera access.
+                视觉镜像模块需要摄像头权限
                 <VisionMirrorPanel
                   onEmotionChange={(emotion) => {
                     if (emotion === 'happy') {
@@ -420,7 +422,7 @@ export default function AdvancedDigitalHumanPage() {
                   }}
                   onHeadMotion={(motion) => {
                     digitalHumanEngine.playAnimation(motion);
-                    toast(`Motion Detected: ${motion}`, { icon: '📸' });
+                    toast(`检测到动作: ${motion}`, { icon: '📸' });
                   }}
                 />
               </div>
@@ -441,8 +443,12 @@ export default function AdvancedDigitalHumanPage() {
         {/* Chat Bubbles Overlay (Above Dock) */}
         <div className="mb-6 w-full max-h-[40vh] overflow-y-auto space-y-3 pr-4 mask-gradient-bottom custom-scrollbar">
           {chatHistory.length === 0 ? (
-            <div className="text-center text-white/30 text-sm py-8">
-              发送消息或使用语音开始对话...
+            <div className="text-center py-12 space-y-3">
+              <div className="w-12 h-12 mx-auto rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-white/20" />
+              </div>
+              <p className="text-white/25 text-sm">发送消息或使用语音开始对话</p>
+              <p className="text-white/15 text-xs">按 <kbd className="px-1.5 py-0.5 bg-white/5 border border-white/10 rounded text-[10px]">V</kbd> 快速开始录音</p>
             </div>
           ) : (
             chatHistory.map((msg) => (
@@ -526,7 +532,7 @@ export default function AdvancedDigitalHumanPage() {
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { bg: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
         .mask-gradient-bottom { -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%); }

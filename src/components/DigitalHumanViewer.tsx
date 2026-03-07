@@ -57,7 +57,8 @@ function VisibilityOptimizer({
         gl.setAnimationLoop(null);
       } else {
         // 页面显示时恢复渲染
-        gl.setAnimationLoop(() => gl.render(gl.domElement as any, {} as any));
+        // 页面恢复时 R3F 会自动重新启动渲染循环，无需手动调用
+        gl.setAnimationLoop(null);
       }
     };
 

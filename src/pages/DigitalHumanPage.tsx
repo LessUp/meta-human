@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import DigitalHumanViewer from '../components/DigitalHumanViewer';
+import DigitalHumanViewer from '../components/DigitalHumanViewer.enhanced';
 import ControlPanel from '../components/ControlPanel';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { ttsService, asrService } from '../core/audio/audioService';

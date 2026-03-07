@@ -40,10 +40,10 @@ export default function ControlPanel({
   const statusConfig = connectionStatusConfig[connectionStatus];
   
   const voiceCommands = [
-    { command: '打招呼', label: '👋 Say Hello' },
-    { command: '跳舞', label: '💃 Dance' },
-    { command: '说话', label: '🗣️ Speak' },
-    { command: '表情', label: '😊 Emote' }
+    { command: '打招呼', label: '👋 打招呼' },
+    { command: '跳舞', label: '💃 跳舞' },
+    { command: '说话', label: '🗣️ 说话' },
+    { command: '表情', label: '😊 表情' }
   ];
 
   return (
