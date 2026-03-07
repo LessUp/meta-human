@@ -33,14 +33,14 @@ export default function LoadingSpinner({
         </div>
       </div>
       {text && (
-        <span className={`${cfg.text} text-white/50 font-light tracking-wide`}>{text}</span>
+        <span className={`${cfg.text} text-slate-400 dark:text-white/50 font-light tracking-wide`}>{text}</span>
       )}
     </div>
   );
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-white/90 dark:bg-black/90 backdrop-blur-md flex items-center justify-center z-50">
         <div className="flex flex-col items-center gap-6">
           {content}
         </div>

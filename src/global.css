@@ -1,13 +1,19 @@
-/* 全局深色主题基础样式 */
+/* 全局基础样式 - 浅色模式默认 */
 html, body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
+  background-color: #f8fafc;
+  color: #1e293b;
+  scroll-behavior: smooth;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark, html.dark body {
   background-color: #000;
   color: #fff;
-  scroll-behavior: smooth;
 }
 
 #root {
@@ -15,7 +21,7 @@ html, body {
   height: 100%;
 }
 
-/* 全局自定义滚动条 */
+/* 全局自定义滚动条 - 浅色 */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -26,11 +32,20 @@ html, body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.15);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* 深色模式滚动条 */
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.25);
 }
 
@@ -40,10 +55,10 @@ html, body {
   color: #fff;
 }
 
-/* 输入框自动填充样式覆盖（深色模式） */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus {
+/* 输入框自动填充样式覆盖 */
+html.dark input:-webkit-autofill,
+html.dark input:-webkit-autofill:hover,
+html.dark input:-webkit-autofill:focus {
   -webkit-text-fill-color: #fff;
   -webkit-box-shadow: 0 0 0px 1000px rgba(0, 0, 0, 0.8) inset;
   transition: background-color 5000s ease-in-out 0s;

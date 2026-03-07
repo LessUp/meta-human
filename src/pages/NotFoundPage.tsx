@@ -4,7 +4,7 @@ import { Home, ArrowLeft } from 'lucide-react';
 
 export default function NotFoundPage() {
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white px-4">
+    <div className="min-h-screen bg-slate-50 dark:bg-black flex flex-col items-center justify-center text-slate-800 dark:text-white px-4">
       <div className="text-center space-y-6 max-w-md">
         {/* 404 大数字 */}
         <div className="relative animate-fade-in">
@@ -17,15 +17,15 @@ export default function NotFoundPage() {
           <div className="absolute top-1/2 -right-8 w-1 h-1 bg-cyan-400/40 rounded-full animate-ping" style={{ animationDelay: '1s' }} />
         </div>
 
-        <h2 className="text-xl font-medium text-white/80">页面未找到</h2>
-        <p className="text-sm text-white/40 leading-relaxed">
+        <h2 className="text-xl font-medium text-slate-700 dark:text-white/80">页面未找到</h2>
+        <p className="text-sm text-slate-400 dark:text-white/40 leading-relaxed">
           您访问的页面不存在或已被移除。请返回首页继续使用数字人交互平台。
         </p>
 
         <div className="flex items-center justify-center gap-3 pt-4">
           <button
             onClick={() => window.history.back()}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm text-white/80 transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-slate-600 dark:text-white/80 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             返回上页
