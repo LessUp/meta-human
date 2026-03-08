@@ -530,27 +530,27 @@ function CyberAvatar() {
     }
   });
 
-  // 共享材质 — 动漫风格
+  // 共享材质 — 动漫风格（精修版）
   const skinMat = useMemo(() => (
-    <meshPhysicalMaterial color="#fce4d6" metalness={0.02} roughness={0.55} clearcoat={0.3} clearcoatRoughness={0.4} envMapIntensity={0.8} />
+    <meshPhysicalMaterial color="#fde8d8" metalness={0.01} roughness={0.48} clearcoat={0.4} clearcoatRoughness={0.3} envMapIntensity={1.0} sheen={0.3} sheenColor="#f9a8d4" />
   ), []);
   const clothMat = useMemo(() => (
-    <meshPhysicalMaterial color="#f0f4ff" metalness={0.02} roughness={0.7} clearcoat={0.15} clearcoatRoughness={0.5} envMapIntensity={0.6} />
+    <meshPhysicalMaterial color="#eef2ff" metalness={0.03} roughness={0.65} clearcoat={0.2} clearcoatRoughness={0.4} envMapIntensity={0.7} sheen={0.15} sheenColor="#c7d2fe" />
   ), []);
   const clothAccentMat = useMemo(() => (
-    <meshPhysicalMaterial color="#7c8bbf" metalness={0.05} roughness={0.6} clearcoat={0.2} clearcoatRoughness={0.4} envMapIntensity={0.8} />
+    <meshPhysicalMaterial color="#6b7db8" metalness={0.08} roughness={0.5} clearcoat={0.3} clearcoatRoughness={0.3} envMapIntensity={1.0} />
   ), []);
   const hairMat = useMemo(() => (
-    <meshPhysicalMaterial color="#4a3a5c" metalness={0.15} roughness={0.4} clearcoat={0.6} clearcoatRoughness={0.15} envMapIntensity={1.5} />
+    <meshPhysicalMaterial color="#3d2d50" metalness={0.18} roughness={0.32} clearcoat={0.75} clearcoatRoughness={0.1} envMapIntensity={2.0} sheen={0.5} sheenColor="#8b5cf6" />
   ), []);
   const hairHighlightMat = useMemo(() => (
-    <meshPhysicalMaterial color="#7b5ea7" metalness={0.1} roughness={0.35} clearcoat={0.7} clearcoatRoughness={0.1} envMapIntensity={1.8} />
+    <meshPhysicalMaterial color="#7b5ea7" metalness={0.12} roughness={0.28} clearcoat={0.85} clearcoatRoughness={0.08} envMapIntensity={2.2} sheen={0.6} sheenColor="#c4b5fd" />
   ), []);
   const glowSoft = useMemo(() => (
-    <meshStandardMaterial color="#c4b5fd" emissive="#c4b5fd" emissiveIntensity={1.8} toneMapped={false} />
+    <meshStandardMaterial color="#c4b5fd" emissive="#c4b5fd" emissiveIntensity={2.0} toneMapped={false} />
   ), []);
   const glowPink = useMemo(() => (
-    <meshStandardMaterial color="#f9a8d4" emissive="#f9a8d4" emissiveIntensity={1.5} toneMapped={false} />
+    <meshStandardMaterial color="#f9a8d4" emissive="#f9a8d4" emissiveIntensity={1.8} toneMapped={false} />
   ), []);
 
   return (
@@ -675,10 +675,35 @@ function CyberAvatar() {
             <capsuleGeometry args={[0.15, 0.25, 8, 12]} />
             {hairHighlightMat}
           </mesh>
-          {/* 后发尾 */}
+          {/* 后发尾 — 主束 */}
           <mesh position={[0, -0.42, -0.45]} rotation={[0.2, 0, 0]} scale={[0.5, 0.85, 0.32]}>
             <capsuleGeometry args={[0.22, 0.55, 8, 16]} />
             {hairMat}
+          </mesh>
+          {/* 后发尾 — 左分支 */}
+          <mesh position={[-0.2, -0.45, -0.42]} rotation={[0.15, 0.1, 0.08]} scale={[0.25, 0.6, 0.2]}>
+            <capsuleGeometry args={[0.15, 0.35, 6, 12]} />
+            {hairMat}
+          </mesh>
+          {/* 后发尾 — 右分支 */}
+          <mesh position={[0.2, -0.45, -0.42]} rotation={[0.15, -0.1, -0.08]} scale={[0.25, 0.6, 0.2]}>
+            <capsuleGeometry args={[0.15, 0.35, 6, 12]} />
+            {hairMat}
+          </mesh>
+          {/* 后脑勺侧发量 — 左 */}
+          <mesh position={[-0.55, 0.0, -0.28]} rotation={[0, 0.15, 0.1]} scale={[0.3, 0.55, 0.35]}>
+            <sphereGeometry args={[0.35, 12, 12]} />
+            {hairMat}
+          </mesh>
+          {/* 后脑勺侧发量 — 右 */}
+          <mesh position={[0.55, 0.0, -0.28]} rotation={[0, -0.15, -0.1]} scale={[0.3, 0.55, 0.35]}>
+            <sphereGeometry args={[0.35, 12, 12]} />
+            {hairMat}
+          </mesh>
+          {/* 刘海内层高光 — 半透明光泽 */}
+          <mesh position={[0, 0.22, 0.56]} rotation={[0.45, 0, 0]} scale={[0.52, 0.28, 0.12]}>
+            <sphereGeometry args={[0.38, 12, 12]} />
+            {hairHighlightMat}
           </mesh>
           {/* 头发天使光环 — 动漫标志性高光弧线 */}
           <mesh position={[0, 0.52, 0.2]} rotation={[0.25, 0, 0]} scale={[0.6, 0.07, 0.25]}>
@@ -773,6 +798,26 @@ function CyberAvatar() {
             <mesh position={[0.30, 0.02, 0.125]}>
               <sphereGeometry args={[0.007, 6, 6]} />
               <meshBasicMaterial color="#e9d5ff" />
+            </mesh>
+            {/* 眼底反射弧 — 左（动漫标志性水光） */}
+            <mesh position={[-0.24, -0.06, 0.1]} rotation={[0, 0, 0]} scale={[1.1, 0.35, 0.1]}>
+              <sphereGeometry args={[0.07, 16, 16]} />
+              <meshStandardMaterial color="#e0e7ff" emissive="#c7d2fe" emissiveIntensity={0.6} transparent opacity={0.35} />
+            </mesh>
+            {/* 眼底反射弧 — 右 */}
+            <mesh position={[0.24, -0.06, 0.1]} rotation={[0, 0, 0]} scale={[1.1, 0.35, 0.1]}>
+              <sphereGeometry args={[0.07, 16, 16]} />
+              <meshStandardMaterial color="#e0e7ff" emissive="#c7d2fe" emissiveIntensity={0.6} transparent opacity={0.35} />
+            </mesh>
+            {/* 虹膜中间渐变环 — 左 */}
+            <mesh position={[-0.24, -0.01, 0.105]} scale={[1.08, 1.08, 0.15]}>
+              <sphereGeometry args={[0.078, 24, 24]} />
+              <meshStandardMaterial color="#7c3aed" emissive="#9333ea" emissiveIntensity={0.6} transparent opacity={0.5} />
+            </mesh>
+            {/* 虹膜中间渐变环 — 右 */}
+            <mesh position={[0.24, -0.01, 0.105]} scale={[1.08, 1.08, 0.15]}>
+              <sphereGeometry args={[0.078, 24, 24]} />
+              <meshStandardMaterial color="#7c3aed" emissive="#9333ea" emissiveIntensity={0.6} transparent opacity={0.5} />
             </mesh>
             {/* 上睫毛 — 左眼 */}
             <mesh position={[-0.24, 0.1, 0.08]} rotation={[0, 0, 0.05]} scale={[1.6, 0.22, 0.12]}>
@@ -874,13 +919,25 @@ function CyberAvatar() {
             <sphereGeometry args={[0.22, 16, 16]} />
             {clothMat}
           </mesh>
-          <mesh position={[-0.1, -0.96, 0.25]} rotation={[0.2, 0.15, 0.2]}>
-            <boxGeometry args={[0.18, 0.005, 0.005]} />
+          {/* 领口V线 — 左 */}
+          <mesh position={[-0.1, -0.96, 0.26]} rotation={[0.2, 0.15, 0.2]}>
+            <boxGeometry args={[0.2, 0.012, 0.008]} />
             {clothAccentMat}
           </mesh>
-          <mesh position={[0.1, -0.96, 0.25]} rotation={[0.2, -0.15, -0.2]}>
-            <boxGeometry args={[0.18, 0.005, 0.005]} />
+          {/* 领口白边 — 左 */}
+          <mesh position={[-0.09, -0.95, 0.265]} rotation={[0.2, 0.15, 0.2]}>
+            <boxGeometry args={[0.18, 0.006, 0.004]} />
+            <meshStandardMaterial color="#ffffff" />
+          </mesh>
+          {/* 领口V线 — 右 */}
+          <mesh position={[0.1, -0.96, 0.26]} rotation={[0.2, -0.15, -0.2]}>
+            <boxGeometry args={[0.2, 0.012, 0.008]} />
             {clothAccentMat}
+          </mesh>
+          {/* 领口白边 — 右 */}
+          <mesh position={[0.09, -0.95, 0.265]} rotation={[0.2, -0.15, -0.2]}>
+            <boxGeometry args={[0.18, 0.006, 0.004]} />
+            <meshStandardMaterial color="#ffffff" />
           </mesh>
           {/* 胸口蝴蝶结 */}
           <mesh position={[-0.05, -1.02, 0.3]} rotation={[0, 0, 0.45]} scale={[0.9, 0.45, 0.4]}>
@@ -1116,13 +1173,23 @@ function Scene({
       <VisibilityOptimizer autoRotate={autoRotate ?? false} />
 
       {/* 主光源 — 柔和温暖 */}
-      <ambientLight intensity={0.7} color="#f5f0ff" />
-      <spotLight position={[8, 10, 8]} angle={0.2} penumbra={1} intensity={1.5} castShadow shadow-mapSize={2048} color="#fff5f5" />
+      <ambientLight intensity={0.8} color="#f8f4ff" />
+      <spotLight position={[8, 10, 8]} angle={0.2} penumbra={1} intensity={1.8} castShadow shadow-mapSize={2048} color="#fff8f0" />
       <pointLight position={[-8, -8, -8]} intensity={0.5} color="#c4b5fd" />
+      {/* 头顶柔和补光 — 增加头发高光 */}
+      <pointLight position={[0, 4, 2]} intensity={0.6} color="#f0e6ff" distance={10} />
 
       {/* Rim Light — 柔和紫粉轮廓光 */}
-      <spotLight position={[-5, 5, -5]} angle={0.3} penumbra={0.5} intensity={1.0} color="#c4b5fd" />
-      <spotLight position={[5, -3, -5]} angle={0.3} penumbra={0.5} intensity={0.6} color="#f9a8d4" />
+      <spotLight position={[-5, 5, -5]} angle={0.3} penumbra={0.5} intensity={1.2} color="#c4b5fd" />
+      <spotLight position={[5, -3, -5]} angle={0.3} penumbra={0.5} intensity={0.8} color="#f9a8d4" />
+      {/* 底部反射补光 */}
+      <pointLight position={[0, -4, 3]} intensity={0.3} color="#e0e7ff" distance={8} />
+
+      {/* 背景柔和光晕 — 角色背后微弱氛围 */}
+      <mesh position={[0, -0.8, -2.5]}>
+        <sphereGeometry args={[1.8, 16, 16]} />
+        <meshStandardMaterial color="#2d1b4e" emissive="#1e1035" emissiveIntensity={0.15} transparent opacity={0.06} />
+      </mesh>
 
       {/* 环境反射 */}
       <Environment preset="city" />
