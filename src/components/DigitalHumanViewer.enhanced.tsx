@@ -123,6 +123,11 @@ function CyberAvatar() {
   const leftArmRef = useRef<THREE.Group>(null);
   const rightArmRef = useRef<THREE.Group>(null);
   const emotionLightRef = useRef<THREE.PointLight>(null);
+  const leftSideHairRef = useRef<THREE.Mesh>(null);
+  const rightSideHairRef = useRef<THREE.Mesh>(null);
+  const backHairRef = useRef<THREE.Mesh>(null);
+  const pupilGroupRef = useRef<THREE.Group>(null);
+  const skirtRef = useRef<THREE.Mesh>(null);
 
   const mouse = useMousePosition();
 
@@ -146,6 +151,10 @@ function CyberAvatar() {
     leftArmRotX: 0,
     rightArmRotX: 0,
     bodyScale: 1,
+    sideHairSwing: 0,
+    backHairSwing: 0,
+    pupilOffsetX: 0,
+    pupilOffsetY: 0,
   });
 
   const {
@@ -482,6 +491,44 @@ function CyberAvatar() {
       bodyRef.current.scale.z = breathScale;
     }
 
+    // ---- 裙摆微摆动 ----
+    if (skirtRef.current) {
+      const skirtSwing = Math.sin(t * 1.6) * 0.015 + anim.bodyRotZ * 0.3;
+      skirtRef.current.rotation.z = skirtSwing;
+      skirtRef.current.rotation.x = Math.sin(t * 1.2) * 0.01;
+    }
+
+    // ---- 头发摆动（跟随头部运动产生延迟物理感） ----
+    const headVelocityY = targetHeadRotY - anim.headRotY;
+    const headVelocityX = targetHeadRotX - anim.headRotX;
+    const swingDamping = 0.08;
+    const targetSideSwing = -headVelocityY * 2.5 + Math.sin(t * 1.8) * 0.02;
+    const targetBackSwing = -headVelocityX * 1.5 + Math.sin(t * 1.3) * 0.015;
+    anim.sideHairSwing = lerp(anim.sideHairSwing, targetSideSwing, swingDamping);
+    anim.backHairSwing = lerp(anim.backHairSwing, targetBackSwing, swingDamping);
+
+    // ---- 瞳孔跟随鼠标 ----
+    const targetPupilX = mouse.current.x * 0.012;
+    const targetPupilY = -mouse.current.y * 0.008;
+    anim.pupilOffsetX = lerp(anim.pupilOffsetX, targetPupilX, 0.06);
+    anim.pupilOffsetY = lerp(anim.pupilOffsetY, targetPupilY, 0.06);
+
+    // 应用头发摆动
+    if (leftSideHairRef.current) {
+      leftSideHairRef.current.rotation.z = 0.1 + anim.sideHairSwing * 0.8;
+    }
+    if (rightSideHairRef.current) {
+      rightSideHairRef.current.rotation.z = -0.1 - anim.sideHairSwing * 0.8;
+    }
+    if (backHairRef.current) {
+      backHairRef.current.rotation.x = 0.15 + anim.backHairSwing * 0.6;
+    }
+    // 应用瞳孔偏移
+    if (pupilGroupRef.current) {
+      pupilGroupRef.current.position.x = anim.pupilOffsetX;
+      pupilGroupRef.current.position.y = anim.pupilOffsetY;
+    }
+
     // ---- 光环动画 ----
     if (ringsRef.current) {
       let ringSpeed = 0.2;
@@ -536,7 +583,7 @@ function CyberAvatar() {
 
   // 共享材质 — 参考airi柔和动漫风格
   const skinMat = useMemo(() => (
-    <meshPhysicalMaterial color="#fdd9c4" metalness={0.0} roughness={0.5} clearcoat={0.25} clearcoatRoughness={0.35} envMapIntensity={0.6} sheen={0.35} sheenColor="#ffb8c6" />
+    <meshPhysicalMaterial color="#fdd9c4" metalness={0.0} roughness={0.45} clearcoat={0.2} clearcoatRoughness={0.35} envMapIntensity={0.6} sheen={0.4} sheenColor="#ffb8c6" transmission={0.05} thickness={0.8} />
   ), []);
   const clothMat = useMemo(() => (
     <meshPhysicalMaterial color="#f0f4ff" metalness={0.02} roughness={0.6} clearcoat={0.15} clearcoatRoughness={0.4} envMapIntensity={0.6} sheen={0.1} sheenColor="#ddd6fe" />
@@ -632,17 +679,17 @@ function CyberAvatar() {
             {hairMat}
           </mesh>
           {/* 侧发左 — 更丰满 */}
-          <mesh position={[-0.62, -0.1, -0.04]} rotation={[0.05, 0, 0.1]} scale={[0.32, 0.9, 0.35]}>
+          <mesh ref={leftSideHairRef} position={[-0.62, -0.1, -0.04]} rotation={[0.05, 0, 0.1]} scale={[0.32, 0.9, 0.35]}>
             <capsuleGeometry args={[0.18, 0.55, 6, 10]} />
             {hairMat}
           </mesh>
           {/* 侧发右 — 更丰满 */}
-          <mesh position={[0.62, -0.1, -0.04]} rotation={[0.05, 0, -0.1]} scale={[0.32, 0.9, 0.35]}>
+          <mesh ref={rightSideHairRef} position={[0.62, -0.1, -0.04]} rotation={[0.05, 0, -0.1]} scale={[0.32, 0.9, 0.35]}>
             <capsuleGeometry args={[0.18, 0.55, 6, 10]} />
             {hairMat}
           </mesh>
           {/* 后发尾主束 */}
-          <mesh position={[0, -0.38, -0.42]} rotation={[0.15, 0, 0]} scale={[0.52, 0.85, 0.32]}>
+          <mesh ref={backHairRef} position={[0, -0.38, -0.42]} rotation={[0.15, 0, 0]} scale={[0.52, 0.85, 0.32]}>
             <capsuleGeometry args={[0.22, 0.55, 6, 10]} />
             {hairMat}
           </mesh>
@@ -688,6 +735,8 @@ function CyberAvatar() {
               <sphereGeometry args={[0.13, 16, 16]} />
               {eyeWhiteMat}
             </mesh>
+            {/* 虹膜+瞳孔组（跟随鼠标） */}
+            <group ref={pupilGroupRef}>
             {/* 虹膜外圈 — 填充眼球 */}
             <mesh position={[-0.23, -0.02, 0.09]} scale={[1.5, 1.45, 0.24]}>
               <sphereGeometry args={[0.09, 16, 16]} />
@@ -715,6 +764,7 @@ function CyberAvatar() {
               <sphereGeometry args={[0.035, 10, 10]} />
               <meshStandardMaterial color="#0f0320" emissive="#7c3aed" emissiveIntensity={1.0} toneMapped={false} />
             </mesh>
+            </group>
             {/* 主高光 — 更大更亮 */}
             <mesh position={[-0.19, 0.05, 0.13]}>
               <sphereGeometry args={[0.032, 6, 6]} />
@@ -808,8 +858,13 @@ function CyberAvatar() {
           {glowPink}
         </mesh>
 
-        {/* ========== 身体（精简版 13mesh） ========== */}
+        {/* ========== 身体 ========== */}
         <group>
+          {/* 颈部阴影暗示 */}
+          <mesh position={[0, -0.82, 0.02]} rotation={[Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.12, 0.2, 16]} />
+            <meshStandardMaterial color="#d4a690" transparent opacity={0.15} side={2} />
+          </mesh>
           {/* 上身 */}
           <mesh ref={bodyRef} position={[0, -1.35, 0]} castShadow>
             <capsuleGeometry args={[0.34, 0.78, 8, 16]} />
@@ -878,7 +933,7 @@ function CyberAvatar() {
             {glowPink}
           </mesh>
           {/* 裙摆 */}
-          <mesh position={[0, -1.88, 0]} castShadow>
+          <mesh ref={skirtRef} position={[0, -1.88, 0]} castShadow>
             <cylinderGeometry args={[0.32, 0.58, 0.58, 20]} />
             {clothMat}
           </mesh>
