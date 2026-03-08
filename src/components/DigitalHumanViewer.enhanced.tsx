@@ -999,16 +999,26 @@ function CyberAvatar() {
           </mesh>
         </group>
 
-        {/* ========== 腿部 — 裙摆下露出 ========== */}
-        {/* 左腿 */}
+        {/* ========== 腿部 — 白色过膝袜 ========== */}
+        {/* 左腿（袜子） */}
         <mesh position={[0.15, -2.32, 0]}>
-          <capsuleGeometry args={[0.06, 0.28, 8, 12]} />
-          {skinMat}
+          <capsuleGeometry args={[0.065, 0.3, 8, 12]} />
+          <meshPhysicalMaterial color="#f0f0f8" metalness={0.02} roughness={0.6} clearcoat={0.15} />
         </mesh>
-        {/* 右腿 */}
+        {/* 左袜口 */}
+        <mesh position={[0.15, -2.14, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.068, 0.008, 6, 16]} />
+          <meshStandardMaterial color="#e0e0f0" />
+        </mesh>
+        {/* 右腿（袜子） */}
         <mesh position={[-0.15, -2.32, 0]}>
-          <capsuleGeometry args={[0.06, 0.28, 8, 12]} />
-          {skinMat}
+          <capsuleGeometry args={[0.065, 0.3, 8, 12]} />
+          <meshPhysicalMaterial color="#f0f0f8" metalness={0.02} roughness={0.6} clearcoat={0.15} />
+        </mesh>
+        {/* 右袜口 */}
+        <mesh position={[-0.15, -2.14, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.068, 0.008, 6, 16]} />
+          <meshStandardMaterial color="#e0e0f0" />
         </mesh>
         {/* 左鞋 — 玛丽珍鞋 */}
         <mesh position={[0.15, -2.55, 0.03]} scale={[1, 0.6, 1.3]}>
@@ -1100,7 +1110,7 @@ function Scene({
 }) {
   return (
     <>
-      <PerspectiveCamera makeDefault position={[0, 0, 6]} fov={45} />
+      <PerspectiveCamera makeDefault position={[0, -0.5, 6.5]} fov={45} />
 
       <FPSMonitor onFPSUpdate={onFPSUpdate} />
       <VisibilityOptimizer autoRotate={autoRotate ?? false} />
