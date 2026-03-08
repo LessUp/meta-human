@@ -50,7 +50,6 @@ function VisibilityOptimizer({
   onVisibilityChange?: (visible: boolean) => void;
 }) {
   const { gl, invalidate } = useThree();
-  const animationLoopRef = useRef<((time: number) => void) | null>(null);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -160,7 +159,6 @@ function CyberAvatar() {
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
-    const dt = state.clock.getDelta();
     const intensity = Math.max(0, Math.min(1, expressionIntensity ?? 1));
     const lerp = THREE.MathUtils.lerp;
     const anim = animState.current;
@@ -242,6 +240,12 @@ function CyberAvatar() {
       targetHeadRotY = mouse.current.x * 0.1 + Math.sin(t * 1.5) * 0.05;
       targetHeadRotX = -mouse.current.y * 0.05 + Math.sin(t * 2) * 0.03;
       targetBodyRotZ = Math.sin(t * 1.5) * 0.01;
+    } else {
+      // idle 呼吸动画 — 微妙的身体起伏和头部晃动
+      targetBodyPosY = Math.sin(t * 1.2) * 0.012;
+      targetHeadRotX = -mouse.current.y * 0.1 + Math.sin(t * 0.8) * 0.015;
+      targetHeadRotY = mouse.current.x * 0.15 + Math.sin(t * 0.6) * 0.01;
+      targetBodyRotZ = Math.sin(t * 0.9) * 0.005;
     }
 
     // 平滑插值 — 头部
@@ -622,9 +626,14 @@ function CyberAvatar() {
             <sphereGeometry args={[0.72, 32, 32]} />
             {hairMat}
           </mesh>
-          {/* 头顶蓬松 */}
-          <mesh position={[0, 0.42, 0.0]} scale={[1.0, 0.5, 0.88]}>
-            <sphereGeometry args={[0.68, 32, 32]} />
+          {/* 头顶蓬松 — 加大覆盖 */}
+          <mesh position={[0, 0.38, 0.0]} scale={[1.05, 0.55, 0.92]}>
+            <sphereGeometry args={[0.7, 32, 32]} />
+            {hairMat}
+          </mesh>
+          {/* 前额过渡层 — 消除头皮缝隙 */}
+          <mesh position={[0, 0.3, 0.3]} rotation={[0.3, 0, 0]} scale={[0.95, 0.4, 0.5]}>
+            <sphereGeometry args={[0.55, 16, 16]} />
             {hairMat}
           </mesh>
           {/* 呆毛 — 标志性动漫元素 */}
@@ -741,7 +750,7 @@ function CyberAvatar() {
           </mesh>
 
           {/* ========== 眼睛 — 动漫大眼（增强版） ========== */}
-          <group position={[0, 0.0, 0.58]}>
+          <group position={[0, -0.03, 0.58]}>
             {/* 眼周柔和光晕 */}
             <mesh position={[-0.24, 0, 0.04]} scale={[1.5, 1.35, 0.15]}>
               <sphereGeometry args={[0.13, 24, 24]} />
@@ -879,8 +888,8 @@ function CyberAvatar() {
           </group>
 
           {/* ========== 嘴巴 — 柔和唇形 ========== */}
-          <mesh ref={mouthRef} position={[0, -0.25, 0.58]}>
-            <capsuleGeometry args={[0.025, 0.12, 8, 16]} />
+          <mesh ref={mouthRef} position={[0, -0.28, 0.58]}>
+            <capsuleGeometry args={[0.02, 0.1, 8, 16]} />
             <meshStandardMaterial color="#e8a0bf" emissive="#e8a0bf" emissiveIntensity={0.3} transparent opacity={0.85} />
           </mesh>
 
@@ -1003,11 +1012,25 @@ function CyberAvatar() {
               <meshStandardMaterial color="#d4d8ff" transparent opacity={0.25} />
             </mesh>
           ))}
-          {/* 裙摆边饰 */}
+          {/* 裙摆边饰线 */}
           <mesh position={[0, -2.15, 0]} rotation={[Math.PI / 2, 0, 0]}>
             <torusGeometry args={[0.56, 0.008, 8, 48]} />
             {glowSoft}
           </mesh>
+          {/* 蕾丝波浪边 — 半圆弧形排列 */}
+          {Array.from({ length: 16 }).map((_, i) => {
+            const a = (i / 16) * Math.PI * 2;
+            return (
+              <mesh key={`lace-${i}`} position={[
+                Math.sin(a) * 0.56,
+                -2.18,
+                Math.cos(a) * 0.56
+              ]} rotation={[0, -a, 0]} scale={[0.08, 0.04, 0.04]}>
+                <sphereGeometry args={[0.5, 6, 6]} />
+                <meshStandardMaterial color="#f0f0ff" transparent opacity={0.5} />
+              </mesh>
+            );
+          })}
         </group>
 
         {/* ========== 手臂 — 纤细贴身 ========== */}
@@ -1037,9 +1060,14 @@ function CyberAvatar() {
             <torusGeometry args={[0.05, 0.007, 8, 16]} />
             {glowSoft}
           </mesh>
-          {/* 手掌 */}
-          <mesh position={[0, -0.72, 0]}>
-            <sphereGeometry args={[0.05, 12, 12]} />
+          {/* 手掌 — 椭圆形 */}
+          <mesh position={[0, -0.72, 0]} scale={[0.9, 0.7, 0.7]}>
+            <sphereGeometry args={[0.055, 12, 12]} />
+            {skinMat}
+          </mesh>
+          {/* 手指暗示 */}
+          <mesh position={[0, -0.79, 0]} scale={[0.6, 0.5, 0.5]}>
+            <capsuleGeometry args={[0.02, 0.03, 4, 6]} />
             {skinMat}
           </mesh>
         </group>
@@ -1065,8 +1093,14 @@ function CyberAvatar() {
             <torusGeometry args={[0.05, 0.007, 8, 16]} />
             {glowSoft}
           </mesh>
-          <mesh position={[0, -0.72, 0]}>
-            <sphereGeometry args={[0.05, 12, 12]} />
+          {/* 手掌 — 椭圆形 */}
+          <mesh position={[0, -0.72, 0]} scale={[0.9, 0.7, 0.7]}>
+            <sphereGeometry args={[0.055, 12, 12]} />
+            {skinMat}
+          </mesh>
+          {/* 手指暗示 */}
+          <mesh position={[0, -0.79, 0]} scale={[0.6, 0.5, 0.5]}>
+            <capsuleGeometry args={[0.02, 0.03, 4, 6]} />
             {skinMat}
           </mesh>
         </group>
@@ -1360,7 +1394,7 @@ export default function DigitalHumanViewer({
     <div className="w-full h-full bg-transparent relative">
       {/* FPS 显示 */}
       {showFPS && (
-        <div className="absolute top-2 right-2 z-10 px-2 py-1 rounded bg-white/70 text-slate-600 text-xs font-mono backdrop-blur-sm border border-slate-200 shadow-sm">
+        <div className="absolute top-2 right-2 z-10 px-2 py-1 rounded bg-white/70 dark:bg-black/50 text-slate-600 dark:text-white text-xs font-mono backdrop-blur-sm border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none">
           {currentFPS} FPS
           {currentFPS < 30 && <span className="text-yellow-400 ml-1">⚠</span>}
         </div>
