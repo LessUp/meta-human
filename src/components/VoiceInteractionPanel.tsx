@@ -23,13 +23,13 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
     // 检查浏览器支持
     const hasSpeechRecognition = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
     const hasSpeechSynthesis = 'speechSynthesis' in window;
-    
+
     setIsSupported(hasSpeechRecognition && hasSpeechSynthesis);
-    
+
     if (hasSpeechSynthesis) {
       loadVoices();
     }
-    
+
     return () => {
       asrService.stop();
     };
@@ -39,7 +39,7 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
   const loadVoices = () => {
     const voices = ttsService.getVoices();
     setAvailableVoices(voices);
-    
+
     // 优先选择中文语音
     const chineseVoice = voices.find(v => v.lang.includes('zh'));
     if (chineseVoice) {
@@ -52,7 +52,7 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
   // 开始/停止录音
   const toggleRecording = () => {
     if (!isSupported) return;
-    
+
     if (isRecording) {
       asrService.stop();
       setRecording(false);
@@ -70,7 +70,7 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
   // 语音合成
   const speakText = (text: string) => {
     if (isMuted) return;
-    
+
     ttsService.speakWithOptions(text, {
       lang: 'zh-CN',
       volume,
@@ -78,7 +78,7 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
       rate,
       voiceName: voice?.name
     });
-    
+
     onSpeak?.(text);
   };
 
@@ -89,12 +89,12 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
 
   if (!isSupported) {
     return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <div className="flex items-center space-x-2 text-yellow-800">
+      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-500/30 rounded-lg p-4">
+        <div className="flex items-center space-x-2 text-yellow-800 dark:text-yellow-300">
           <VolumeX size={20} />
           <span className="font-medium">浏览器不支持语音功能</span>
         </div>
-        <p className="text-sm text-yellow-700 mt-2">
+        <p className="text-sm text-yellow-700 dark:text-yellow-400 mt-2">
           请使用支持 Web Speech API 的现代浏览器，如 Chrome、Edge 或 Safari。
         </p>
       </div>
@@ -102,12 +102,12 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 space-y-6">
+    <div className="bg-white dark:bg-white/5 rounded-lg shadow-lg dark:shadow-none p-6 space-y-6 border border-transparent dark:border-white/10">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-800">语音交互</h3>
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">语音交互</h3>
         <div className="flex items-center space-x-2">
-          <div className={`w-2 h-2 rounded-full ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-gray-300'}`}></div>
-          <span className="text-sm text-gray-600">{isRecording ? '录音中' : '待机'}</span>
+          <div className={`w-2 h-2 rounded-full ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-gray-300 dark:bg-white/20'}`}></div>
+          <span className="text-sm text-gray-600 dark:text-white/60">{isRecording ? '录音中' : '待机'}</span>
         </div>
       </div>
 
@@ -117,20 +117,20 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
           <button
             onClick={toggleRecording}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-              isRecording 
-                ? 'bg-red-500 hover:bg-red-600 text-white' 
+              isRecording
+                ? 'bg-red-500 hover:bg-red-600 text-white'
                 : 'bg-blue-500 hover:bg-blue-600 text-white'
             }`}
           >
             {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
             <span>{isRecording ? '停止录音' : '开始录音'}</span>
           </button>
-          
+
           <button
             onClick={toggleMute}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-              isMuted 
-                ? 'bg-gray-300 hover:bg-gray-400 text-gray-700' 
+              isMuted
+                ? 'bg-gray-300 dark:bg-white/10 hover:bg-gray-400 dark:hover:bg-white/20 text-gray-700 dark:text-white/70'
                 : 'bg-purple-500 hover:bg-purple-600 text-white'
             }`}
           >
@@ -141,9 +141,9 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
 
         {/* 识别结果 */}
         {transcript && (
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="text-sm text-gray-600 mb-1">识别结果:</div>
-            <div className="text-gray-800">{transcript}</div>
+          <div className="bg-gray-50 dark:bg-white/5 rounded-lg p-3">
+            <div className="text-sm text-gray-600 dark:text-white/60 mb-1">识别结果:</div>
+            <div className="text-gray-800 dark:text-white">{transcript}</div>
           </div>
         )}
       </div>
@@ -151,7 +151,7 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
       {/* 语音合成控制 */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h4 className="text-md font-medium text-gray-700">语音合成设置</h4>
+          <h4 className="text-md font-medium text-gray-700 dark:text-white/80">语音合成设置</h4>
           <button
             onClick={testVoice}
             className="flex items-center space-x-2 px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-sm transition-colors"
@@ -163,14 +163,14 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
 
         {/* 语音选择 */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">语音选择</label>
+          <label className="block text-sm font-medium text-gray-600 dark:text-white/60 mb-1">语音选择</label>
           <select
             value={voice?.name || ''}
             onChange={(e) => {
               const selectedVoice = availableVoices.find(v => v.name === e.target.value);
               setVoice(selectedVoice || null);
             }}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-white/5 text-gray-800 dark:text-white"
           >
             {availableVoices.map((v) => (
               <option key={v.name} value={v.name}>
@@ -182,7 +182,7 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
 
         {/* 音量控制 */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">
+          <label className="block text-sm font-medium text-gray-600 dark:text-white/60 mb-1">
             音量: {Math.round(volume * 100)}%
           </label>
           <input
@@ -198,7 +198,7 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
 
         {/* 音调控制 */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">
+          <label className="block text-sm font-medium text-gray-600 dark:text-white/60 mb-1">
             音调: {pitch.toFixed(1)}
           </label>
           <input
@@ -214,7 +214,7 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
 
         {/* 语速控制 */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">
+          <label className="block text-sm font-medium text-gray-600 dark:text-white/60 mb-1">
             语速: {rate.toFixed(1)}
           </label>
           <input
@@ -231,7 +231,7 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
 
       {/* 快速测试文本 */}
       <div className="space-y-3">
-        <label className="block text-sm font-medium text-gray-600">快速测试文本</label>
+        <label className="block text-sm font-medium text-gray-600 dark:text-white/60">快速测试文本</label>
         <div className="grid grid-cols-2 gap-2">
           {[
             '您好！我是数字人助手。',
@@ -242,7 +242,7 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
             <button
               key={index}
               onClick={() => speakText(text)}
-              className="px-3 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded text-sm transition-colors text-left"
+              className="px-3 py-2 bg-indigo-100 dark:bg-indigo-500/20 hover:bg-indigo-200 dark:hover:bg-indigo-500/30 text-indigo-700 dark:text-indigo-300 rounded text-sm transition-colors text-left"
             >
               {text}
             </button>

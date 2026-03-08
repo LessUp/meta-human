@@ -45,7 +45,7 @@ function VisibilityOptimizer({
   autoRotate: boolean;
   onVisibilityChange?: (visible: boolean) => void;
 }) {
-  const { gl } = useThree();
+  const { gl, invalidate } = useThree();
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -56,9 +56,8 @@ function VisibilityOptimizer({
         // 页面隐藏时降低渲染频率
         gl.setAnimationLoop(null);
       } else {
-        // 页面显示时恢复渲染
-        // 页面恢复时 R3F 会自动重新启动渲染循环，无需手动调用
-        gl.setAnimationLoop(null);
+        // 页面恢复：通知 R3F 需要重新渲染
+        invalidate();
       }
     };
 
@@ -66,7 +65,7 @@ function VisibilityOptimizer({
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [gl, onVisibilityChange]);
+  }, [gl, invalidate, onVisibilityChange]);
 
   return null;
 }
@@ -418,31 +417,31 @@ export default function DigitalHumanViewer({
       </Canvas>
 
       {showControls && (
-        <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-4 space-y-3 text-white">
+        <div className="bg-white/80 dark:bg-white/5 backdrop-blur-lg border border-slate-200 dark:border-white/10 rounded-2xl p-4 space-y-3 text-slate-800 dark:text-white">
           <h2 className="text-lg font-semibold">数字人控制</h2>
           <div className="grid grid-cols-1 gap-2 text-sm">
             <div className="flex items-center gap-2">
-              <span className="text-white/70">模型状态:</span>
+              <span className="text-slate-500 dark:text-white/70">模型状态:</span>
               <span className={loadStatus === 'ready' ? 'text-green-400' : 'text-yellow-300'}>
                 {loadStatus === 'ready' ? '已加载' : loadStatus === 'loading' ? `加载中 ${loadProgress}%` : '使用内置模型'}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-white/70">渲染引擎:</span>
-              <span className="text-blue-300">Three.js</span>
+              <span className="text-slate-500 dark:text-white/70">渲染引擎:</span>
+              <span className="text-blue-500 dark:text-blue-300">Three.js</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-white/70">帧率:</span>
+              <span className="text-slate-500 dark:text-white/70">帧率:</span>
               <span className={currentFPS >= 30 ? 'text-green-400' : 'text-yellow-400'}>
                 {currentFPS} FPS
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-white/70">自动旋转:</span>
-              <span className="text-white">{autoRotate ? '开启' : '关闭'}</span>
+              <span className="text-slate-500 dark:text-white/70">自动旋转:</span>
+              <span className="text-slate-800 dark:text-white">{autoRotate ? '开启' : '关闭'}</span>
             </div>
             {loadError && (
-              <div className="text-xs text-red-200 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+              <div className="text-xs text-red-600 dark:text-red-200 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-lg px-3 py-2">
                 {loadError}
               </div>
             )}

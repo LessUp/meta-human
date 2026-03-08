@@ -206,6 +206,9 @@ export default function VRMAvatar({ url, onLoad, onError, onProgress }: VRMAvata
       targetHeadRotX = 0.15;
       targetHeadRotZ = Math.sin(t * 7) * 0.1;
       targetHipsPosY = Math.abs(Math.sin(t * 5)) * 0.08;
+    } else if (isAnim('dance')) {
+      targetHeadRotZ = Math.sin(t * 4) * 0.1;
+      targetHipsPosY = Math.abs(Math.sin(t * 4)) * 0.06;
     } else if (isAnim('excited') || currentBehavior === 'excited') {
       targetHipsPosY = Math.abs(Math.sin(t * 6)) * 0.1;
       targetHeadRotZ = Math.sin(t * 8) * 0.08;
@@ -292,7 +295,6 @@ export default function VRMAvatar({ url, onLoad, onError, onProgress }: VRMAvata
       targetRightArmRotZ = -Math.PI * 0.3 - Math.sin(t * 4 + Math.PI) * 0.3;
       targetLeftArmRotX = Math.sin(t * 4) * 0.2;
       targetRightArmRotX = Math.sin(t * 4 + Math.PI) * 0.2;
-      targetHipsPosY = Math.abs(Math.sin(t * 4)) * 0.06;
     }
 
     const armLerp = 0.08;
