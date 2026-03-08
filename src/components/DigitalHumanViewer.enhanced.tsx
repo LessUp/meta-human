@@ -536,7 +536,7 @@ function CyberAvatar() {
 
   // 共享材质 — 参考airi柔和动漫风格
   const skinMat = useMemo(() => (
-    <meshPhysicalMaterial color="#ffe4d0" metalness={0.0} roughness={0.55} clearcoat={0.3} clearcoatRoughness={0.35} envMapIntensity={0.8} sheen={0.4} sheenColor="#ffb8c6" />
+    <meshPhysicalMaterial color="#fdd9c4" metalness={0.0} roughness={0.5} clearcoat={0.25} clearcoatRoughness={0.35} envMapIntensity={0.6} sheen={0.35} sheenColor="#ffb8c6" />
   ), []);
   const clothMat = useMemo(() => (
     <meshPhysicalMaterial color="#f0f4ff" metalness={0.02} roughness={0.6} clearcoat={0.15} clearcoatRoughness={0.4} envMapIntensity={0.6} sheen={0.1} sheenColor="#ddd6fe" />
@@ -570,7 +570,9 @@ function CyberAvatar() {
     <group ref={group}>
       <pointLight ref={emotionLightRef} position={[0, 0.5, 2.5]} intensity={2} color="#a78bfa" distance={8} />
       {/* 脸部补光 — 柔和打亮五官 */}
-      <pointLight position={[0, 0, 3]} intensity={0.8} color="#fef3c7" distance={5} />
+      <pointLight position={[0, -0.05, 2.5]} intensity={0.8} color="#fff5ee" distance={4} />
+      {/* 眼部微补光 */}
+      <pointLight position={[0, 0.1, 2.8]} intensity={0.3} color="#ede9fe" distance={3} />
 
       <Float speed={1.8} rotationIntensity={0.08} floatIntensity={0.25}>
 
@@ -1016,7 +1018,7 @@ function Scene({
       {/* 主光源 — 参考airi的柔和光照系统 */}
       <hemisphereLight args={['#e8dff5', '#fce7d6', 0.6]} />
       <ambientLight intensity={0.5} color="#faf5ff" />
-      <directionalLight position={[5, 8, 6]} intensity={1.5} castShadow color="#fff5ee" shadow-mapSize={1024} />
+      <directionalLight position={[5, 8, 6]} intensity={1.2} castShadow color="#fff5ee" shadow-mapSize={1024} />
       {/* 背光 — 轮廓光效果 */}
       <spotLight position={[-4, 5, -5]} angle={0.35} penumbra={0.8} intensity={0.8} color="#d8b4fe" />
       {/* 头顶高光补光 */}
@@ -1024,8 +1026,8 @@ function Scene({
       {/* 底部反射补光 */}
       <pointLight position={[0, -3, 2]} intensity={0.2} color="#fce7f3" distance={6} />
 
-      {/* 环境反射 */}
-      <Environment preset="city" />
+      {/* 环境反射 — sunset更暖更动漫 */}
+      <Environment preset="sunset" />
 
       {/* 模型 / 内置角色 / VRM */}
       {modelScene ? (
