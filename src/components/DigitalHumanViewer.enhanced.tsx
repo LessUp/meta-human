@@ -111,7 +111,7 @@ const EMOTION_LIGHT_COLORS: Record<string, string> = {
 function CyberAvatar() {
   const group = useRef<THREE.Group>(null);
   const headGroupRef = useRef<THREE.Group>(null);
-  const bodyGroupRef = useRef<THREE.Group>(null);
+  const _bodyGroupRef = useRef<THREE.Group>(null);
   const headRef = useRef<THREE.Mesh>(null);
   const leftEyeRef = useRef<THREE.Mesh>(null);
   const rightEyeRef = useRef<THREE.Mesh>(null);
