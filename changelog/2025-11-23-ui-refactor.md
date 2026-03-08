@@ -1,31 +1,23 @@
-# 2025-11-23 UI Refactoring & Character Design Update
+# 2025-11-23 UI 重构与角色设计升级
 
-## Context
-The original frontend design was identified as "terrible" with an overly simplistic "box robot" character representation. The goal is to completely refactor the UI and character design to achieve a professional, high-end "Digital Human" aesthetic.
+## 3D 角色重构
 
-## Changes
+- 用赛博风 **CyberAvatar** 替换原始的"盒子机器人"
+- 头部：金属质感光滑几何体 + 发光眼球镜片
+- 身体：全息核心 + 旋转光环 + 漂浮粒子
+- 灯光：三点布光 + 边缘光 + 环境反射
+- 动画：平滑浮动待机 + 动态眨眼
 
-### Character Design (DigitalHumanViewer)
-- Replaced the primitive "Box + Sphere" robot with a sophisticated **Cybernetic Avatar**.
-- **Visuals**:
-  - Head: Smooth geometry with a physical metallic material.
-  - Eyes: Glowing emissive lenses.
-  - Environment: Added a "Holographic Core" with rotating rings and floating particles.
-  - Lighting: Dramatic 3-point lighting with rim lights and environmental reflections.
-- **Animation**: Added smooth floating idle animations and dynamic eye blinking.
+## UI 架构升级
 
-### UI Architecture (AdvancedDigitalHumanPage)
-- **Layout**: Switched from a standard grid dashboard to a **Full-Screen Immersive Experience**.
-- **Style**:
-  - Adopted a "Glassmorphism" aesthetic (blur filters, semi-transparent dark backgrounds).
-  - Floating UI panels instead of static blocks.
-  - Modernized typography and iconography using `lucide-react`.
-- **Components**:
-  - **Main Stage**: Full-screen 3D canvas.
-  - **Control Dock**: Floating bottom bar for primary interactions (Mic, Chat).
-  - **Side Panel**: Collapsible glass panel for advanced settings (Parameters, Expressions).
-  - **Status HUD**: Top-left minimalist status indicators.
+- 布局从标准网格改为**全屏沉浸式体验**
+- 采用毛玻璃（Glassmorphism）风格 — 模糊滤镜 + 半透明深色背景
+- 浮动 UI 面板取代静态区块
+- 图标体系迁移到 Lucide React
 
-### Technical Details
-- Leveraged `react-three-fiber` and `@react-three/drei` for advanced PBR materials and environmental lighting.
-- Used Tailwind CSS for complex transparency and absolute positioning layouts.
+## 核心组件
+
+- **主舞台**：全屏 3D Canvas
+- **控制栏**：底部浮动交互栏（麦克风、聊天）
+- **侧面板**：可折叠毛玻璃面板（参数、表情控制）
+- **状态 HUD**：左上角极简状态指示器
