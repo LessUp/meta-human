@@ -545,7 +545,7 @@ function CyberAvatar() {
     <meshPhysicalMaterial color="#8b9dc3" metalness={0.05} roughness={0.45} clearcoat={0.25} clearcoatRoughness={0.3} envMapIntensity={0.8} />
   ), []);
   const hairMat = useMemo(() => (
-    <meshPhysicalMaterial color="#2e1f3e" metalness={0.12} roughness={0.35} clearcoat={0.6} clearcoatRoughness={0.12} envMapIntensity={1.5} sheen={0.45} sheenColor="#a78bfa" />
+    <meshPhysicalMaterial color="#2e1f3e" metalness={0.1} roughness={0.32} clearcoat={0.7} clearcoatRoughness={0.1} envMapIntensity={1.5} sheen={0.5} sheenColor="#a78bfa" />
   ), []);
   const hairHighlightMat = useMemo(() => (
     <meshPhysicalMaterial color="#6d4c9e" metalness={0.08} roughness={0.3} clearcoat={0.7} clearcoatRoughness={0.1} envMapIntensity={1.8} sheen={0.55} sheenColor="#d8b4fe" />
@@ -580,12 +580,12 @@ function CyberAvatar() {
         <group ref={headGroupRef}>
           {/* 头部主体 */}
           <mesh ref={headRef} position={[0, 0, 0]} castShadow receiveShadow>
-            <sphereGeometry args={[0.72, 64, 64]} />
+            <sphereGeometry args={[0.72, 32, 32]} />
             {skinMat}
           </mesh>
-          {/* 下颌 — 更尖更Q版 */}
+          {/* 下颌 — Q版尖下巴 */}
           <mesh position={[0, -0.32, 0.1]} castShadow scale={[0.78, 0.55, 0.78]}>
-            <sphereGeometry args={[0.55, 32, 32]} />
+            <sphereGeometry args={[0.55, 20, 20]} />
             {skinMat}
           </mesh>
           {/* 脸颊腮红（左） */}
@@ -803,7 +803,7 @@ function CyberAvatar() {
         <group>
           {/* 上身 */}
           <mesh ref={bodyRef} position={[0, -1.35, 0]} castShadow>
-            <capsuleGeometry args={[0.32, 0.75, 8, 16]} />
+            <capsuleGeometry args={[0.34, 0.78, 8, 16]} />
             {clothMat}
           </mesh>
           {/* 泡泡袖 */}
@@ -815,9 +815,14 @@ function CyberAvatar() {
             <sphereGeometry args={[0.15, 10, 10]} />
             {clothMat}
           </mesh>
-          {/* 水手领 */}
+          {/* 水手领前 */}
           <mesh position={[0, -0.92, 0.2]} rotation={[0.35, 0, 0]} scale={[0.9, 0.45, 0.4]}>
             <sphereGeometry args={[0.22, 10, 10]} />
+            {clothMat}
+          </mesh>
+          {/* 水手领后 */}
+          <mesh position={[0, -0.88, -0.15]} rotation={[-0.2, 0, 0]} scale={[0.85, 0.35, 0.35]}>
+            <sphereGeometry args={[0.22, 8, 8]} />
             {clothMat}
           </mesh>
           {/* 领口V线 */}
@@ -855,12 +860,12 @@ function CyberAvatar() {
           </mesh>
           {/* 裙摆 */}
           <mesh position={[0, -1.88, 0]} castShadow>
-            <cylinderGeometry args={[0.3, 0.55, 0.55, 20]} />
+            <cylinderGeometry args={[0.32, 0.58, 0.58, 20]} />
             {clothMat}
           </mesh>
           {/* 裙摆内层 */}
-          <mesh position={[0, -2.1, 0]}>
-            <cylinderGeometry args={[0.5, 0.58, 0.15, 20]} />
+          <mesh position={[0, -2.12, 0]}>
+            <cylinderGeometry args={[0.53, 0.6, 0.15, 20]} />
             {clothMat}
           </mesh>
           {/* 裙摆褶皱暗示线 */}
@@ -923,14 +928,23 @@ function CyberAvatar() {
           </mesh>
         </group>
 
-        {/* ========== 腿部（精简版 4mesh） ========== */}
-        <mesh position={[0.15, -2.32, 0]}>
-          <capsuleGeometry args={[0.065, 0.3, 6, 8]} />
+        {/* ========== 腿部 ========== */}
+        <mesh position={[0.15, -2.35, 0]}>
+          <capsuleGeometry args={[0.065, 0.32, 6, 8]} />
           {clothMat}
         </mesh>
-        <mesh position={[-0.15, -2.32, 0]}>
-          <capsuleGeometry args={[0.065, 0.3, 6, 8]} />
+        <mesh position={[-0.15, -2.35, 0]}>
+          <capsuleGeometry args={[0.065, 0.32, 6, 8]} />
           {clothMat}
+        </mesh>
+        {/* 袜口过渡环 */}
+        <mesh position={[0.15, -2.45, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.065, 0.006, 4, 12]} />
+          <meshStandardMaterial color="#e2e8f0" />
+        </mesh>
+        <mesh position={[-0.15, -2.45, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.065, 0.006, 4, 12]} />
+          <meshStandardMaterial color="#e2e8f0" />
         </mesh>
         {/* 鞋子主体 */}
         <mesh position={[0.15, -2.55, 0.03]} scale={[1, 0.6, 1.35]}>
@@ -1010,7 +1024,7 @@ function Scene({
 }) {
   return (
     <>
-      <PerspectiveCamera makeDefault position={[0, -0.5, 6.5]} fov={45} />
+      <PerspectiveCamera makeDefault position={[0, -0.3, 5.8]} fov={42} />
 
       <FPSMonitor onFPSUpdate={onFPSUpdate} />
       <VisibilityOptimizer autoRotate={autoRotate ?? false} />
