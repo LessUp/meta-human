@@ -554,7 +554,7 @@ function CyberAvatar() {
     <meshStandardMaterial color="#f8fafc" metalness={0.0} roughness={0.15} />
   ), []);
   const blushMat = useMemo(() => (
-    <meshStandardMaterial color="#f9a8d4" transparent opacity={0.18} />
+    <meshStandardMaterial color="#f9a8d4" transparent opacity={0.25} />
   ), []);
   const shoeMat = useMemo(() => (
     <meshPhysicalMaterial color="#2e1f3e" metalness={0.1} roughness={0.4} clearcoat={0.35} />
@@ -631,14 +631,14 @@ function CyberAvatar() {
             <sphereGeometry args={[0.38, 10, 10]} />
             {hairMat}
           </mesh>
-          {/* 侧发左 */}
-          <mesh position={[-0.6, -0.12, -0.06]} rotation={[0.05, 0, 0.12]} scale={[0.28, 0.85, 0.3]}>
-            <capsuleGeometry args={[0.18, 0.5, 6, 10]} />
+          {/* 侧发左 — 更丰满 */}
+          <mesh position={[-0.62, -0.1, -0.04]} rotation={[0.05, 0, 0.1]} scale={[0.32, 0.9, 0.35]}>
+            <capsuleGeometry args={[0.18, 0.55, 6, 10]} />
             {hairMat}
           </mesh>
-          {/* 侧发右 */}
-          <mesh position={[0.6, -0.12, -0.06]} rotation={[0.05, 0, -0.12]} scale={[0.28, 0.85, 0.3]}>
-            <capsuleGeometry args={[0.18, 0.5, 6, 10]} />
+          {/* 侧发右 — 更丰满 */}
+          <mesh position={[0.62, -0.1, -0.04]} rotation={[0.05, 0, -0.1]} scale={[0.32, 0.9, 0.35]}>
+            <capsuleGeometry args={[0.18, 0.55, 6, 10]} />
             {hairMat}
           </mesh>
           {/* 后发尾主束 */}
@@ -750,6 +750,15 @@ function CyberAvatar() {
             <mesh position={[0.23, 0.11, 0.08]} rotation={[0, 0, -0.05]} scale={[2.0, 0.3, 0.14]}>
               <capsuleGeometry args={[0.04, 0.08, 3, 6]} />
               <meshBasicMaterial color="#1a0e30" />
+            </mesh>
+            {/* 下睫毛 — 细柔 */}
+            <mesh position={[-0.23, -0.1, 0.08]} rotation={[0, 0, 0.03]} scale={[1.4, 0.15, 0.08]}>
+              <capsuleGeometry args={[0.03, 0.06, 3, 4]} />
+              <meshBasicMaterial color="#2d1b4e" transparent opacity={0.6} />
+            </mesh>
+            <mesh position={[0.23, -0.1, 0.08]} rotation={[0, 0, -0.03]} scale={[1.4, 0.15, 0.08]}>
+              <capsuleGeometry args={[0.03, 0.06, 3, 4]} />
+              <meshBasicMaterial color="#2d1b4e" transparent opacity={0.6} />
             </mesh>
           </group>
 
@@ -889,9 +898,14 @@ function CyberAvatar() {
               <meshStandardMaterial color="#d4d4f7" transparent opacity={0.15} />
             </mesh>
           ))}
+          {/* 裙摆底部渐变环 */}
+          <mesh position={[0, -2.14, 0]}>
+            <cylinderGeometry args={[0.56, 0.58, 0.04, 20]} />
+            <meshStandardMaterial color="#ddd6fe" transparent opacity={0.3} />
+          </mesh>
           {/* 裙摆边饰 */}
-          <mesh position={[0, -2.15, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[0.56, 0.01, 6, 32]} />
+          <mesh position={[0, -2.16, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.57, 0.01, 6, 32]} />
             {glowSoft}
           </mesh>
         </group>
