@@ -657,7 +657,7 @@ function CyberAvatar() {
             {hairMat}
           </mesh>
           {/* 天使光环 */}
-          <mesh position={[0, 0.55, 0.18]} rotation={[0.25, 0, 0]} scale={[0.6, 0.07, 0.25]}>
+          <mesh position={[0, 0.58, 0.15]} rotation={[0.2, 0, 0]} scale={[0.6, 0.07, 0.25]}>
             <sphereGeometry args={[0.48, 10, 10]} />
             {hairHighlightMat}
           </mesh>
@@ -672,7 +672,7 @@ function CyberAvatar() {
             {glowPink}
           </mesh>
           {/* 刘海内层高光 */}
-          <mesh position={[0, 0.2, 0.6]} rotation={[0.5, 0, 0]} scale={[0.55, 0.3, 0.1]}>
+          <mesh position={[0, 0.15, 0.58]} rotation={[0.45, 0, 0]} scale={[0.6, 0.32, 0.1]}>
             <sphereGeometry args={[0.35, 8, 8]} />
             {hairHighlightMat}
           </mesh>
@@ -688,32 +688,32 @@ function CyberAvatar() {
               <sphereGeometry args={[0.13, 16, 16]} />
               {eyeWhiteMat}
             </mesh>
-            {/* 虹膜外圈 — 更大 */}
-            <mesh position={[-0.23, -0.01, 0.09]} scale={[1.35, 1.35, 0.22]}>
+            {/* 虹膜外圈 — 填充眼球 */}
+            <mesh position={[-0.23, -0.02, 0.09]} scale={[1.5, 1.45, 0.24]}>
               <sphereGeometry args={[0.09, 16, 16]} />
-              <meshStandardMaterial color="#5b21b6" emissive="#5b21b6" emissiveIntensity={0.35} />
+              <meshStandardMaterial color="#4c1d95" emissive="#5b21b6" emissiveIntensity={0.3} />
             </mesh>
-            <mesh position={[0.23, -0.01, 0.09]} scale={[1.35, 1.35, 0.22]}>
+            <mesh position={[0.23, -0.02, 0.09]} scale={[1.5, 1.45, 0.24]}>
               <sphereGeometry args={[0.09, 16, 16]} />
-              <meshStandardMaterial color="#5b21b6" emissive="#5b21b6" emissiveIntensity={0.35} />
+              <meshStandardMaterial color="#4c1d95" emissive="#5b21b6" emissiveIntensity={0.3} />
             </mesh>
             {/* 虹膜内圈 */}
-            <mesh position={[-0.23, -0.01, 0.1]} scale={[1.1, 1.1, 0.18]}>
+            <mesh position={[-0.23, -0.02, 0.1]} scale={[1.2, 1.2, 0.18]}>
               <sphereGeometry args={[0.065, 12, 12]} />
-              <meshStandardMaterial color="#7c3aed" emissive="#a78bfa" emissiveIntensity={0.6} />
+              <meshStandardMaterial color="#7c3aed" emissive="#a78bfa" emissiveIntensity={0.5} />
             </mesh>
-            <mesh position={[0.23, -0.01, 0.1]} scale={[1.1, 1.1, 0.18]}>
+            <mesh position={[0.23, -0.02, 0.1]} scale={[1.2, 1.2, 0.18]}>
               <sphereGeometry args={[0.065, 12, 12]} />
-              <meshStandardMaterial color="#7c3aed" emissive="#a78bfa" emissiveIntensity={0.6} />
+              <meshStandardMaterial color="#7c3aed" emissive="#a78bfa" emissiveIntensity={0.5} />
             </mesh>
             {/* 瞳孔 */}
-            <mesh position={[-0.23, -0.01, 0.115]} scale={[1, 1, 0.12]}>
-              <sphereGeometry args={[0.032, 10, 10]} />
-              <meshStandardMaterial color="#0f0320" emissive="#7c3aed" emissiveIntensity={1.2} toneMapped={false} />
+            <mesh position={[-0.23, -0.02, 0.115]} scale={[1, 1, 0.12]}>
+              <sphereGeometry args={[0.035, 10, 10]} />
+              <meshStandardMaterial color="#0f0320" emissive="#7c3aed" emissiveIntensity={1.0} toneMapped={false} />
             </mesh>
-            <mesh position={[0.23, -0.01, 0.115]} scale={[1, 1, 0.12]}>
-              <sphereGeometry args={[0.032, 10, 10]} />
-              <meshStandardMaterial color="#0f0320" emissive="#7c3aed" emissiveIntensity={1.2} toneMapped={false} />
+            <mesh position={[0.23, -0.02, 0.115]} scale={[1, 1, 0.12]}>
+              <sphereGeometry args={[0.035, 10, 10]} />
+              <meshStandardMaterial color="#0f0320" emissive="#7c3aed" emissiveIntensity={1.0} toneMapped={false} />
             </mesh>
             {/* 主高光 — 更大更亮 */}
             <mesh position={[-0.19, 0.05, 0.13]}>
@@ -766,9 +766,9 @@ function CyberAvatar() {
           </group>
 
           {/* ========== 嘴巴 — 微笑弧形 ========== */}
-          <mesh ref={mouthRef} position={[0, -0.3, 0.62]} rotation={[0.1, 0, 0]}>
-            <torusGeometry args={[0.045, 0.012, 6, 12, Math.PI]} />
-            <meshStandardMaterial color="#d4789b" emissive="#e8a0bf" emissiveIntensity={0.25} />
+          <mesh ref={mouthRef} position={[0, -0.35, 0.64]} rotation={[0.15, 0, 0]}>
+            <torusGeometry args={[0.055, 0.014, 6, 12, Math.PI]} />
+            <meshStandardMaterial color="#c4607e" emissive="#e8a0bf" emissiveIntensity={0.3} />
           </mesh>
 
           {/* ========== 耳朵 ========== */}
@@ -897,7 +897,7 @@ function CyberAvatar() {
         </group>
 
         {/* ========== 手臂 + 手指暗示 ========== */}
-        <group ref={leftArmRef} position={[0.38, -0.98, 0]}>
+        <group ref={leftArmRef} position={[0.42, -0.98, 0]}>
           <mesh position={[0, -0.22, 0]}>
             <capsuleGeometry args={[0.052, 0.32, 6, 8]} />
             {skinMat}
@@ -917,7 +917,7 @@ function CyberAvatar() {
             {skinMat}
           </mesh>
         </group>
-        <group ref={rightArmRef} position={[-0.38, -0.98, 0]}>
+        <group ref={rightArmRef} position={[-0.42, -0.98, 0]}>
           <mesh position={[0, -0.22, 0]}>
             <capsuleGeometry args={[0.052, 0.32, 6, 8]} />
             {skinMat}
