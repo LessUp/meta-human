@@ -368,8 +368,8 @@ function CyberAvatar() {
     if (rightBrowRef.current) rightBrowRef.current.rotation.z = anim.rightBrowRotZ;
 
     // ---- 手臂动画（Z轴侧展 + X轴前后摆） ----
-    let targetLeftArmRotZ = Math.PI * 0.1;
-    let targetRightArmRotZ = -Math.PI * 0.1;
+    let targetLeftArmRotZ = Math.PI * 0.05;
+    let targetRightArmRotZ = -Math.PI * 0.05;
     let targetLeftArmRotX = 0;
     let targetRightArmRotX = 0;
     const armLerp = 0.08;
@@ -632,28 +632,43 @@ function CyberAvatar() {
             <capsuleGeometry args={[0.15, 0.5, 4, 8]} />
             {hairHighlightMat}
           </mesh>
-          {/* 刘海 — 中间（自然弧度） */}
-          <mesh position={[0, 0.28, 0.55]} rotation={[0.5, 0, 0]} scale={[0.6, 0.42, 0.22]}>
-            <sphereGeometry args={[0.42, 16, 16]} />
+          {/* 刘海 — 中间主层（加厚） */}
+          <mesh position={[0, 0.22, 0.58]} rotation={[0.55, 0, 0]} scale={[0.7, 0.48, 0.25]}>
+            <sphereGeometry args={[0.44, 16, 16]} />
             {hairMat}
           </mesh>
-          {/* 刘海 — 左束 */}
-          <mesh position={[-0.25, 0.18, 0.52]} rotation={[0.35, 0.15, 0.12]} scale={[0.4, 0.45, 0.2]}>
-            <sphereGeometry args={[0.38, 16, 16]} />
+          {/* 刘海 — 中间内层（增加厚度） */}
+          <mesh position={[0, 0.18, 0.6]} rotation={[0.6, 0, 0]} scale={[0.55, 0.35, 0.18]}>
+            <sphereGeometry args={[0.38, 12, 12]} />
             {hairMat}
           </mesh>
-          {/* 刘海 — 右束 */}
-          <mesh position={[0.25, 0.18, 0.52]} rotation={[0.35, -0.15, -0.12]} scale={[0.4, 0.45, 0.2]}>
-            <sphereGeometry args={[0.38, 16, 16]} />
+          {/* 刘海 — 左束（更宽更低） */}
+          <mesh position={[-0.28, 0.14, 0.55]} rotation={[0.4, 0.12, 0.1]} scale={[0.45, 0.5, 0.22]}>
+            <sphereGeometry args={[0.4, 16, 16]} />
             {hairMat}
           </mesh>
-          {/* 额角碎发 — 左 */}
-          <mesh position={[-0.42, 0.15, 0.42]} rotation={[0.2, 0.3, 0.2]} scale={[0.22, 0.3, 0.13]}>
+          {/* 刘海 — 右束（更宽更低） */}
+          <mesh position={[0.28, 0.14, 0.55]} rotation={[0.4, -0.12, -0.1]} scale={[0.45, 0.5, 0.22]}>
+            <sphereGeometry args={[0.4, 16, 16]} />
+            {hairMat}
+          </mesh>
+          {/* 刘海分束线 — 左侧小缝隙暗示 */}
+          <mesh position={[-0.12, 0.2, 0.62]} rotation={[0.5, 0.05, 0.05]} scale={[0.12, 0.35, 0.08]}>
+            <capsuleGeometry args={[0.08, 0.15, 4, 8]} />
+            {hairHighlightMat}
+          </mesh>
+          {/* 刘海分束线 — 右侧 */}
+          <mesh position={[0.12, 0.2, 0.62]} rotation={[0.5, -0.05, -0.05]} scale={[0.12, 0.35, 0.08]}>
+            <capsuleGeometry args={[0.08, 0.15, 4, 8]} />
+            {hairHighlightMat}
+          </mesh>
+          {/* 额角碎发 — 左（更低更贴脸） */}
+          <mesh position={[-0.45, 0.1, 0.42]} rotation={[0.15, 0.3, 0.18]} scale={[0.25, 0.38, 0.15]}>
             <sphereGeometry args={[0.3, 12, 12]} />
             {hairMat}
           </mesh>
-          {/* 额角碎发 — 右 */}
-          <mesh position={[0.42, 0.15, 0.42]} rotation={[0.2, -0.3, -0.2]} scale={[0.22, 0.3, 0.13]}>
+          {/* 额角碎发 — 右（更低更贴脸） */}
+          <mesh position={[0.45, 0.1, 0.42]} rotation={[0.15, -0.3, -0.18]} scale={[0.25, 0.38, 0.15]}>
             <sphereGeometry args={[0.3, 12, 12]} />
             {hairMat}
           </mesh>
