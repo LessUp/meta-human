@@ -1,9 +1,12 @@
+import logging
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, field_validator
 
 from app.services.dialogue import dialogue_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -45,13 +48,13 @@ class ErrorResponse(BaseModel):
 )
 async def chat(req: ChatRequest) -> ChatResponse:
     """对话接口
-    
+
     接收用户输入，返回数字人的回复、情感和动作。
-    
+
     - **sessionId**: 可选的会话ID，用于维护对话上下文
     - **userText**: 用户输入的文本（必填，最大2000字符）
     - **meta**: 可选的附加元数据
-    
+
     返回:
     - **replyText**: 数字人的回复文本
     - **emotion**: 情感状态 (neutral, happy, surprised, sad, angry)
@@ -68,8 +71,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         # 记录错误但返回友好的错误信息
-        import logging
-        logging.exception("Chat API error: %s", e)
+        logger.exception("Chat API error: %s", e)
         raise HTTPException(
             status_code=500,
             detail="服务暂时不可用，请稍后重试"
@@ -79,7 +81,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
 @router.delete("/chat/session/{session_id}")
 async def clear_session(session_id: str) -> Dict[str, Any]:
     """清除指定会话的历史记录
-    
+
     - **session_id**: 要清除的会话ID
     """
     success = dialogue_service.clear_session(session_id)
@@ -92,7 +94,7 @@ async def clear_session(session_id: str) -> Dict[str, Any]:
 @router.get("/chat/session/{session_id}/history")
 async def get_session_history(session_id: str) -> Dict[str, Any]:
     """获取指定会话的历史记录
-    
+
     - **session_id**: 会话ID
     """
     history = dialogue_service.get_session_history(session_id)
