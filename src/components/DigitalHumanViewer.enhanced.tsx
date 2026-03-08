@@ -563,195 +563,195 @@ function CyberAvatar() {
 
         {/* ========== 头部组（独立旋转） ========== */}
         <group ref={headGroupRef}>
-          {/* 头部主体 — 更大更圆的动漫比例 */}
+          {/* 头部主体 */}
           <mesh ref={headRef} position={[0, 0, 0]} castShadow receiveShadow>
-            <sphereGeometry args={[0.88, 64, 64]} />
+            <sphereGeometry args={[0.72, 64, 64]} />
             {skinMat}
           </mesh>
           {/* 下颌柔和过渡 */}
-          <mesh position={[0, -0.35, 0.1]} castShadow scale={[0.88, 0.65, 0.85]}>
-            <sphereGeometry args={[0.65, 32, 32]} />
+          <mesh position={[0, -0.28, 0.08]} castShadow scale={[0.85, 0.6, 0.82]}>
+            <sphereGeometry args={[0.55, 32, 32]} />
             {skinMat}
           </mesh>
           {/* 脸颊腮红（左） */}
-          <mesh position={[-0.42, -0.18, 0.62]} scale={[1, 0.6, 0.3]}>
+          <mesh position={[-0.34, -0.12, 0.52]} scale={[0.9, 0.55, 0.25]}>
             <sphereGeometry args={[0.12, 16, 16]} />
             <meshStandardMaterial color="#f9a8d4" transparent opacity={0.25} />
           </mesh>
           {/* 脸颊腮红（右） */}
-          <mesh position={[0.42, -0.18, 0.62]} scale={[1, 0.6, 0.3]}>
+          <mesh position={[0.34, -0.12, 0.52]} scale={[0.9, 0.55, 0.25]}>
             <sphereGeometry args={[0.12, 16, 16]} />
             <meshStandardMaterial color="#f9a8d4" transparent opacity={0.25} />
           </mesh>
 
           {/* 鼻子 — 动漫风格小巧 */}
-          <mesh position={[0, -0.12, 0.85]} scale={[0.5, 0.6, 0.35]}>
-            <sphereGeometry args={[0.04, 12, 12]} />
+          <mesh position={[0, -0.08, 0.7]} scale={[0.5, 0.6, 0.35]}>
+            <sphereGeometry args={[0.035, 12, 12]} />
             <meshPhysicalMaterial color="#f0c9b0" metalness={0.02} roughness={0.5} />
           </mesh>
 
           {/* ========== 头发 — 层次丰富的紫色动漫发型 ========== */}
           {/* 后脑勺基底 */}
-          <mesh position={[0, 0.1, -0.18]} scale={[1.08, 1.06, 1.0]}>
-            <sphereGeometry args={[0.86, 32, 32]} />
+          <mesh position={[0, 0.08, -0.15]} scale={[1.08, 1.06, 1.0]}>
+            <sphereGeometry args={[0.72, 32, 32]} />
             {hairMat}
           </mesh>
           {/* 头顶蓬松 */}
-          <mesh position={[0, 0.5, 0.0]} scale={[1.0, 0.5, 0.88]}>
-            <sphereGeometry args={[0.82, 32, 32]} />
+          <mesh position={[0, 0.42, 0.0]} scale={[1.0, 0.5, 0.88]}>
+            <sphereGeometry args={[0.68, 32, 32]} />
             {hairMat}
           </mesh>
           {/* 呆毛 — 标志性动漫元素 */}
-          <mesh position={[0.08, 0.95, 0.15]} rotation={[0.3, 0, 0.15]} scale={[0.08, 0.35, 0.06]}>
+          <mesh position={[0.08, 0.8, 0.12]} rotation={[0.3, 0, 0.15]} scale={[0.07, 0.3, 0.05]}>
             <capsuleGeometry args={[0.15, 0.5, 4, 8]} />
             {hairHighlightMat}
           </mesh>
           {/* 刘海 — 中间（自然弧度） */}
-          <mesh position={[0, 0.32, 0.68]} rotation={[0.5, 0, 0]} scale={[0.65, 0.45, 0.25]}>
-            <sphereGeometry args={[0.48, 16, 16]} />
+          <mesh position={[0, 0.28, 0.55]} rotation={[0.5, 0, 0]} scale={[0.6, 0.42, 0.22]}>
+            <sphereGeometry args={[0.42, 16, 16]} />
             {hairMat}
           </mesh>
           {/* 刘海 — 左束 */}
-          <mesh position={[-0.3, 0.22, 0.62]} rotation={[0.35, 0.15, 0.12]} scale={[0.45, 0.5, 0.22]}>
-            <sphereGeometry args={[0.44, 16, 16]} />
+          <mesh position={[-0.25, 0.18, 0.52]} rotation={[0.35, 0.15, 0.12]} scale={[0.4, 0.45, 0.2]}>
+            <sphereGeometry args={[0.38, 16, 16]} />
             {hairMat}
           </mesh>
           {/* 刘海 — 右束 */}
-          <mesh position={[0.3, 0.22, 0.62]} rotation={[0.35, -0.15, -0.12]} scale={[0.45, 0.5, 0.22]}>
-            <sphereGeometry args={[0.44, 16, 16]} />
+          <mesh position={[0.25, 0.18, 0.52]} rotation={[0.35, -0.15, -0.12]} scale={[0.4, 0.45, 0.2]}>
+            <sphereGeometry args={[0.38, 16, 16]} />
             {hairMat}
           </mesh>
           {/* 额角碎发 — 左 */}
-          <mesh position={[-0.52, 0.18, 0.5]} rotation={[0.2, 0.3, 0.2]} scale={[0.25, 0.35, 0.15]}>
-            <sphereGeometry args={[0.35, 12, 12]} />
+          <mesh position={[-0.42, 0.15, 0.42]} rotation={[0.2, 0.3, 0.2]} scale={[0.22, 0.3, 0.13]}>
+            <sphereGeometry args={[0.3, 12, 12]} />
             {hairMat}
           </mesh>
           {/* 额角碎发 — 右 */}
-          <mesh position={[0.52, 0.18, 0.5]} rotation={[0.2, -0.3, -0.2]} scale={[0.25, 0.35, 0.15]}>
-            <sphereGeometry args={[0.35, 12, 12]} />
+          <mesh position={[0.42, 0.15, 0.42]} rotation={[0.2, -0.3, -0.2]} scale={[0.22, 0.3, 0.13]}>
+            <sphereGeometry args={[0.3, 12, 12]} />
             {hairMat}
           </mesh>
           {/* 侧发 — 左（更长+渐变发梢） */}
-          <mesh position={[-0.75, -0.1, -0.08]} rotation={[0.05, 0, 0.15]} scale={[0.3, 0.85, 0.35]}>
-            <capsuleGeometry args={[0.2, 0.55, 8, 16]} />
+          <mesh position={[-0.62, -0.08, -0.06]} rotation={[0.05, 0, 0.15]} scale={[0.26, 0.75, 0.3]}>
+            <capsuleGeometry args={[0.18, 0.48, 8, 16]} />
             {hairMat}
           </mesh>
-          <mesh position={[-0.7, -0.55, -0.15]} rotation={[0.05, 0, 0.1]} scale={[0.22, 0.4, 0.25]}>
-            <capsuleGeometry args={[0.18, 0.3, 8, 12]} />
+          <mesh position={[-0.58, -0.48, -0.12]} rotation={[0.05, 0, 0.1]} scale={[0.2, 0.35, 0.22]}>
+            <capsuleGeometry args={[0.15, 0.25, 8, 12]} />
             {hairHighlightMat}
           </mesh>
           {/* 侧发 — 右（更长+渐变发梢） */}
-          <mesh position={[0.75, -0.1, -0.08]} rotation={[0.05, 0, -0.15]} scale={[0.3, 0.85, 0.35]}>
-            <capsuleGeometry args={[0.2, 0.55, 8, 16]} />
+          <mesh position={[0.62, -0.08, -0.06]} rotation={[0.05, 0, -0.15]} scale={[0.26, 0.75, 0.3]}>
+            <capsuleGeometry args={[0.18, 0.48, 8, 16]} />
             {hairMat}
           </mesh>
-          <mesh position={[0.7, -0.55, -0.15]} rotation={[0.05, 0, -0.1]} scale={[0.22, 0.4, 0.25]}>
-            <capsuleGeometry args={[0.18, 0.3, 8, 12]} />
+          <mesh position={[0.58, -0.48, -0.12]} rotation={[0.05, 0, -0.1]} scale={[0.2, 0.35, 0.22]}>
+            <capsuleGeometry args={[0.15, 0.25, 8, 12]} />
             {hairHighlightMat}
           </mesh>
           {/* 后发尾 */}
-          <mesh position={[0, -0.5, -0.55]} rotation={[0.2, 0, 0]} scale={[0.6, 0.95, 0.38]}>
-            <capsuleGeometry args={[0.25, 0.65, 8, 16]} />
+          <mesh position={[0, -0.42, -0.45]} rotation={[0.2, 0, 0]} scale={[0.5, 0.85, 0.32]}>
+            <capsuleGeometry args={[0.22, 0.55, 8, 16]} />
             {hairMat}
           </mesh>
           {/* 头发天使光环 — 动漫标志性高光弧线 */}
-          <mesh position={[0, 0.62, 0.25]} rotation={[0.25, 0, 0]} scale={[0.7, 0.08, 0.3]}>
-            <sphereGeometry args={[0.55, 16, 16]} />
+          <mesh position={[0, 0.52, 0.2]} rotation={[0.25, 0, 0]} scale={[0.6, 0.07, 0.25]}>
+            <sphereGeometry args={[0.48, 16, 16]} />
             {hairHighlightMat}
           </mesh>
 
           {/* 发饰 — 蝴蝶结 */}
-          <mesh position={[-0.68, 0.32, 0.15]} rotation={[0, 0.3, 0.3]} scale={[0.7, 0.5, 0.4]}>
+          <mesh position={[-0.56, 0.28, 0.12]} rotation={[0, 0.3, 0.3]} scale={[0.7, 0.5, 0.4]}>
             <sphereGeometry args={[0.08, 8, 8]} />
             {glowPink}
           </mesh>
-          <mesh position={[-0.58, 0.32, 0.15]} rotation={[0, 0.3, 0.3]} scale={[0.7, 0.5, 0.4]}>
+          <mesh position={[-0.48, 0.28, 0.12]} rotation={[0, 0.3, 0.3]} scale={[0.7, 0.5, 0.4]}>
             <sphereGeometry args={[0.08, 8, 8]} />
             {glowPink}
           </mesh>
-          <mesh position={[-0.63, 0.32, 0.16]}>
+          <mesh position={[-0.52, 0.28, 0.13]}>
             <sphereGeometry args={[0.03, 6, 6]} />
             {glowSoft}
           </mesh>
 
           {/* ========== 眼睛 — 动漫大眼（增强版） ========== */}
-          <group position={[0, -0.02, 0.68]}>
+          <group position={[0, 0.0, 0.58]}>
             {/* 眼周柔和光晕 */}
-            <mesh position={[-0.26, 0, 0.05]} scale={[1.65, 1.45, 0.18]}>
-              <sphereGeometry args={[0.14, 24, 24]} />
+            <mesh position={[-0.24, 0, 0.04]} scale={[1.5, 1.35, 0.15]}>
+              <sphereGeometry args={[0.13, 24, 24]} />
               <meshStandardMaterial color="#ddd6fe" transparent opacity={0.15} />
             </mesh>
-            <mesh position={[0.26, 0, 0.05]} scale={[1.65, 1.45, 0.18]}>
-              <sphereGeometry args={[0.14, 24, 24]} />
+            <mesh position={[0.24, 0, 0.04]} scale={[1.5, 1.35, 0.15]}>
+              <sphereGeometry args={[0.13, 24, 24]} />
               <meshStandardMaterial color="#ddd6fe" transparent opacity={0.15} />
             </mesh>
-            {/* 巩膜（白眼球）— 更大更圆 */}
-            <mesh ref={leftEyeRef} position={[-0.26, 0, 0.08]} scale={[1.55, 1.35, 0.5]}>
-              <sphereGeometry args={[0.14, 32, 32]} />
+            {/* 巩膜（白眼球） */}
+            <mesh ref={leftEyeRef} position={[-0.24, 0, 0.06]} scale={[1.55, 1.35, 0.42]}>
+              <sphereGeometry args={[0.13, 32, 32]} />
               <meshStandardMaterial color="#f8fafc" metalness={0.01} roughness={0.12} />
             </mesh>
-            <mesh ref={rightEyeRef} position={[0.26, 0, 0.08]} scale={[1.55, 1.35, 0.5]}>
-              <sphereGeometry args={[0.14, 32, 32]} />
+            <mesh ref={rightEyeRef} position={[0.24, 0, 0.06]} scale={[1.55, 1.35, 0.42]}>
+              <sphereGeometry args={[0.13, 32, 32]} />
               <meshStandardMaterial color="#f8fafc" metalness={0.01} roughness={0.12} />
             </mesh>
             {/* 虹膜外圈 — 深紫 */}
-            <mesh position={[-0.26, -0.01, 0.11]} scale={[1.2, 1.2, 0.25]}>
-              <sphereGeometry args={[0.1, 32, 32]} />
+            <mesh position={[-0.24, -0.01, 0.09]} scale={[1.15, 1.15, 0.2]}>
+              <sphereGeometry args={[0.09, 32, 32]} />
               <meshStandardMaterial color="#6d28d9" emissive="#6d28d9" emissiveIntensity={0.4} />
             </mesh>
-            <mesh position={[0.26, -0.01, 0.11]} scale={[1.2, 1.2, 0.25]}>
-              <sphereGeometry args={[0.1, 32, 32]} />
+            <mesh position={[0.24, -0.01, 0.09]} scale={[1.15, 1.15, 0.2]}>
+              <sphereGeometry args={[0.09, 32, 32]} />
               <meshStandardMaterial color="#6d28d9" emissive="#6d28d9" emissiveIntensity={0.4} />
             </mesh>
             {/* 虹膜内圈 — 亮紫 */}
-            <mesh position={[-0.26, -0.01, 0.13]} scale={[1, 1, 0.2]}>
-              <sphereGeometry args={[0.075, 32, 32]} />
+            <mesh position={[-0.24, -0.01, 0.11]} scale={[1, 1, 0.18]}>
+              <sphereGeometry args={[0.065, 32, 32]} />
               <meshStandardMaterial color="#8b5cf6" emissive="#a78bfa" emissiveIntensity={0.8} />
             </mesh>
-            <mesh position={[0.26, -0.01, 0.13]} scale={[1, 1, 0.2]}>
-              <sphereGeometry args={[0.075, 32, 32]} />
+            <mesh position={[0.24, -0.01, 0.11]} scale={[1, 1, 0.18]}>
+              <sphereGeometry args={[0.065, 32, 32]} />
               <meshStandardMaterial color="#8b5cf6" emissive="#a78bfa" emissiveIntensity={0.8} />
             </mesh>
             {/* 瞳孔 */}
-            <mesh position={[-0.26, -0.01, 0.15]} scale={[1, 1, 0.15]}>
-              <sphereGeometry args={[0.04, 16, 16]} />
+            <mesh position={[-0.24, -0.01, 0.12]} scale={[1, 1, 0.12]}>
+              <sphereGeometry args={[0.035, 16, 16]} />
               <meshStandardMaterial color="#1e0533" emissive="#7c3aed" emissiveIntensity={2} toneMapped={false} />
             </mesh>
-            <mesh position={[0.26, -0.01, 0.15]} scale={[1, 1, 0.15]}>
-              <sphereGeometry args={[0.04, 16, 16]} />
+            <mesh position={[0.24, -0.01, 0.12]} scale={[1, 1, 0.12]}>
+              <sphereGeometry args={[0.035, 16, 16]} />
               <meshStandardMaterial color="#1e0533" emissive="#7c3aed" emissiveIntensity={2} toneMapped={false} />
             </mesh>
             {/* 大高光（左上角）— 更醒目 */}
-            <mesh position={[-0.22, 0.05, 0.16]}>
-              <sphereGeometry args={[0.032, 10, 10]} />
+            <mesh position={[-0.20, 0.04, 0.13]}>
+              <sphereGeometry args={[0.028, 10, 10]} />
               <meshBasicMaterial color="#ffffff" />
             </mesh>
-            <mesh position={[0.30, 0.05, 0.16]}>
-              <sphereGeometry args={[0.032, 10, 10]} />
+            <mesh position={[0.28, 0.04, 0.13]}>
+              <sphereGeometry args={[0.028, 10, 10]} />
               <meshBasicMaterial color="#ffffff" />
             </mesh>
             {/* 小高光（右下角）— 动漫双高光 */}
-            <mesh position={[-0.30, -0.03, 0.15]}>
-              <sphereGeometry args={[0.015, 8, 8]} />
+            <mesh position={[-0.28, -0.03, 0.12]}>
+              <sphereGeometry args={[0.013, 8, 8]} />
               <meshBasicMaterial color="#ffffff" />
             </mesh>
-            <mesh position={[0.22, -0.03, 0.15]}>
-              <sphereGeometry args={[0.015, 8, 8]} />
+            <mesh position={[0.20, -0.03, 0.12]}>
+              <sphereGeometry args={[0.013, 8, 8]} />
               <meshBasicMaterial color="#ffffff" />
             </mesh>
             {/* 星形小高光 — 增加灵动感 */}
-            <mesh position={[-0.2, 0.02, 0.155]}>
-              <sphereGeometry args={[0.008, 6, 6]} />
+            <mesh position={[-0.18, 0.02, 0.125]}>
+              <sphereGeometry args={[0.007, 6, 6]} />
               <meshBasicMaterial color="#e9d5ff" />
             </mesh>
-            <mesh position={[0.32, 0.02, 0.155]}>
-              <sphereGeometry args={[0.008, 6, 6]} />
+            <mesh position={[0.30, 0.02, 0.125]}>
+              <sphereGeometry args={[0.007, 6, 6]} />
               <meshBasicMaterial color="#e9d5ff" />
             </mesh>
           </group>
 
           {/* ========== 眉毛 — 柔和弧形 ========== */}
-          <group position={[0, 0.02, 0.74]}>
+          <group position={[0, 0.04, 0.58]}>
             <mesh ref={leftBrowRef} position={[-0.26, 0.32, 0]} rotation={[0, 0, 0.1]}>
               <capsuleGeometry args={[0.018, 0.14, 4, 8]} />
               {hairMat}
@@ -763,174 +763,196 @@ function CyberAvatar() {
           </group>
 
           {/* ========== 嘴巴 — 柔和唇形 ========== */}
-          <mesh ref={mouthRef} position={[0, -0.35, 0.72]}>
+          <mesh ref={mouthRef} position={[0, -0.25, 0.58]}>
             <capsuleGeometry args={[0.025, 0.12, 8, 16]} />
             <meshStandardMaterial color="#e8a0bf" emissive="#e8a0bf" emissiveIntensity={0.3} transparent opacity={0.85} />
           </mesh>
 
           {/* ========== 耳朵 — 小巧 ========== */}
-          <mesh position={[0.82, -0.05, -0.05]} scale={[0.25, 0.4, 0.3]}>
-            <sphereGeometry args={[0.2, 12, 12]} />
+          <mesh position={[0.68, -0.04, -0.04]} scale={[0.22, 0.35, 0.28]}>
+            <sphereGeometry args={[0.18, 12, 12]} />
             {skinMat}
           </mesh>
-          <mesh position={[-0.82, -0.05, -0.05]} scale={[0.25, 0.4, 0.3]}>
-            <sphereGeometry args={[0.2, 12, 12]} />
+          <mesh position={[-0.68, -0.04, -0.04]} scale={[0.22, 0.35, 0.28]}>
+            <sphereGeometry args={[0.18, 12, 12]} />
             {skinMat}
           </mesh>
 
         </group>{/* 关闭 headGroupRef */}
 
         {/* ========== 脖子 ========== */}
-        <mesh position={[0, -0.82, 0.02]}>
-          <cylinderGeometry args={[0.14, 0.16, 0.3, 24]} />
+        <mesh position={[0, -0.68, 0.02]}>
+          <cylinderGeometry args={[0.13, 0.15, 0.25, 24]} />
           {skinMat}
         </mesh>
         {/* 项链 */}
-        <mesh position={[0, -0.72, 0.05]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.18, 0.008, 8, 32]} />
+        <mesh position={[0, -0.58, 0.05]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.16, 0.008, 8, 32]} />
           {glowSoft}
         </mesh>
         {/* 项链吊坠 */}
-        <mesh position={[0, -0.82, 0.18]}>
-          <sphereGeometry args={[0.03, 12, 12]} />
+        <mesh position={[0, -0.68, 0.16]}>
+          <sphereGeometry args={[0.025, 12, 12]} />
           {glowPink}
         </mesh>
 
         {/* ========== 身体躯干 — 纤细优雅 ========== */}
         <group>
           {/* 上身 */}
-          <mesh ref={bodyRef} position={[0, -1.55, 0]} castShadow>
-            <capsuleGeometry args={[0.3, 0.8, 12, 24]} />
+          <mesh ref={bodyRef} position={[0, -1.35, 0]} castShadow>
+            <capsuleGeometry args={[0.32, 0.75, 12, 24]} />
             {clothMat}
           </mesh>
           {/* 泡泡袖 — 左 */}
-          <mesh position={[0.38, -1.12, 0]} scale={[0.8, 0.6, 0.75]}>
+          <mesh position={[0.38, -0.95, 0]} scale={[0.8, 0.6, 0.75]}>
             <sphereGeometry args={[0.15, 16, 16]} />
             {clothMat}
           </mesh>
           {/* 泡泡袖 — 右 */}
-          <mesh position={[-0.38, -1.12, 0]} scale={[0.8, 0.6, 0.75]}>
+          <mesh position={[-0.38, -0.95, 0]} scale={[0.8, 0.6, 0.75]}>
             <sphereGeometry args={[0.15, 16, 16]} />
             {clothMat}
           </mesh>
           {/* 水手领 — V形衣领 */}
-          <mesh position={[0, -1.08, 0.2]} rotation={[0.35, 0, 0]} scale={[0.9, 0.45, 0.4]}>
+          <mesh position={[0, -0.92, 0.2]} rotation={[0.35, 0, 0]} scale={[0.9, 0.45, 0.4]}>
             <sphereGeometry args={[0.22, 16, 16]} />
             {clothMat}
           </mesh>
-          <mesh position={[-0.1, -1.12, 0.25]} rotation={[0.2, 0.15, 0.2]}>
+          <mesh position={[-0.1, -0.96, 0.25]} rotation={[0.2, 0.15, 0.2]}>
             <boxGeometry args={[0.18, 0.005, 0.005]} />
             {clothAccentMat}
           </mesh>
-          <mesh position={[0.1, -1.12, 0.25]} rotation={[0.2, -0.15, -0.2]}>
+          <mesh position={[0.1, -0.96, 0.25]} rotation={[0.2, -0.15, -0.2]}>
             <boxGeometry args={[0.18, 0.005, 0.005]} />
             {clothAccentMat}
           </mesh>
           {/* 胸口蝴蝶结 */}
-          <mesh position={[-0.05, -1.18, 0.3]} rotation={[0, 0, 0.45]} scale={[0.9, 0.45, 0.4]}>
+          <mesh position={[-0.05, -1.02, 0.3]} rotation={[0, 0, 0.45]} scale={[0.9, 0.45, 0.4]}>
             <sphereGeometry args={[0.05, 8, 8]} />
             {glowPink}
           </mesh>
-          <mesh position={[0.05, -1.18, 0.3]} rotation={[0, 0, -0.45]} scale={[0.9, 0.45, 0.4]}>
+          <mesh position={[0.05, -1.02, 0.3]} rotation={[0, 0, -0.45]} scale={[0.9, 0.45, 0.4]}>
             <sphereGeometry args={[0.05, 8, 8]} />
             {glowPink}
           </mesh>
-          <mesh position={[0, -1.18, 0.3]}>
+          <mesh position={[0, -1.02, 0.3]}>
             <sphereGeometry args={[0.022, 8, 8]} />
             {glowSoft}
           </mesh>
           {/* 缎带垂尾 */}
-          <mesh position={[0, -1.28, 0.28]} scale={[0.12, 0.3, 0.06]}>
+          <mesh position={[0, -1.12, 0.28]} scale={[0.12, 0.3, 0.06]}>
             <capsuleGeometry args={[0.08, 0.2, 4, 8]} />
             {glowPink}
           </mesh>
           {/* 腰线 */}
-          <mesh position={[0, -1.82, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[0.28, 0.018, 8, 32]} />
+          <mesh position={[0, -1.62, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.3, 0.018, 8, 32]} />
             {clothAccentMat}
           </mesh>
           {/* 腰带蝴蝶结 */}
-          <mesh position={[0, -1.82, 0.25]} scale={[0.6, 0.35, 0.3]}>
+          <mesh position={[0, -1.62, 0.27]} scale={[0.6, 0.35, 0.3]}>
             <sphereGeometry args={[0.06, 8, 8]} />
             {clothAccentMat}
           </mesh>
           {/* 裙摆 — 多层褶皱 */}
-          <mesh position={[0, -2.08, 0]} castShadow>
-            <cylinderGeometry args={[0.28, 0.5, 0.55, 32]} />
+          <mesh position={[0, -1.88, 0]} castShadow>
+            <cylinderGeometry args={[0.3, 0.55, 0.55, 32]} />
             {clothMat}
           </mesh>
           {/* 裙摆内层 */}
-          <mesh position={[0, -2.3, 0]}>
-            <cylinderGeometry args={[0.45, 0.55, 0.15, 32]} />
+          <mesh position={[0, -2.1, 0]}>
+            <cylinderGeometry args={[0.5, 0.58, 0.15, 32]} />
             <meshPhysicalMaterial color="#e8ecff" metalness={0.02} roughness={0.75} clearcoat={0.1} />
           </mesh>
           {/* 裙摆边饰 */}
-          <mesh position={[0, -2.35, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[0.53, 0.008, 8, 48]} />
+          <mesh position={[0, -2.15, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.56, 0.008, 8, 48]} />
             {glowSoft}
           </mesh>
         </group>
 
-        {/* ========== 手臂 — 纤细 ========== */}
-        <group ref={leftArmRef} position={[0.42, -1.15, 0]}>
+        {/* ========== 手臂 — 纤细贴身 ========== */}
+        <group ref={leftArmRef} position={[0.38, -0.98, 0]}>
           {/* 上臂 */}
-          <mesh position={[0, -0.22, 0]}>
-            <capsuleGeometry args={[0.065, 0.32, 8, 12]} />
+          <mesh position={[0, -0.18, 0]}>
+            <capsuleGeometry args={[0.055, 0.25, 8, 12]} />
             {skinMat}
           </mesh>
           {/* 袖口 */}
-          <mesh position={[0, -0.08, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[0.075, 0.02, 6, 16]} />
+          <mesh position={[0, -0.06, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.065, 0.018, 6, 16]} />
             {clothMat}
           </mesh>
           {/* 肘 */}
-          <mesh position={[0, -0.42, 0]}>
-            <sphereGeometry args={[0.06, 12, 12]} />
+          <mesh position={[0, -0.35, 0]}>
+            <sphereGeometry args={[0.05, 12, 12]} />
             {skinMat}
           </mesh>
           {/* 前臂 */}
-          <mesh position={[0, -0.62, 0]}>
-            <capsuleGeometry args={[0.055, 0.28, 8, 12]} />
+          <mesh position={[0, -0.52, 0]}>
+            <capsuleGeometry args={[0.045, 0.22, 8, 12]} />
             {skinMat}
           </mesh>
           {/* 手镯 */}
-          <mesh position={[0, -0.8, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[0.06, 0.008, 8, 16]} />
+          <mesh position={[0, -0.66, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.05, 0.007, 8, 16]} />
             {glowSoft}
           </mesh>
           {/* 手掌 */}
-          <mesh position={[0, -0.88, 0]}>
-            <sphereGeometry args={[0.06, 12, 12]} />
+          <mesh position={[0, -0.72, 0]}>
+            <sphereGeometry args={[0.05, 12, 12]} />
             {skinMat}
           </mesh>
         </group>
 
-        <group ref={rightArmRef} position={[-0.42, -1.15, 0]}>
-          <mesh position={[0, -0.22, 0]}>
-            <capsuleGeometry args={[0.065, 0.32, 8, 12]} />
+        <group ref={rightArmRef} position={[-0.38, -0.98, 0]}>
+          <mesh position={[0, -0.18, 0]}>
+            <capsuleGeometry args={[0.055, 0.25, 8, 12]} />
             {skinMat}
           </mesh>
-          <mesh position={[0, -0.08, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[0.075, 0.02, 6, 16]} />
+          <mesh position={[0, -0.06, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.065, 0.018, 6, 16]} />
             {clothMat}
           </mesh>
-          <mesh position={[0, -0.42, 0]}>
-            <sphereGeometry args={[0.06, 12, 12]} />
+          <mesh position={[0, -0.35, 0]}>
+            <sphereGeometry args={[0.05, 12, 12]} />
             {skinMat}
           </mesh>
-          <mesh position={[0, -0.62, 0]}>
-            <capsuleGeometry args={[0.055, 0.28, 8, 12]} />
+          <mesh position={[0, -0.52, 0]}>
+            <capsuleGeometry args={[0.045, 0.22, 8, 12]} />
             {skinMat}
           </mesh>
-          <mesh position={[0, -0.8, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[0.06, 0.008, 8, 16]} />
+          <mesh position={[0, -0.66, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.05, 0.007, 8, 16]} />
             {glowSoft}
           </mesh>
-          <mesh position={[0, -0.88, 0]}>
-            <sphereGeometry args={[0.06, 12, 12]} />
+          <mesh position={[0, -0.72, 0]}>
+            <sphereGeometry args={[0.05, 12, 12]} />
             {skinMat}
           </mesh>
         </group>
+
+        {/* ========== 腿部 — 裙摆下露出 ========== */}
+        {/* 左腿 */}
+        <mesh position={[0.15, -2.32, 0]}>
+          <capsuleGeometry args={[0.06, 0.28, 8, 12]} />
+          {skinMat}
+        </mesh>
+        {/* 右腿 */}
+        <mesh position={[-0.15, -2.32, 0]}>
+          <capsuleGeometry args={[0.06, 0.28, 8, 12]} />
+          {skinMat}
+        </mesh>
+        {/* 左鞋 */}
+        <mesh position={[0.15, -2.55, 0.03]} scale={[1, 0.6, 1.3]}>
+          <sphereGeometry args={[0.07, 12, 12]} />
+          <meshPhysicalMaterial color="#4a3a5c" metalness={0.1} roughness={0.5} />
+        </mesh>
+        {/* 右鞋 */}
+        <mesh position={[-0.15, -2.55, 0.03]} scale={[1, 0.6, 1.3]}>
+          <sphereGeometry args={[0.07, 12, 12]} />
+          <meshPhysicalMaterial color="#4a3a5c" metalness={0.1} roughness={0.5} />
+        </mesh>
 
         {/* ========== 柔和光环 — 梦幻风格 ========== */}
         <group ref={ringsRef}>
