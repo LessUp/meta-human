@@ -616,18 +616,18 @@ function CyberAvatar() {
             <capsuleGeometry args={[0.15, 0.5, 3, 6]} />
             {hairHighlightMat}
           </mesh>
-          {/* 刘海主层 */}
-          <mesh position={[0, 0.18, 0.58]} rotation={[0.55, 0, 0]} scale={[0.75, 0.52, 0.28]}>
+          {/* 刘海主层 — 覆盖额头 */}
+          <mesh position={[0, 0.12, 0.56]} rotation={[0.5, 0, 0]} scale={[0.82, 0.55, 0.3]}>
             <sphereGeometry args={[0.48, 12, 12]} />
             {hairMat}
           </mesh>
           {/* 刘海左束 */}
-          <mesh position={[-0.32, 0.1, 0.5]} rotation={[0.35, 0.15, 0.12]} scale={[0.4, 0.52, 0.2]}>
+          <mesh position={[-0.3, 0.05, 0.48]} rotation={[0.3, 0.12, 0.1]} scale={[0.42, 0.55, 0.22]}>
             <sphereGeometry args={[0.38, 10, 10]} />
             {hairMat}
           </mesh>
           {/* 刘海右束 */}
-          <mesh position={[0.32, 0.1, 0.5]} rotation={[0.35, -0.15, -0.12]} scale={[0.4, 0.52, 0.2]}>
+          <mesh position={[0.3, 0.05, 0.48]} rotation={[0.3, -0.12, -0.1]} scale={[0.42, 0.55, 0.22]}>
             <sphereGeometry args={[0.38, 10, 10]} />
             {hairMat}
           </mesh>
@@ -807,31 +807,41 @@ function CyberAvatar() {
             {clothMat}
           </mesh>
           {/* 泡泡袖 */}
-          <mesh position={[0.38, -0.95, 0]} scale={[0.8, 0.6, 0.75]}>
+          <mesh position={[0.42, -0.95, 0]} scale={[0.85, 0.62, 0.78]}>
             <sphereGeometry args={[0.15, 10, 10]} />
             {clothMat}
           </mesh>
-          <mesh position={[-0.38, -0.95, 0]} scale={[0.8, 0.6, 0.75]}>
+          <mesh position={[-0.42, -0.95, 0]} scale={[0.85, 0.62, 0.78]}>
             <sphereGeometry args={[0.15, 10, 10]} />
             {clothMat}
           </mesh>
           {/* 水手领前 */}
-          <mesh position={[0, -0.92, 0.2]} rotation={[0.35, 0, 0]} scale={[0.9, 0.45, 0.4]}>
+          <mesh position={[0, -0.92, 0.22]} rotation={[0.35, 0, 0]} scale={[0.95, 0.48, 0.42]}>
             <sphereGeometry args={[0.22, 10, 10]} />
             {clothMat}
           </mesh>
           {/* 水手领后 */}
-          <mesh position={[0, -0.88, -0.15]} rotation={[-0.2, 0, 0]} scale={[0.85, 0.35, 0.35]}>
+          <mesh position={[0, -0.88, -0.16]} rotation={[-0.2, 0, 0]} scale={[0.9, 0.38, 0.38]}>
             <sphereGeometry args={[0.22, 8, 8]} />
             {clothMat}
           </mesh>
-          {/* 领口V线 */}
-          <mesh position={[-0.1, -0.96, 0.26]} rotation={[0.2, 0.15, 0.2]}>
-            <boxGeometry args={[0.2, 0.012, 0.008]} />
+          {/* 领口蓝色边线（前） */}
+          <mesh position={[0, -0.85, 0.3]} rotation={[0.35, 0, 0]} scale={[0.88, 0.02, 0.35]}>
+            <sphereGeometry args={[0.22, 8, 4]} />
             {clothAccentMat}
           </mesh>
-          <mesh position={[0.1, -0.96, 0.26]} rotation={[0.2, -0.15, -0.2]}>
-            <boxGeometry args={[0.2, 0.012, 0.008]} />
+          {/* 领口蓝色边线（后） */}
+          <mesh position={[0, -0.82, -0.22]} rotation={[-0.2, 0, 0]} scale={[0.82, 0.02, 0.3]}>
+            <sphereGeometry args={[0.22, 8, 4]} />
+            {clothAccentMat}
+          </mesh>
+          {/* 领口V线 */}
+          <mesh position={[-0.1, -0.96, 0.28]} rotation={[0.2, 0.15, 0.2]}>
+            <boxGeometry args={[0.22, 0.014, 0.008]} />
+            {clothAccentMat}
+          </mesh>
+          <mesh position={[0.1, -0.96, 0.28]} rotation={[0.2, -0.15, -0.2]}>
+            <boxGeometry args={[0.22, 0.014, 0.008]} />
             {clothAccentMat}
           </mesh>
           {/* 胸口蝴蝶结 */}
