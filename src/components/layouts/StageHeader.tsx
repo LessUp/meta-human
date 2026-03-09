@@ -1,10 +1,19 @@
-import React from 'react';
-import { Activity, Wifi, WifiOff, RefreshCw, RotateCcw, Sun, Moon, Settings } from 'lucide-react';
-import { useDigitalHumanStore } from '@/store/digitalHumanStore';
-import { useTheme } from '@/hooks/useTheme';
-import KeyboardShortcutsHelp from '@/components/KeyboardShortcutsHelp';
-import { toast } from 'sonner';
-import StatusIndicator from '@/components/widgets/StatusIndicator';
+import React from "react";
+import {
+  Activity,
+  Wifi,
+  WifiOff,
+  RefreshCw,
+  RotateCcw,
+  Sun,
+  Moon,
+  Settings,
+} from "lucide-react";
+import { useDigitalHumanStore } from "@/store/digitalHumanStore";
+import { useTheme } from "@/hooks/useTheme";
+import KeyboardShortcutsHelp from "@/components/overlays/KeyboardShortcutsHelp";
+import { toast } from "sonner";
+import StatusIndicator from "@/components/widgets/StatusIndicator";
 
 interface StageHeaderProps {
   onReconnect: () => void;
@@ -16,7 +25,11 @@ interface StageHeaderProps {
  * 桌面端顶部 HUD 栏
  * 参考 airi 的 Header 组件，展示品牌、状态指标和操作按钮
  */
-export default function StageHeader({ onReconnect, onToggleSettings, showSettings }: StageHeaderProps) {
+export default function StageHeader({
+  onReconnect,
+  onToggleSettings,
+  showSettings,
+}: StageHeaderProps) {
   const {
     connectionStatus,
     currentBehavior,
@@ -49,27 +62,36 @@ export default function StageHeader({ onReconnect, onToggleSettings, showSetting
 
       {/* 右侧：操作按钮组 */}
       <div className="pointer-events-auto flex space-x-2 md:space-x-3">
-        {connectionStatus !== 'connected' && (
+        {connectionStatus !== "connected" && (
           <HeaderButton
             onClick={onReconnect}
             title="重新连接"
             className="bg-yellow-500/20 border-yellow-500/30 hover:bg-yellow-500/30"
           >
-            <RefreshCw className={`w-5 h-5 text-yellow-400 ${connectionStatus === 'connecting' ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`w-5 h-5 text-yellow-400 ${connectionStatus === "connecting" ? "animate-spin" : ""}`}
+            />
           </HeaderButton>
         )}
         <HeaderButton
           onClick={() => {
             initSession();
-            toast.success('已开启新会话');
+            toast.success("已开启新会话");
           }}
           title="新会话"
         >
           <RotateCcw className="w-5 h-5 text-slate-600 dark:text-white/80" />
         </HeaderButton>
         <KeyboardShortcutsHelp />
-        <HeaderButton onClick={toggleTheme} title={isDark ? '切换浅色模式' : '切换深色模式'}>
-          {isDark ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-slate-600" />}
+        <HeaderButton
+          onClick={toggleTheme}
+          title={isDark ? "切换浅色模式" : "切换深色模式"}
+        >
+          {isDark ? (
+            <Sun className="w-5 h-5 text-yellow-400" />
+          ) : (
+            <Moon className="w-5 h-5 text-slate-600" />
+          )}
         </HeaderButton>
         <HeaderButton onClick={onToggleSettings} title="设置">
           <Settings className="w-5 h-5 text-slate-600 dark:text-white/80" />
@@ -85,7 +107,7 @@ export default function StageHeader({ onReconnect, onToggleSettings, showSetting
 function HeaderButton({
   onClick,
   title,
-  className = '',
+  className = "",
   children,
 }: {
   onClick: () => void;
@@ -98,7 +120,8 @@ function HeaderButton({
       onClick={onClick}
       title={title}
       className={`p-2.5 md:p-3 rounded-full backdrop-blur-md border transition-all active:scale-95 shadow-sm dark:shadow-none ${
-        className || 'bg-white/70 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:bg-white dark:hover:bg-white/10'
+        className ||
+        "bg-white/70 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:bg-white dark:hover:bg-white/10"
       }`}
     >
       {children}
