@@ -1,149 +1,91 @@
-import { create } from 'zustand';
+// digitalHumanStore — 统一 Facade（向后兼容）
+// 参考 AIRI 项目的领域分离架构，将单体 store 拆分为独立领域子 store
+// 本文件作为组合入口，让现有代码无需修改即可继续使用
+//
+// 领域子 store（推荐在新代码中直接使用）：
+//   - avatarStore     → 模型/动画/表情/行为/情绪
+//   - voiceStore      → 录音/静音/语音合成
+//   - chatStore       → 会话管理/聊天历史
+//   - connectionStore → 连接状态/重连
+//   - errorStore      → 错误队列/自动清除
+//   - performanceStore→ FPS/性能指标
+//
+import { create } from "zustand";
 
-// 表情类型定义
-export type EmotionType = 'neutral' | 'happy' | 'surprised' | 'sad' | 'angry';
-export type ExpressionType = 'neutral' | 'smile' | 'laugh' | 'surprise' | 'sad' | 'angry' | 'blink' | 'eyebrow_raise' | 'eye_blink' | 'mouth_open' | 'head_nod';
-export type BehaviorType = 'idle' | 'greeting' | 'listening' | 'thinking' | 'speaking' | 'excited' | 'wave' | 'greet' | 'think' | 'nod' | 'shakeHead' | 'dance' | 'speak' | 'waveHand' | 'raiseHand' | 'bow' | 'clap' | 'thumbsUp' | 'headTilt' | 'shrug' | 'lookAround' | 'cheer' | 'sleep' | 'crossArms' | 'point';
-export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'error';
-export type AvatarType = 'cyber' | 'vrm';
+// 重新导出类型（保持向后兼容）
+export type {
+  EmotionType,
+  ExpressionType,
+  BehaviorType,
+  ConnectionStatus,
+  AvatarType,
+  ErrorItem,
+  ConnectionDetails,
+  PerformanceMetrics,
+  ChatMessage,
+} from "./types";
+import type {
+  EmotionType,
+  ExpressionType,
+  BehaviorType,
+  ConnectionStatus,
+  AvatarType,
+  ConnectionDetails,
+  PerformanceMetrics,
+  ChatMessage,
+  ErrorItem,
+} from "./types";
 
-// 错误项接口
-export interface ErrorItem {
-  id: string;
-  message: string;
-  severity: 'info' | 'warning' | 'error';
-  timestamp: number;
-  dismissable: boolean;
-  autoHideMs?: number;
-}
+// 导入领域子 store
+import { useAvatarStore } from "./avatarStore";
+import { useVoiceStore } from "./voiceStore";
+import { useChatStore } from "./chatStore";
+import { useConnectionStore } from "./connectionStore";
+import { useErrorStore } from "./errorStore";
+import { usePerformanceStore } from "./performanceStore";
 
-// 连接详情接口
-export interface ConnectionDetails {
-  lastConnectedAt: number | null;
-  lastErrorAt: number | null;
-  reconnectAttempts: number;
-  maxReconnectAttempts: number;
-}
-
-// 性能指标接口
-export interface PerformanceMetrics {
-  fps: number;
-  lastFrameTime: number;
-}
-
-// 聊天消息接口
-export interface ChatMessage {
-  id: number;
-  role: 'user' | 'assistant';
-  text: string;
-  timestamp: number;
-}
-
-// 状态更新防抖配置
-const DEBOUNCE_CONFIG = {
-  maxUpdatesPerSecond: 10,
-  debounceInterval: 100, // ms
-};
-
-// 防抖状态跟踪
-let lastUpdateTime = 0;
-let updateCount = 0;
-let windowStart = 0;
-let pendingUpdate: (() => void) | null = null;
-let debounceTimeoutId: ReturnType<typeof setTimeout> | null = null;
-
-// 防抖更新函数
-function debouncedSetState(updateFn: () => void): void {
-  const now = Date.now();
-
-  // 重置计数窗口
-  if (now - windowStart >= 1000) {
-    updateCount = 0;
-    windowStart = now;
-  }
-
-  // 检查是否超过每秒最大更新次数
-  if (updateCount >= DEBOUNCE_CONFIG.maxUpdatesPerSecond) {
-    pendingUpdate = updateFn;
-
-    if (!debounceTimeoutId) {
-      debounceTimeoutId = setTimeout(() => {
-        debounceTimeoutId = null;
-        if (pendingUpdate) {
-          pendingUpdate();
-          pendingUpdate = null;
-          updateCount++;
-        }
-      }, DEBOUNCE_CONFIG.debounceInterval);
-    }
-    return;
-  }
-
-  // 检查防抖间隔
-  if (now - lastUpdateTime < DEBOUNCE_CONFIG.debounceInterval) {
-    pendingUpdate = updateFn;
-
-    if (!debounceTimeoutId) {
-      const delay = DEBOUNCE_CONFIG.debounceInterval - (now - lastUpdateTime);
-      debounceTimeoutId = setTimeout(() => {
-        debounceTimeoutId = null;
-        if (pendingUpdate) {
-          pendingUpdate();
-          pendingUpdate = null;
-          lastUpdateTime = Date.now();
-          updateCount++;
-        }
-      }, delay);
-    }
-    return;
-  }
-
-  // 立即执行
-  updateFn();
-  lastUpdateTime = now;
-  updateCount++;
-}
+// ============================================================
+// 统一状态接口（向后兼容）
+// ============================================================
 
 interface DigitalHumanState {
-  // 模型状态
+  // 模型状态（委托 → avatarStore）
   isPlaying: boolean;
   autoRotate: boolean;
   currentAnimation: string;
   avatarType: AvatarType;
   vrmModelUrl: string | null;
-
-  // 语音状态
-  isRecording: boolean;
-  isMuted: boolean;
-  isSpeaking: boolean;
-
-  // 行为状态
   currentEmotion: EmotionType;
   currentExpression: ExpressionType;
   expressionIntensity: number;
   currentBehavior: BehaviorType;
 
-  // 会话状态
+  // 语音状态（委托 → voiceStore）
+  isRecording: boolean;
+  isMuted: boolean;
+  isSpeaking: boolean;
+
+  // 会话状态（委托 → chatStore）
   sessionId: string;
   chatHistory: ChatMessage[];
   maxChatHistoryLength: number;
 
-  // 系统状态
+  // 系统状态（委托 → connectionStore）
   isConnected: boolean;
   connectionStatus: ConnectionStatus;
   connectionDetails: ConnectionDetails;
   isLoading: boolean;
 
-  // 错误管理
+  // 错误管理（委托 → errorStore）
   error: string | null;
   lastErrorTime: number | null;
   errorQueue: ErrorItem[];
   maxErrorQueueLength: number;
 
-  // 性能指标
+  // 性能指标（委托 → performanceStore）
   performanceMetrics: PerformanceMetrics;
 
-  // 动作
+  // 动作（委托到各子 store）
   setPlaying: (playing: boolean) => void;
   setAutoRotate: (rotate: boolean) => void;
   setAnimation: (animation: string) => void;
@@ -162,21 +104,17 @@ interface DigitalHumanState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearError: () => void;
-
-  // 错误队列管理
-  addError: (message: string, severity?: 'info' | 'warning' | 'error', autoHideMs?: number) => void;
+  addError: (
+    message: string,
+    severity?: "info" | "warning" | "error",
+    autoHideMs?: number,
+  ) => void;
   dismissError: (errorId: string) => void;
   clearAllErrors: () => void;
-
-  // 会话管理
   initSession: () => void;
-  addChatMessage: (role: 'user' | 'assistant', text: string) => void;
+  addChatMessage: (role: "user" | "assistant", text: string) => void;
   clearChatHistory: () => void;
-
-  // 性能指标
   updatePerformanceMetrics: (metrics: Partial<PerformanceMetrics>) => void;
-
-  // 控制方法
   play: () => void;
   pause: () => void;
   reset: () => void;
@@ -186,282 +124,157 @@ interface DigitalHumanState {
   toggleAutoRotate: () => void;
 }
 
-// 生成唯一会话ID
-const generateSessionId = (): string => {
-  return `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-};
+// ============================================================
+// 统一 Facade Store
+// 内部订阅所有子 store，聚合状态并委托动作
+// ============================================================
 
-// 生成唯一错误ID
-const generateErrorId = (): string => {
-  return `error_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-};
+export const useDigitalHumanStore = create<DigitalHumanState>(() => {
+  // 获取各子 store 的当前快照
+  const avatar = useAvatarStore.getState();
+  const voice = useVoiceStore.getState();
+  const chat = useChatStore.getState();
+  const connection = useConnectionStore.getState();
+  const error = useErrorStore.getState();
+  const perf = usePerformanceStore.getState();
 
-const getSafeLocalStorage = (): Storage | null => {
-  if (typeof window === 'undefined') return null;
-  try {
-    // 测试 localStorage 是否可用
-    const testKey = '__test__';
-    window.localStorage.setItem(testKey, testKey);
-    window.localStorage.removeItem(testKey);
-    return window.localStorage;
-  } catch {
-    return null;
-  }
-};
+  return {
+    // ---- 聚合状态 ----
+    // avatarStore
+    isPlaying: avatar.isPlaying,
+    autoRotate: avatar.autoRotate,
+    currentAnimation: avatar.currentAnimation,
+    avatarType: avatar.avatarType,
+    vrmModelUrl: avatar.vrmModelUrl,
+    currentEmotion: avatar.currentEmotion,
+    currentExpression: avatar.currentExpression,
+    expressionIntensity: avatar.expressionIntensity,
+    currentBehavior: avatar.currentBehavior,
+    // voiceStore
+    isRecording: voice.isRecording,
+    isMuted: voice.isMuted,
+    isSpeaking: voice.isSpeaking,
+    // chatStore
+    sessionId: chat.sessionId,
+    chatHistory: chat.chatHistory,
+    maxChatHistoryLength: chat.maxChatHistoryLength,
+    // connectionStore
+    isConnected: connection.isConnected,
+    connectionStatus: connection.connectionStatus,
+    connectionDetails: connection.connectionDetails,
+    isLoading: connection.isLoading,
+    // errorStore
+    error: error.error,
+    lastErrorTime: error.lastErrorTime,
+    errorQueue: error.errorQueue,
+    maxErrorQueueLength: error.maxErrorQueueLength,
+    // performanceStore
+    performanceMetrics: perf.performanceMetrics,
 
-// 从 localStorage 获取或创建会话ID
-const getOrCreateSessionId = (): string => {
-  const storage = getSafeLocalStorage();
-  if (!storage) {
-    // localStorage 不可用时，生成内存中的 session ID
-    return generateSessionId();
-  }
-  try {
-    const stored = storage.getItem('metahuman_session_id');
-    if (stored) return stored;
-    const newId = generateSessionId();
-    storage.setItem('metahuman_session_id', newId);
-    return newId;
-  } catch {
-    // 存储失败时返回新生成的 ID
-    return generateSessionId();
-  }
-};
+    // ---- 委托动作到子 store ----
+    // avatarStore
+    setPlaying: (p) => useAvatarStore.getState().setPlaying(p),
+    setAutoRotate: (r) => useAvatarStore.getState().setAutoRotate(r),
+    setAnimation: (a) => useAvatarStore.getState().setAnimation(a),
+    setAvatarType: (t) => useAvatarStore.getState().setAvatarType(t),
+    setVrmModelUrl: (u) => useAvatarStore.getState().setVrmModelUrl(u),
+    setEmotion: (e) => useAvatarStore.getState().setEmotion(e),
+    setExpression: (e) => useAvatarStore.getState().setExpression(e),
+    setExpressionIntensity: (i) =>
+      useAvatarStore.getState().setExpressionIntensity(i),
+    setBehavior: (b) => useAvatarStore.getState().setBehavior(b),
+    play: () => useAvatarStore.getState().play(),
+    pause: () => useAvatarStore.getState().pause(),
+    toggleAutoRotate: () => useAvatarStore.getState().toggleAutoRotate(),
+    reset: () => {
+      useAvatarStore.getState().reset();
+      useErrorStore.getState().clearError();
+    },
+    // voiceStore
+    setRecording: (r) => useVoiceStore.getState().setRecording(r),
+    setMuted: (m) => useVoiceStore.getState().setMuted(m),
+    setSpeaking: (s) => useVoiceStore.getState().setSpeaking(s),
+    startRecording: () => useVoiceStore.getState().startRecording(),
+    stopRecording: () => useVoiceStore.getState().stopRecording(),
+    toggleMute: () => useVoiceStore.getState().toggleMute(),
+    // chatStore
+    initSession: () => useChatStore.getState().initSession(),
+    addChatMessage: (r, t) => useChatStore.getState().addChatMessage(r, t),
+    clearChatHistory: () => useChatStore.getState().clearChatHistory(),
+    // connectionStore
+    setConnected: (c) => useConnectionStore.getState().setConnected(c),
+    setConnectionStatus: (s) =>
+      useConnectionStore.getState().setConnectionStatus(s),
+    setConnectionDetails: (d) =>
+      useConnectionStore.getState().setConnectionDetails(d),
+    setLoading: (l) => useConnectionStore.getState().setLoading(l),
+    // errorStore
+    setError: (e) => useErrorStore.getState().setError(e),
+    clearError: () => useErrorStore.getState().clearError(),
+    addError: (m, s, a) => useErrorStore.getState().addError(m, s, a),
+    dismissError: (id) => useErrorStore.getState().dismissError(id),
+    clearAllErrors: () => useErrorStore.getState().clearAllErrors(),
+    // performanceStore
+    updatePerformanceMetrics: (m) =>
+      usePerformanceStore.getState().updatePerformanceMetrics(m),
+  };
+});
 
-// 错误自动清除定时器存储
-const errorTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+// ============================================================
+// 子 store → facade 状态同步
+// 当任意子 store 变化时，自动同步到 facade
+// ============================================================
 
-export const useDigitalHumanStore = create<DigitalHumanState>((set, get) => ({
-  // 初始状态
-  isPlaying: false,
-  autoRotate: false,
-  currentAnimation: 'idle',
-  avatarType: 'cyber',
-  vrmModelUrl: null,
-  isRecording: false,
-  isMuted: false,
-  isSpeaking: false,
-  currentEmotion: 'neutral',
-  currentExpression: 'neutral',
-  expressionIntensity: 0.8,
-  currentBehavior: 'idle',
-  sessionId: getOrCreateSessionId(),
-  chatHistory: [],
-  maxChatHistoryLength: 100,
-  isConnected: true,
-  connectionStatus: 'connected',
-  connectionDetails: {
-    lastConnectedAt: null,
-    lastErrorAt: null,
-    reconnectAttempts: 0,
-    maxReconnectAttempts: 5,
-  },
-  isLoading: false,
-  error: null,
-  lastErrorTime: null,
-  errorQueue: [],
-  maxErrorQueueLength: 5,
-  performanceMetrics: {
-    fps: 0,
-    lastFrameTime: 0,
-  },
+useAvatarStore.subscribe((s) => {
+  useDigitalHumanStore.setState({
+    isPlaying: s.isPlaying,
+    autoRotate: s.autoRotate,
+    currentAnimation: s.currentAnimation,
+    avatarType: s.avatarType,
+    vrmModelUrl: s.vrmModelUrl,
+    currentEmotion: s.currentEmotion,
+    currentExpression: s.currentExpression,
+    expressionIntensity: s.expressionIntensity,
+    currentBehavior: s.currentBehavior,
+  });
+});
 
-  // 状态设置方法
-  setPlaying: (playing) => set({ isPlaying: playing }),
-  setAutoRotate: (rotate) => set({ autoRotate: rotate }),
-  setAnimation: (animation) => set({ currentAnimation: animation }),
-  setAvatarType: (type) => set({ avatarType: type }),
-  setVrmModelUrl: (url) => set({ vrmModelUrl: url, avatarType: url ? 'vrm' : 'cyber' }),
-  setRecording: (recording) => set({ isRecording: recording }),
-  setMuted: (muted) => set({ isMuted: muted }),
-  setSpeaking: (speaking) => set({ isSpeaking: speaking }),
-  setEmotion: (emotion) => set({ currentEmotion: emotion }),
-  setExpression: (expression) => set({ currentExpression: expression }),
-  setExpressionIntensity: (intensity) => set({ expressionIntensity: Math.max(0, Math.min(1, intensity)) }),
-  setBehavior: (behavior) => set({ currentBehavior: behavior }),
-  setConnected: (connected) => set({ isConnected: connected }),
+useVoiceStore.subscribe((s) => {
+  useDigitalHumanStore.setState({
+    isRecording: s.isRecording,
+    isMuted: s.isMuted,
+    isSpeaking: s.isSpeaking,
+  });
+});
 
-  setConnectionStatus: (status) => {
-    // 验证状态转换
-    const currentStatus = get().connectionStatus;
-    const validTransitions: Record<ConnectionStatus, ConnectionStatus[]> = {
-      'disconnected': ['connecting', 'error'],
-      'connecting': ['connected', 'error', 'disconnected'],
-      'connected': ['disconnected', 'error'],
-      'error': ['connecting', 'disconnected', 'connected'],
-    };
+useChatStore.subscribe((s) => {
+  useDigitalHumanStore.setState({
+    sessionId: s.sessionId,
+    chatHistory: s.chatHistory,
+    maxChatHistoryLength: s.maxChatHistoryLength,
+  });
+});
 
-    if (validTransitions[currentStatus]?.includes(status) || currentStatus === status) {
-      set({
-        connectionStatus: status,
-        isConnected: status === 'connected'
-      });
-    } else {
-      console.warn(`无效的连接状态转换: ${currentStatus} → ${status}`);
-    }
-  },
+useConnectionStore.subscribe((s) => {
+  useDigitalHumanStore.setState({
+    isConnected: s.isConnected,
+    connectionStatus: s.connectionStatus,
+    connectionDetails: s.connectionDetails,
+    isLoading: s.isLoading,
+  });
+});
 
-  setConnectionDetails: (details) => set((state) => ({
-    connectionDetails: { ...state.connectionDetails, ...details }
-  })),
+useErrorStore.subscribe((s) => {
+  useDigitalHumanStore.setState({
+    error: s.error,
+    lastErrorTime: s.lastErrorTime,
+    errorQueue: s.errorQueue,
+    maxErrorQueueLength: s.maxErrorQueueLength,
+  });
+});
 
-  setLoading: (loading) => set({ isLoading: loading }),
-
-  setError: (error) => set({ error, lastErrorTime: error ? Date.now() : null }),
-
-  clearError: () => set({ error: null, lastErrorTime: null }),
-
-  // 错误队列管理
-  addError: (message, severity = 'error', autoHideMs = 5000) => {
-    const errorId = generateErrorId();
-    const errorItem: ErrorItem = {
-      id: errorId,
-      message,
-      severity,
-      timestamp: Date.now(),
-      dismissable: true,
-      autoHideMs,
-    };
-
-    set((state) => {
-      let newQueue = [...state.errorQueue, errorItem];
-      // 限制队列长度
-      while (newQueue.length > state.maxErrorQueueLength) {
-        const removed = newQueue.shift();
-        if (removed) {
-          const timer = errorTimers.get(removed.id);
-          if (timer) {
-            clearTimeout(timer);
-            errorTimers.delete(removed.id);
-          }
-        }
-      }
-      return {
-        errorQueue: newQueue,
-        error: message,
-        lastErrorTime: Date.now(),
-      };
-    });
-
-    // 设置自动清除
-    if (autoHideMs && autoHideMs > 0) {
-      const timer = setTimeout(() => {
-        get().dismissError(errorId);
-      }, autoHideMs);
-      errorTimers.set(errorId, timer);
-    }
-  },
-
-  dismissError: (errorId) => {
-    const timer = errorTimers.get(errorId);
-    if (timer) {
-      clearTimeout(timer);
-      errorTimers.delete(errorId);
-    }
-
-    set((state) => ({
-      errorQueue: state.errorQueue.filter(e => e.id !== errorId),
-    }));
-  },
-
-  clearAllErrors: () => {
-    // 清除所有定时器
-    errorTimers.forEach((timer) => clearTimeout(timer));
-    errorTimers.clear();
-
-    set({
-      errorQueue: [],
-      error: null,
-      lastErrorTime: null,
-    });
-  },
-
-  // 会话管理
-  initSession: () => {
-    const newId = generateSessionId();
-    const storage = getSafeLocalStorage();
-    if (storage) {
-      try {
-        storage.setItem('metahuman_session_id', newId);
-      } catch {
-        // 忽略存储错误
-      }
-    }
-    set({ sessionId: newId, chatHistory: [] });
-  },
-
-  addChatMessage: (role, text) => set((state) => {
-    const newMessage: ChatMessage = {
-      id: Date.now(),
-      role,
-      text,
-      timestamp: Date.now(),
-    };
-
-    let newHistory = [...state.chatHistory, newMessage];
-
-    // 限制历史长度
-    while (newHistory.length > state.maxChatHistoryLength) {
-      newHistory.shift();
-    }
-
-    return { chatHistory: newHistory };
-  }),
-
-  clearChatHistory: () => set({ chatHistory: [] }),
-
-  // 性能指标 - 使用防抖更新
-  updatePerformanceMetrics: (metrics) => {
-    debouncedSetState(() => {
-      set((state) => ({
-        performanceMetrics: { ...state.performanceMetrics, ...metrics }
-      }));
-    });
-  },
-
-  // 控制方法
-  play: () => {
-    set({ isPlaying: true });
-  },
-
-  pause: () => {
-    set({ isPlaying: false });
-  },
-
-  reset: () => {
-    set({
-      isPlaying: false,
-      currentAnimation: 'idle',
-      currentEmotion: 'neutral',
-      currentExpression: 'neutral',
-      expressionIntensity: 0.8,
-      currentBehavior: 'idle',
-      error: null,
-      lastErrorTime: null
-    });
-  },
-
-  startRecording: () => {
-    set({ isRecording: true });
-    // 录音超时保护
-    setTimeout(() => {
-      if (get().isRecording) {
-        get().stopRecording();
-      }
-    }, 30000);
-  },
-
-  stopRecording: () => {
-    set({ isRecording: false });
-  },
-
-  toggleMute: () => {
-    const { isMuted } = get();
-    set({ isMuted: !isMuted });
-  },
-
-  toggleAutoRotate: () => {
-    const { autoRotate } = get();
-    set({ autoRotate: !autoRotate });
-  }
-}));
+usePerformanceStore.subscribe((s) => {
+  useDigitalHumanStore.setState({
+    performanceMetrics: s.performanceMetrics,
+  });
+});
