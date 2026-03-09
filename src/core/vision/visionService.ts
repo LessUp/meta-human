@@ -1,12 +1,25 @@
-import { mapFaceToEmotion, UserEmotion } from './visionMapper';
-import { useDigitalHumanStore } from '../../store/digitalHumanStore';
+/**
+ * @deprecated 此文件为兼容层，请迁移到新模块：
+ * - import { createVisionService } from '@/core/vision/service'
+ */
+
+import { mapFaceToEmotion } from "./visionMapper";
+import type { UserEmotion } from "./visionMapper";
+import { useDigitalHumanStore } from "../../store/digitalHumanStore";
 
 type EmotionCallback = (emotion: UserEmotion) => void;
-type MotionCallback = (motion: 'nod' | 'shakeHead' | 'raiseHand' | 'waveHand') => void;
+type MotionCallback = (
+  motion: "nod" | "shakeHead" | "raiseHand" | "waveHand",
+) => void;
 type ErrorCallback = (error: string) => void;
 type StatusCallback = (status: VisionStatus) => void;
 
-export type VisionStatus = 'idle' | 'initializing' | 'running' | 'error' | 'no_camera';
+export type VisionStatus =
+  | "idle"
+  | "initializing"
+  | "running"
+  | "error"
+  | "no_camera";
 
 export interface VisionServiceCallbacks {
   onEmotion?: EmotionCallback;
@@ -37,11 +50,15 @@ type MediaPipeModelLike = {
 };
 
 type FaceMeshModuleLike = {
-  FaceMesh: new (options: { locateFile: (file: string) => string }) => MediaPipeModelLike;
+  FaceMesh: new (options: {
+    locateFile: (file: string) => string;
+  }) => MediaPipeModelLike;
 };
 
 type PoseModuleLike = {
-  Pose: new (options: { locateFile: (file: string) => string }) => MediaPipeModelLike;
+  Pose: new (options: {
+    locateFile: (file: string) => string;
+  }) => MediaPipeModelLike;
 };
 
 const DEFAULT_CONFIG: VisionServiceConfig = {
@@ -56,7 +73,7 @@ class VisionService {
   private video: HTMLVideoElement | null = null;
   private stream: MediaStream | null = null;
   private running = false;
-  private status: VisionStatus = 'idle';
+  private status: VisionStatus = "idle";
   private faceMesh: MediaPipeModelLike | null = null;
   private pose: MediaPipeModelLike | null = null;
   private callbacks: VisionServiceCallbacks = {};
@@ -99,29 +116,36 @@ class VisionService {
 
   private handleError(message: string, error?: unknown): void {
     console.error(message, error);
-    this.setStatus('error');
+    this.setStatus("error");
     this.callbacks.onError?.(message);
     useDigitalHumanStore.getState().addError(message);
   }
 
   async checkCameraPermission(): Promise<boolean> {
     try {
-      const result = await navigator.permissions.query({ name: 'camera' as PermissionName });
-      return result.state === 'granted' || result.state === 'prompt';
+      const result = await navigator.permissions.query({
+        name: "camera" as PermissionName,
+      });
+      return result.state === "granted" || result.state === "prompt";
     } catch {
       return true;
     }
   }
 
-  private async loadModelsWithRetry(): Promise<{ faceMesh: MediaPipeModelLike | null; pose: MediaPipeModelLike | null }> {
+  private async loadModelsWithRetry(): Promise<{
+    faceMesh: MediaPipeModelLike | null;
+    pose: MediaPipeModelLike | null;
+  }> {
     let faceMesh: MediaPipeModelLike | null = null;
     let pose: MediaPipeModelLike | null = null;
 
     for (let attempt = 0; attempt < this.config.maxRetries; attempt++) {
       try {
-        const mod = (await import('@mediapipe/face_mesh')) as unknown as FaceMeshModuleLike;
+        const mod =
+          (await import("@mediapipe/face_mesh")) as unknown as FaceMeshModuleLike;
         faceMesh = new mod.FaceMesh({
-          locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
+          locateFile: (file: string) =>
+            `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
         });
         faceMesh.setOptions({
           maxNumFaces: 1,
@@ -131,7 +155,10 @@ class VisionService {
         });
         break;
       } catch (error) {
-        console.warn(`人脸检测模型加载失败 (尝试 ${attempt + 1}/${this.config.maxRetries}):`, error);
+        console.warn(
+          `人脸检测模型加载失败 (尝试 ${attempt + 1}/${this.config.maxRetries}):`,
+          error,
+        );
         if (attempt < this.config.maxRetries - 1) {
           await this.delay(this.config.retryDelay * Math.pow(2, attempt));
         }
@@ -140,9 +167,11 @@ class VisionService {
 
     for (let attempt = 0; attempt < this.config.maxRetries; attempt++) {
       try {
-        const poseMod = (await import('@mediapipe/pose')) as unknown as PoseModuleLike;
+        const poseMod =
+          (await import("@mediapipe/pose")) as unknown as PoseModuleLike;
         pose = new poseMod.Pose({
-          locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+          locateFile: (file: string) =>
+            `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
         });
         pose.setOptions({
           modelComplexity: 0,
@@ -153,7 +182,10 @@ class VisionService {
         });
         break;
       } catch (error) {
-        console.warn(`姿态检测模型加载失败 (尝试 ${attempt + 1}/${this.config.maxRetries}):`, error);
+        console.warn(
+          `姿态检测模型加载失败 (尝试 ${attempt + 1}/${this.config.maxRetries}):`,
+          error,
+        );
         if (attempt < this.config.maxRetries - 1) {
           await this.delay(this.config.retryDelay * Math.pow(2, attempt));
         }
@@ -164,7 +196,7 @@ class VisionService {
   }
 
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private debounceEmotion(emotion: UserEmotion): UserEmotion | null {
@@ -190,7 +222,10 @@ class VisionService {
     if (now - this.lastMotionTime < this.config.motionCooldownMs) {
       return false;
     }
-    if (motion === this.lastMotion && now - this.lastMotionTime < this.config.motionCooldownMs * 2) {
+    if (
+      motion === this.lastMotion &&
+      now - this.lastMotionTime < this.config.motionCooldownMs * 2
+    ) {
       return false;
     }
     this.lastMotionTime = now;
@@ -212,18 +247,23 @@ class VisionService {
     this.video = videoElement;
     this.callbacks.onEmotion = onEmotion;
     this.callbacks.onMotion = onMotion;
-    this.setStatus('initializing');
+    this.setStatus("initializing");
     this.retryCount = 0;
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      this.handleError('浏览器不支持摄像头访问，请使用 Chrome 或 Firefox');
-      this.setStatus('no_camera');
+      this.handleError("浏览器不支持摄像头访问，请使用 Chrome 或 Firefox");
+      this.setStatus("no_camera");
       return false;
     }
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: this.config.targetFps } },
+        video: {
+          facingMode: "user",
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          frameRate: { ideal: this.config.targetFps },
+        },
         audio: false,
       });
       this.stream = stream;
@@ -232,7 +272,7 @@ class VisionService {
     } catch (error) {
       const errorMessage = this.getCameraErrorMessage(error);
       this.handleError(errorMessage, error);
-      this.setStatus('no_camera');
+      this.setStatus("no_camera");
       return false;
     }
 
@@ -249,7 +289,11 @@ class VisionService {
         }
         const landmarks = this.getFaceLandmarks(results);
         const motion = this.detectHeadMotion(landmarks);
-        if (motion && this.shouldEmitMotion(motion) && this.callbacks.onMotion) {
+        if (
+          motion &&
+          this.shouldEmitMotion(motion) &&
+          this.callbacks.onMotion
+        ) {
           this.callbacks.onMotion(motion);
         }
       });
@@ -258,7 +302,11 @@ class VisionService {
     if (this.pose) {
       this.pose.onResults((results: unknown) => {
         const upperMotion = this.detectUpperBodyMotion(results);
-        if (upperMotion && this.shouldEmitMotion(upperMotion) && this.callbacks.onMotion) {
+        if (
+          upperMotion &&
+          this.shouldEmitMotion(upperMotion) &&
+          this.callbacks.onMotion
+        ) {
           this.callbacks.onMotion(upperMotion);
         }
       });
@@ -266,28 +314,30 @@ class VisionService {
 
     if (this.faceMesh || this.pose) {
       this.running = true;
-      this.setStatus('running');
+      this.setStatus("running");
       this.lastFpsTime = performance.now();
       this.loop();
       return true;
     } else {
-      this.handleError('视觉模型加载失败，请刷新页面重试');
+      this.handleError("视觉模型加载失败，请刷新页面重试");
       return false;
     }
   }
 
   private getCameraErrorMessage(error: unknown): string {
     const err = error as { name?: string; message?: string };
-    const errorName = err.name || '';
+    const errorName = err.name || "";
     const errorMessages: Record<string, string> = {
-      'NotAllowedError': '摄像头权限被拒绝，请在浏览器设置中允许访问摄像头',
-      'NotFoundError': '未检测到摄像头设备，请确保摄像头已连接',
-      'NotReadableError': '摄像头被其他应用占用，请关闭其他使用摄像头的程序',
-      'OverconstrainedError': '摄像头不支持请求的分辨率',
-      'SecurityError': '安全限制：请通过 HTTPS 访问或在本地运行',
-      'AbortError': '摄像头访问被中断',
+      NotAllowedError: "摄像头权限被拒绝，请在浏览器设置中允许访问摄像头",
+      NotFoundError: "未检测到摄像头设备，请确保摄像头已连接",
+      NotReadableError: "摄像头被其他应用占用，请关闭其他使用摄像头的程序",
+      OverconstrainedError: "摄像头不支持请求的分辨率",
+      SecurityError: "安全限制：请通过 HTTPS 访问或在本地运行",
+      AbortError: "摄像头访问被中断",
     };
-    return errorMessages[errorName] || `摄像头访问失败: ${err.message || errorName}`;
+    return (
+      errorMessages[errorName] || `摄像头访问失败: ${err.message || errorName}`
+    );
   }
 
   private async loop(): Promise<void> {
@@ -302,13 +352,18 @@ class VisionService {
     try {
       if (this.faceMesh) await this.faceMesh.send({ image: this.video });
       if (this.pose) await this.pose.send({ image: this.video });
-    } catch { /* ignore single frame errors */ }
-    if (this.running) requestAnimationFrame(() => { void this.loop(); });
+    } catch {
+      /* ignore single frame errors */
+    }
+    if (this.running)
+      requestAnimationFrame(() => {
+        void this.loop();
+      });
   }
 
   stop(): void {
     this.running = false;
-    this.setStatus('idle');
+    this.setStatus("idle");
     if (this.stream) {
       this.stream.getTracks().forEach((track) => track.stop());
       this.stream = null;
@@ -336,20 +391,22 @@ class VisionService {
   }
 
   private getFaceLandmarks(results: unknown): Landmark[] | undefined {
-    if (!results || typeof results !== 'object') return undefined;
+    if (!results || typeof results !== "object") return undefined;
     const typed = results as FaceMeshResultsLike;
     const landmarks = typed.multiFaceLandmarks?.[0];
     return Array.isArray(landmarks) ? landmarks : undefined;
   }
 
   private getPoseLandmarks(results: unknown): PoseLandmark[] | undefined {
-    if (!results || typeof results !== 'object') return undefined;
+    if (!results || typeof results !== "object") return undefined;
     const typed = results as PoseResultsLike;
     const landmarks = typed.poseLandmarks;
     return Array.isArray(landmarks) ? landmarks : undefined;
   }
 
-  private computeHeadPose(landmarks: Landmark[] | undefined): { yaw: number; pitch: number } | null {
+  private computeHeadPose(
+    landmarks: Landmark[] | undefined,
+  ): { yaw: number; pitch: number } | null {
     if (!landmarks || landmarks.length < 300) return null;
     const leftEye = landmarks[33];
     const rightEye = landmarks[263];
@@ -364,7 +421,9 @@ class VisionService {
     return { yaw, pitch };
   }
 
-  private detectHeadMotion(landmarks: Landmark[] | undefined): 'nod' | 'shakeHead' | null {
+  private detectHeadMotion(
+    landmarks: Landmark[] | undefined,
+  ): "nod" | "shakeHead" | null {
     const pose = this.computeHeadPose(landmarks);
     if (!pose) return null;
     const { yaw, pitch } = pose;
@@ -372,7 +431,8 @@ class VisionService {
     this.pitchHistory.push(pitch);
     if (this.yawHistory.length > 20) this.yawHistory.shift();
     if (this.pitchHistory.length > 20) this.pitchHistory.shift();
-    if (this.yawHistory.length < 10 || this.pitchHistory.length < 10) return null;
+    if (this.yawHistory.length < 10 || this.pitchHistory.length < 10)
+      return null;
     const yawMin = Math.min(...this.yawHistory);
     const yawMax = Math.max(...this.yawHistory);
     const pitchMin = Math.min(...this.pitchHistory);
@@ -385,24 +445,27 @@ class VisionService {
     if (pitchRange > nodThreshold && yawRange < tolerance) {
       this.yawHistory = [];
       this.pitchHistory = [];
-      return 'nod';
+      return "nod";
     }
     if (yawRange > shakeThreshold && pitchRange < tolerance) {
       this.yawHistory = [];
       this.pitchHistory = [];
-      return 'shakeHead';
+      return "shakeHead";
     }
     return null;
   }
 
-  private detectUpperBodyMotion(results: unknown): 'raiseHand' | 'waveHand' | null {
+  private detectUpperBodyMotion(
+    results: unknown,
+  ): "raiseHand" | "waveHand" | null {
     const landmarks = this.getPoseLandmarks(results);
     if (!landmarks || landmarks.length < 17) return null;
     const leftShoulder = landmarks[11];
     const rightShoulder = landmarks[12];
     const leftWrist = landmarks[15];
     const rightWrist = landmarks[16];
-    if (!leftShoulder || !rightShoulder || !leftWrist || !rightWrist) return null;
+    if (!leftShoulder || !rightShoulder || !leftWrist || !rightWrist)
+      return null;
     const raiseThreshold = 0.05;
     let handRaised = false;
     if (leftWrist.y < leftShoulder.y - raiseThreshold) {
@@ -421,22 +484,34 @@ class VisionService {
     if (this.leftWristXHistory.length > 20) this.leftWristXHistory.shift();
     if (this.rightWristXHistory.length > 20) this.rightWristXHistory.shift();
     const now = performance.now();
-    if (now - this.lastUpperBodyMotionTime < this.config.motionCooldownMs) return null;
+    if (now - this.lastUpperBodyMotionTime < this.config.motionCooldownMs)
+      return null;
     const waveThreshold = 0.06;
-    const leftRange = this.leftWristXHistory.length >= 5 ? Math.max(...this.leftWristXHistory) - Math.min(...this.leftWristXHistory) : 0;
-    const rightRange = this.rightWristXHistory.length >= 5 ? Math.max(...this.rightWristXHistory) - Math.min(...this.rightWristXHistory) : 0;
+    const leftRange =
+      this.leftWristXHistory.length >= 5
+        ? Math.max(...this.leftWristXHistory) -
+          Math.min(...this.leftWristXHistory)
+        : 0;
+    const rightRange =
+      this.rightWristXHistory.length >= 5
+        ? Math.max(...this.rightWristXHistory) -
+          Math.min(...this.rightWristXHistory)
+        : 0;
     if (leftRange > waveThreshold || rightRange > waveThreshold) {
       this.leftWristXHistory = [];
       this.rightWristXHistory = [];
       this.lastUpperBodyMotionTime = now;
-      return 'waveHand';
+      return "waveHand";
     }
     const raiseHistoryThreshold = 10;
-    if (this.leftWristXHistory.length >= raiseHistoryThreshold || this.rightWristXHistory.length >= raiseHistoryThreshold) {
+    if (
+      this.leftWristXHistory.length >= raiseHistoryThreshold ||
+      this.rightWristXHistory.length >= raiseHistoryThreshold
+    ) {
       this.leftWristXHistory = [];
       this.rightWristXHistory = [];
       this.lastUpperBodyMotionTime = now;
-      return 'raiseHand';
+      return "raiseHand";
     }
     return null;
   }
