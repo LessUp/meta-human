@@ -1,4 +1,4 @@
-# MetaHuman - 3D 数字人交互平台
+# MetaHuman - 3D Digital Human Interaction Platform
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
@@ -6,97 +6,99 @@
 ![Three.js](https://img.shields.io/badge/Three.js-r158-000000?logo=threedotjs&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
 
-基于 Web 技术的 3D 数字人交互平台，支持实时 3D 渲染、语音交互、表情控制和智能行为系统。全中文界面，深色/浅色双主题。
+English | [简体中文](README.zh-CN.md)
+
+A web-based 3D digital human interaction platform with real-time 3D rendering, voice interaction, facial expression control, and intelligent behavior system. Features dark/light dual themes.
 
 ---
 
-## 界面预览
+## UI Preview
 
-> 运行 `npm run dev` 后访问 `http://localhost:5173` 查看完整效果
+> Run `npm run dev` and visit `http://localhost:5173` for the full experience
 
-| 主界面 | 控制面板 | 404 页面 |
+| Main UI | Control Panel | 404 Page |
 |:---:|:---:|:---:|
-| ![主界面](docs/screenshots/main-ui.png) | ![控制面板](docs/screenshots/control-panel.png) | ![404 页面](docs/screenshots/404-page.png) |
+| ![Main UI](docs/screenshots/main-ui.png) | ![Control Panel](docs/screenshots/control-panel.png) | ![404 Page](docs/screenshots/404-page.png) |
 
-> 截图说明：请运行项目后手动截图并保存到 `docs/screenshots/` 目录。
+> Screenshots: Run the project and manually capture screenshots to `docs/screenshots/`.
 
 ---
 
-## 核心功能
+## Core Features
 
-### 3D 数字人渲染
+### 3D Digital Human Rendering
 
-- 双模式 Avatar 系统：**CyberAvatar**（纯几何体赛博风）+ **VRM Avatar**（`.vrm` 模型加载）
-- 基于 Three.js + React Three Fiber 的实时渲染
-- 25 种行为动画（挥手、鞠躬、鼓掌、思考、跳舞等）
-- 11 种面部表情（微笑、大笑、惊讶、悲伤、愤怒等）
-- 鼠标头部跟踪 + 情绪灯光系统
-- lerp 插值平滑动画过渡
+- Dual-mode Avatar system: **CyberAvatar** (pure-geometry cyberpunk style) + **VRM Avatar** (`.vrm` model loading)
+- Real-time rendering with Three.js + React Three Fiber
+- 25 behavior animations (wave, bow, clap, think, dance, etc.)
+- 11 facial expressions (smile, laugh, surprise, sad, angry, etc.)
+- Mouse-based head tracking + emotion lighting system
+- Smooth animation transitions via lerp interpolation
 
-### 语音交互
+### Voice Interaction
 
-- TTS 语音合成 + ASR 语音识别（Web Speech API）
-- 中文语音优先，支持自定义语音参数
-- 语音命令直接触发动作（"打招呼"、"跳舞"等）
+- TTS synthesis + ASR recognition (Web Speech API)
+- Chinese voice priority with customizable voice parameters
+- Voice commands trigger actions directly ("say hello", "dance", etc.)
 
-### LLM 对话
+### LLM Dialogue
 
-- 前端 → 后端 `/v1/chat` → OpenAI Chat Completions
-- 后端返回结构化数据驱动数字人（情感 + 动作 + 回复）
-- 无 API Key 时自动降级为智能 Mock 回复
-- 多轮对话上下文、会话管理
+- Frontend → Backend `/v1/chat` → OpenAI Chat Completions
+- Backend returns structured data to drive the digital human (emotion + action + reply)
+- Graceful degradation to intelligent mock replies when no API key is configured
+- Multi-turn conversation context and session management
 
-### 视觉镜像
+### Vision Mirror
 
-- 摄像头实时预览 + MediaPipe FaceMesh/Pose 推理
-- 面部关键点映射为情感和头部动作
-- 实时 FPS 显示
+- Real-time camera preview + MediaPipe FaceMesh/Pose inference
+- Facial keypoint mapping to emotions and head movements
+- Real-time FPS display
 
-### 键盘快捷键
+### Keyboard Shortcuts
 
-| 按键 | 功能 |
+| Key | Function |
 |:---:|:---|
-| `空格` | 播放/暂停 |
-| `R` | 重置数字人 |
-| `M` | 静音切换 |
-| `V` | 录音切换 |
-| `S` | 设置面板开关 |
-| `Esc` | 关闭面板 |
-| `1`~`4` | 快速触发预设行为 |
+| `Space` | Play/Pause |
+| `R` | Reset digital human |
+| `M` | Toggle mute |
+| `V` | Toggle recording |
+| `S` | Toggle settings panel |
+| `Esc` | Close panel |
+| `1`~`4` | Quick-trigger preset behaviors |
 
-> 输入框聚焦时快捷键不生效。
+> Shortcuts are disabled when an input field is focused.
 
 ---
 
-## 技术栈
+## Tech Stack
 
-| 层级 | 技术 |
-|------|------|
-| 前端框架 | React 18 + TypeScript 5 + Vite 5 |
-| 3D 渲染 | Three.js r158 + @react-three/fiber + @react-three/drei |
+| Layer | Technology |
+|-------|------------|
+| Frontend | React 18 + TypeScript 5 + Vite 5 |
+| 3D Rendering | Three.js r158 + @react-three/fiber + @react-three/drei |
 | VRM | @pixiv/three-vrm 3.5 |
-| 状态管理 | Zustand 4 |
-| 样式 | Tailwind CSS 3（双主题 `darkMode: "class"`） |
-| 图标 | Lucide React |
-| 通知 | Sonner |
-| 路由 | React Router DOM 6 |
-| 测试 | Vitest + @testing-library/react + fast-check |
-| 后端 | FastAPI + httpx（Python） |
-| 部署 | Vercel |
+| State Management | Zustand 4 |
+| Styling | Tailwind CSS 3 (dual theme `darkMode: "class"`) |
+| Icons | Lucide React |
+| Notifications | Sonner |
+| Routing | React Router DOM 6 |
+| Testing | Vitest + @testing-library/react + fast-check |
+| Backend | FastAPI + httpx (Python) |
+| Deployment | Vercel |
 
 ---
 
-## 快速开始
+## Quick Start
 
-### 前端
+### Frontend
 
 ```bash
-npm ci            # 安装依赖
-npm run dev       # 开发服务器 → http://localhost:5173
-npm run build     # 构建
+npm ci            # Install dependencies
+npm run dev       # Dev server → http://localhost:5173
+npm run build     # Build
 ```
 
-### 后端（可选）
+### Backend (Optional)
 
 ```bash
 cd server
@@ -105,87 +107,87 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
-> 前端独立运行不依赖后端。未启动后端时对话功能优雅降级。
+> The frontend runs independently without the backend. Dialogue features degrade gracefully when the backend is not running.
 
-### 测试
+### Testing
 
 ```bash
-npm run test          # watch 模式
-npm run test:run      # 单次运行
-npm run lint          # ESLint 检查
+npm run test          # Watch mode
+npm run test:run      # Single run
+npm run lint          # ESLint check
 ```
 
 ---
 
-## 项目结构
+## Project Structure
 
 ```
 src/
-├── pages/                              # 页面组件
-│   ├── AdvancedDigitalHumanPage.tsx     # 主页面（全功能）
-│   ├── DigitalHumanPage.tsx            # 简化版页面
-│   └── NotFoundPage.tsx                # 404 页面
-├── components/                         # UI + 3D 组件
-│   ├── DigitalHumanViewer.enhanced.tsx  # 核心：CyberAvatar 3D 渲染
-│   ├── VRMAvatar.tsx                   # VRM 模型渲染
-│   ├── BehaviorControlPanel.new.tsx    # 行为控制（25 种动作）
-│   ├── ExpressionControlPanel.new.tsx  # 表情控制（11 种表情）
-│   ├── VoiceInteractionPanel.dark.tsx  # 语音交互面板
-│   ├── VisionMirrorPanel.tsx           # 摄像头情感检测
-│   ├── ControlPanel.tsx                # 基础控制面板
-│   ├── KeyboardShortcutsHelp.tsx       # 快捷键帮助
-│   └── ui/                            # 基础 UI 组件
-├── core/                               # 核心引擎
-│   ├── avatar/DigitalHumanEngine.ts    # 行为引擎（动画队列 + 组合动作）
-│   ├── audio/audioService.ts           # TTS/ASR 语音服务
-│   ├── dialogue/                       # 对话服务 + 编排器
-│   ├── vision/                         # 视觉识别（MediaPipe）
-│   └── performance/                    # 性能监控
-├── store/digitalHumanStore.ts          # Zustand 全局状态
-├── hooks/                              # 自定义 Hooks（含 vrm/ 子目录）
-├── __tests__/                          # 测试文件
-└── lib/utils.ts                        # 工具函数
+├── pages/                              # Page components
+│   ├── AdvancedDigitalHumanPage.tsx     # Main page (full features)
+│   ├── DigitalHumanPage.tsx            # Simplified page
+│   └── NotFoundPage.tsx                # 404 page
+├── components/                         # UI + 3D components
+│   ├── DigitalHumanViewer.enhanced.tsx  # Core: CyberAvatar 3D rendering
+│   ├── VRMAvatar.tsx                   # VRM model rendering
+│   ├── BehaviorControlPanel.new.tsx    # Behavior control (25 actions)
+│   ├── ExpressionControlPanel.new.tsx  # Expression control (11 expressions)
+│   ├── VoiceInteractionPanel.dark.tsx  # Voice interaction panel
+│   ├── VisionMirrorPanel.tsx           # Camera emotion detection
+│   ├── ControlPanel.tsx                # Basic control panel
+│   ├── KeyboardShortcutsHelp.tsx       # Keyboard shortcuts help
+│   └── ui/                            # Base UI components
+├── core/                               # Core engines
+│   ├── avatar/DigitalHumanEngine.ts    # Behavior engine (animation queue + combo actions)
+│   ├── audio/audioService.ts           # TTS/ASR voice service
+│   ├── dialogue/                       # Dialogue service + orchestrator
+│   ├── vision/                         # Vision recognition (MediaPipe)
+│   └── performance/                    # Performance monitoring
+├── store/digitalHumanStore.ts          # Zustand global state
+├── hooks/                              # Custom hooks (incl. vrm/ subdirectory)
+├── __tests__/                          # Test files
+└── lib/utils.ts                        # Utility functions
 
-server/                                 # Python FastAPI 后端
+server/                                 # Python FastAPI backend
 ├── app/
-│   ├── main.py                         # 入口
-│   ├── api/chat.py                     # 对话 API
-│   └── services/dialogue.py            # 对话服务（LLM + Mock）
+│   ├── main.py                         # Entry point
+│   ├── api/chat.py                     # Chat API
+│   └── services/dialogue.py            # Dialogue service (LLM + Mock)
 └── requirements.txt
 ```
 
 ---
 
-## 文档
+## Documentation
 
-- **[架构说明](docs/architecture.md)** — 前后端架构、核心模块、数据流
-- **[开发指南](docs/development.md)** — 安装运行、环境变量、浏览器兼容性
-- **[API 契约](docs/api.md)** — 后端接口规范与回退策略
-- **[更新日志](changelog/)** — 版本迭代记录
-
----
-
-## 浏览器兼容性
-
-- 语音能力依赖 Web Speech API，推荐 **Chrome / Edge**
-- 摄像头/麦克风需要 HTTPS 或 localhost 环境
-- 3D 渲染需要 WebGL 2.0 支持
+- **[Architecture](docs/architecture.md)** — Frontend/backend architecture, core modules, data flow
+- **[Development Guide](docs/development.md)** — Setup, environment variables, browser compatibility
+- **[API Contract](docs/api.md)** — Backend API specification and fallback strategies
+- **[Changelog](changelog/)** — Version history
 
 ---
 
-## 贡献
+## Browser Compatibility
 
-1. Fork 本仓库
-2. 创建特性分支：`git checkout -b feature/your-feature`
-3. 提交更改：`git commit -m "feat: add your feature"`
-4. 推送并创建 Pull Request
-
-提交规范：[Conventional Commits](https://www.conventionalcommits.org/)（`feat:` / `fix:` / `docs:` / `style:` / `refactor:`）
-
-详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+- Voice features depend on Web Speech API — **Chrome / Edge** recommended
+- Camera/microphone requires HTTPS or localhost
+- 3D rendering requires WebGL 2.0 support
 
 ---
 
-## 许可证
+## Contributing
+
+1. Fork this repository
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Commit changes: `git commit -m "feat: add your feature"`
+4. Push and create a Pull Request
+
+Commit convention: [Conventional Commits](https://www.conventionalcommits.org/) (`feat:` / `fix:` / `docs:` / `style:` / `refactor:`)
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+---
+
+## License
 
 [MIT](LICENSE)
