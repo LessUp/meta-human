@@ -181,6 +181,18 @@ export default function CyberAvatarModel({ refs }: Props) {
     [],
   );
   const glowWhite = useMemo(() => <meshBasicMaterial color="#ffffff" />, []);
+  const goldMat = useMemo(
+    () => (
+      <meshPhysicalMaterial
+        color="#e8b84b"
+        metalness={0.85}
+        roughness={0.15}
+        clearcoat={0.9}
+        envMapIntensity={2.0}
+      />
+    ),
+    [],
+  );
 
   return (
     <>
@@ -361,13 +373,7 @@ export default function CyberAvatarModel({ refs }: Props) {
         {/* 左侧发夹金色中心结 */}
         <mesh position={[-0.53, 0.28, 0.12]}>
           <sphereGeometry args={[0.022, 6, 6]} />
-          <meshPhysicalMaterial
-            color="#e8b84b"
-            metalness={0.85}
-            roughness={0.15}
-            clearcoat={0.9}
-            envMapIntensity={2.0}
-          />
+          {goldMat}
         </mesh>
         {/* 右侧星星发夹 */}
         <mesh position={[0.53, 0.28, 0.1]} rotation={[0, -0.3, -0.3]}>
@@ -377,13 +383,7 @@ export default function CyberAvatarModel({ refs }: Props) {
         {/* 右侧发夹金色底座 */}
         <mesh position={[0.53, 0.25, 0.08]} rotation={[0, -0.3, 0]}>
           <capsuleGeometry args={[0.015, 0.06, 3, 6]} />
-          <meshPhysicalMaterial
-            color="#e8b84b"
-            metalness={0.85}
-            roughness={0.15}
-            clearcoat={0.9}
-            envMapIntensity={2.0}
-          />
+          {goldMat}
         </mesh>
         {/* 蝴蝶结中心珠 */}
         <mesh position={[-0.53, 0.28, 0.14]}>
@@ -698,13 +698,7 @@ export default function CyberAvatarModel({ refs }: Props) {
       {/* 项链主链（金色） */}
       <mesh position={[0, -0.58, 0.05]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.16, 0.006, 8, 32]} />
-        <meshPhysicalMaterial
-          color="#e8b84b"
-          metalness={0.85}
-          roughness={0.15}
-          clearcoat={0.9}
-          envMapIntensity={2.0}
-        />
+        {goldMat}
       </mesh>
       {/* 项链内层装饰环 */}
       <mesh position={[0, -0.6, 0.06]} rotation={[Math.PI / 2, 0, 0]}>
@@ -714,11 +708,7 @@ export default function CyberAvatarModel({ refs }: Props) {
       {/* 吊坠底座（金色小环） */}
       <mesh position={[0, -0.66, 0.165]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.012, 0.003, 6, 12]} />
-        <meshPhysicalMaterial
-          color="#e8b84b"
-          metalness={0.85}
-          roughness={0.15}
-        />
+        {goldMat}
       </mesh>
       {/* 吊坠宝石 */}
       <mesh position={[0, -0.7, 0.165]}>
@@ -822,13 +812,7 @@ export default function CyberAvatarModel({ refs }: Props) {
         {/* 蝴蝶结金色中心结 */}
         <mesh position={[0, -1.02, 0.32]}>
           <sphereGeometry args={[0.018, 8, 8]} />
-          <meshPhysicalMaterial
-            color="#e8b84b"
-            metalness={0.85}
-            roughness={0.15}
-            clearcoat={0.9}
-            envMapIntensity={2.0}
-          />
+          {goldMat}
         </mesh>
         {/* 腰线 */}
         <mesh position={[0, -1.62, 0]} rotation={[Math.PI / 2, 0, 0]}>
