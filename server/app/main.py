@@ -1,39 +1,45 @@
+"""MetaHuman 后端服务 — 模块化入口
+
+参考 AIRI app.ts 的模块化注册设计：
+  - config.py    → 集中配置管理
+  - errors.py    → 统一错误体系
+  - middleware.py → 请求日志 + 速率限制
+  - api/         → 路由层（chat, health, tts）
+  - services/    → 业务层（dialogue → session + llm + mock）
+"""
 import logging
 import os
-import time
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.config import load_config
+from app.middleware import RequestLoggingMiddleware, SimpleRateLimiter
 from app.api.chat import router as chat_router
+from app.api.health import router as health_router
+from app.api.tts import router as tts_router
 from app.services.dialogue import dialogue_service
 
-# ------------------------------------------------------------------
+# 加载配置
+config = load_config()
+
 # 日志配置
-# ------------------------------------------------------------------
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(
-    level=getattr(logging, LOG_LEVEL, logging.INFO),
+    level=getattr(logging, config.log_level, logging.INFO),
     format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
 
-# 记录服务启动时间
-START_TIME = time.time()
 
-
-# ------------------------------------------------------------------
-# FastAPI lifespan（替代已废弃的 on_event）
-# ------------------------------------------------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """应用生命周期管理：启动时初始化资源，关闭时释放资源"""
+    """应用生命周期管理"""
     logger.info("MetaHuman 后端服务启动中...")
     await dialogue_service.startup()
-    logger.info("MetaHuman 后端服务已就绪")
+    logger.info("MetaHuman 后端服务已就绪 (v%s)", config.version)
     yield
     logger.info("MetaHuman 后端服务关闭中...")
     await dialogue_service.shutdown()
@@ -43,62 +49,22 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(
     title="Digital Human Service",
     description="MetaHuman 数字人后端服务",
-    version="1.0.0",
+    version=config.version,
     lifespan=lifespan,
 )
 
-# ------------------------------------------------------------------
-# CORS 配置 - 允许前端跨域访问
-# ------------------------------------------------------------------
-origins_env = os.getenv("CORS_ALLOW_ORIGINS", "")
-if origins_env:
-    allowed_origins = [origin.strip() for origin in origins_env.split(",") if origin.strip()]
-else:
-    allowed_origins = [
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:3000",
-    ]
-
+# 中间件注册（顺序：外→内）
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=config.cors.allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(SimpleRateLimiter, max_requests=60, window_seconds=60)
 
-
-# ------------------------------------------------------------------
-# 基础端点
-# ------------------------------------------------------------------
-@app.get("/health")
-async def health() -> dict:
-    """健康检查接口，用于确认后端服务是否正常运行。"""
-    uptime = time.time() - START_TIME
-    has_openai_key = bool(os.getenv("OPENAI_API_KEY"))
-
-    return {
-        "status": "ok",
-        "uptime_seconds": round(uptime, 2),
-        "version": "1.0.0",
-        "services": {
-            "chat": "available",
-            "llm": "available" if has_openai_key else "mock_mode",
-        },
-    }
-
-
-@app.get("/")
-async def root() -> dict:
-    """根路径，返回服务基本信息。"""
-    return {
-        "service": "MetaHuman Digital Human Service",
-        "version": "1.0.0",
-        "docs": "/docs",
-        "health": "/health",
-    }
-
-
+# 路由注册
+app.include_router(health_router)
 app.include_router(chat_router, prefix="/v1")
+app.include_router(tts_router, prefix="/v1")

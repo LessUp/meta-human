@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel, field_validator
 
 from app.services.dialogue import dialogue_service
@@ -68,14 +68,12 @@ async def chat(req: ChatRequest) -> ChatResponse:
         )
         return ChatResponse(**result)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        from app.errors import bad_request
+        raise bad_request(str(e), "VALIDATION_ERROR")
     except Exception as e:
-        # 记录错误但返回友好的错误信息
         logger.exception("Chat API error: %s", e)
-        raise HTTPException(
-            status_code=500,
-            detail="服务暂时不可用，请稍后重试"
-        )
+        from app.errors import internal_error
+        raise internal_error()
 
 
 @router.delete("/chat/session/{session_id}")
