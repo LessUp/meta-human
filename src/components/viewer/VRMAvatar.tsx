@@ -1,18 +1,18 @@
 // VRM Avatar 组件 — 借鉴 AIRI 项目的模块化架构
 // v2：完整对齐 AIRI 功能集（AnimationMixer + spring bone + combineSkeletons + 包围盒定位）
-import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
-import { VRM, VRMUtils } from '@pixiv/three-vrm';
-import { useDigitalHumanStore } from '@/store/digitalHumanStore';
-import { useVRMLoader } from '@/hooks/vrm/useVRMLoader';
-import { useVRMEmote } from '@/hooks/vrm/useVRMEmote';
-import { useVRMBlink } from '@/hooks/vrm/useVRMBlink';
-import { useVRMLipSync } from '@/hooks/vrm/useVRMLipSync';
-import { useVRMEyeSaccades } from '@/hooks/vrm/useVRMEyeSaccades';
-import { createVRMAnimationController } from '@/hooks/vrm/useVRMAnimation';
-import type { VRMEmoteController } from '@/hooks/vrm/useVRMEmote';
-import type { VRMAnimationController } from '@/hooks/vrm/useVRMAnimation';
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+import { VRM, VRMUtils } from "@pixiv/three-vrm";
+import { useDigitalHumanStore } from "@/store/digitalHumanStore";
+import { useVRMLoader } from "@/hooks/vrm/useVRMLoader";
+import { useVRMEmote } from "@/hooks/vrm/useVRMEmote";
+import { useVRMBlink } from "@/hooks/vrm/useVRMBlink";
+import { useVRMLipSync } from "@/hooks/vrm/useVRMLipSync";
+import { useVRMEyeSaccades } from "@/hooks/vrm/useVRMEyeSaccades";
+import { createVRMAnimationController } from "@/hooks/vrm/useVRMAnimation";
+import type { VRMEmoteController } from "@/hooks/vrm/useVRMEmote";
+import type { VRMAnimationController } from "@/hooks/vrm/useVRMAnimation";
 
 interface VRMAvatarProps {
   url: string;
@@ -33,7 +33,7 @@ function computeModelBounds(scene: THREE.Object3D) {
     if (!obj.visible) return;
     const mesh = obj as THREE.Mesh;
     if (!mesh.isMesh || !mesh.geometry) return;
-    if (mesh.name.startsWith('VRMC_springBone_collider')) return;
+    if (mesh.name.startsWith("VRMC_springBone_collider")) return;
     const geo = mesh.geometry;
     if (!geo.boundingBox) geo.computeBoundingBox();
     childBox.copy(geo.boundingBox!);
@@ -67,90 +67,97 @@ function computeSkeletonTargets(
   let spineRotZ = 0;
   let hipsPosY = 0;
 
-  if (isAnim('nod') || currentBehavior === 'listening') {
+  if (isAnim("nod") || currentBehavior === "listening") {
     headRotX = Math.sin(t * 3.5) * 0.2;
     spineRotX = Math.sin(t * 3.5) * 0.03;
-  } else if (isAnim('shakeHead')) {
+  } else if (isAnim("shakeHead")) {
     headRotY = Math.sin(t * 5) * 0.4;
     spineRotZ = Math.sin(t * 5) * 0.02;
-  } else if (currentBehavior === 'thinking') {
+  } else if (currentBehavior === "thinking") {
     headRotZ = Math.sin(t * 0.8) * 0.12;
     headRotY = -0.15 + Math.sin(t * 0.5) * 0.08;
     headRotX = 0.05;
-  } else if (currentBehavior === 'greeting' || isAnim('wave') || isAnim('waveHand')) {
+  } else if (
+    currentBehavior === "greeting" ||
+    isAnim("wave") ||
+    isAnim("waveHand")
+  ) {
     headRotZ = Math.sin(t * 2.5) * 0.1;
     headRotY = 0.1 + Math.sin(t * 3) * 0.05;
     hipsPosY = Math.sin(t * 3) * 0.01;
-  } else if (isAnim('bow')) {
+  } else if (isAnim("bow")) {
     headRotX = -0.3;
     spineRotX = -0.25;
-  } else if (isAnim('lookAround')) {
+  } else if (isAnim("lookAround")) {
     headRotY = Math.sin(t * 1.2) * 0.5;
     headRotX = Math.sin(t * 2) * 0.1;
-  } else if (isAnim('sleep')) {
+  } else if (isAnim("sleep")) {
     headRotX = -0.3 + Math.sin(t * 0.4) * 0.03;
     headRotZ = 0.2;
     spineRotX = -0.1;
-  } else if (isAnim('cheer')) {
+  } else if (isAnim("cheer")) {
     headRotX = 0.15;
     headRotZ = Math.sin(t * 7) * 0.1;
     hipsPosY = Math.abs(Math.sin(t * 5)) * 0.08;
-  } else if (isAnim('dance')) {
+  } else if (isAnim("dance")) {
     headRotZ = Math.sin(t * 4) * 0.1;
     hipsPosY = Math.abs(Math.sin(t * 4)) * 0.06;
-  } else if (isAnim('excited') || currentBehavior === 'excited') {
+  } else if (isAnim("excited") || currentBehavior === "excited") {
     hipsPosY = Math.abs(Math.sin(t * 6)) * 0.1;
     headRotZ = Math.sin(t * 8) * 0.08;
-  } else if (currentBehavior === 'speaking' || isSpeaking) {
+  } else if (currentBehavior === "speaking" || isSpeaking) {
     headRotY = mouseX * 0.15 + Math.sin(t * 1.5) * 0.05;
     headRotX = -mouseY * 0.08 + Math.sin(t * 2) * 0.03;
   }
 
   // 手臂
-  let leftArmRotZ = 0, rightArmRotZ = 0, leftArmRotX = 0, rightArmRotX = 0;
+  let leftArmRotZ = 0,
+    rightArmRotZ = 0,
+    leftArmRotX = 0,
+    rightArmRotX = 0;
 
-  if (currentBehavior === 'greeting' || isAnim('wave') || isAnim('waveHand')) {
+  if (currentBehavior === "greeting" || isAnim("wave") || isAnim("waveHand")) {
     rightArmRotZ = -Math.PI * 0.6 + Math.sin(t * 5) * 0.25;
     rightArmRotX = Math.sin(t * 5) * 0.15;
-  } else if (isAnim('raiseHand')) {
+  } else if (isAnim("raiseHand")) {
     rightArmRotZ = -Math.PI * 0.5;
-  } else if (currentBehavior === 'speaking' || isSpeaking) {
+  } else if (currentBehavior === "speaking" || isSpeaking) {
     leftArmRotZ = Math.sin(t * 2.5) * 0.06;
     rightArmRotZ = -Math.sin(t * 2.5 + 1.2) * 0.06;
     leftArmRotX = Math.sin(t * 3) * 0.08;
     rightArmRotX = Math.sin(t * 3 + 1) * 0.08;
-  } else if (isAnim('excited') || currentBehavior === 'excited') {
+  } else if (isAnim("excited") || currentBehavior === "excited") {
     leftArmRotZ = Math.PI * 0.4 + Math.sin(t * 7) * 0.2;
     rightArmRotZ = -Math.PI * 0.4 - Math.sin(t * 7 + 0.5) * 0.2;
-  } else if (isAnim('bow')) {
+  } else if (isAnim("bow")) {
     leftArmRotX = -0.15;
     rightArmRotX = -0.15;
-  } else if (isAnim('clap')) {
+  } else if (isAnim("clap")) {
     const cp = Math.sin(t * 10);
     leftArmRotZ = Math.PI * 0.2 + cp * 0.12;
     rightArmRotZ = -Math.PI * 0.2 - cp * 0.12;
     leftArmRotX = -0.5 + cp * 0.08;
     rightArmRotX = -0.5 + cp * 0.08;
-  } else if (isAnim('thumbsUp')) {
+  } else if (isAnim("thumbsUp")) {
     rightArmRotZ = -Math.PI * 0.45;
     rightArmRotX = -0.3;
-  } else if (isAnim('shrug')) {
+  } else if (isAnim("shrug")) {
     leftArmRotZ = Math.PI * 0.3;
     rightArmRotZ = -Math.PI * 0.3;
     leftArmRotX = -0.2;
     rightArmRotX = -0.2;
-  } else if (isAnim('cheer')) {
+  } else if (isAnim("cheer")) {
     leftArmRotZ = Math.PI * 0.65 + Math.sin(t * 5) * 0.12;
     rightArmRotZ = -Math.PI * 0.65 - Math.sin(t * 5 + 0.4) * 0.12;
-  } else if (isAnim('crossArms')) {
+  } else if (isAnim("crossArms")) {
     leftArmRotZ = Math.PI * 0.2;
     rightArmRotZ = -Math.PI * 0.2;
     leftArmRotX = -0.4;
     rightArmRotX = -0.4;
-  } else if (isAnim('point')) {
+  } else if (isAnim("point")) {
     rightArmRotZ = -Math.PI * 0.35;
     rightArmRotX = -0.55;
-  } else if (isAnim('dance')) {
+  } else if (isAnim("dance")) {
     leftArmRotZ = Math.PI * 0.3 + Math.sin(t * 4) * 0.3;
     rightArmRotZ = -Math.PI * 0.3 - Math.sin(t * 4 + Math.PI) * 0.3;
     leftArmRotX = Math.sin(t * 4) * 0.2;
@@ -158,9 +165,16 @@ function computeSkeletonTargets(
   }
 
   return {
-    headRotX, headRotY, headRotZ,
-    spineRotX, spineRotZ, hipsPosY,
-    leftArmRotZ, rightArmRotZ, leftArmRotX, rightArmRotX,
+    headRotX,
+    headRotY,
+    headRotZ,
+    spineRotX,
+    spineRotZ,
+    hipsPosY,
+    leftArmRotZ,
+    rightArmRotZ,
+    leftArmRotX,
+    rightArmRotX,
   };
 }
 
@@ -182,14 +196,20 @@ export default function VRMAvatar({
   const eyeSaccadesRef = useRef(useVRMEyeSaccades());
 
   // 上一次的表情名，用于检测变化
-  const lastExpressionRef = useRef<string>('neutral');
+  const lastExpressionRef = useRef<string>("neutral");
 
   // 骨骼动画插值状态
   const animState = useRef({
-    headRotX: 0, headRotY: 0, headRotZ: 0,
-    spineRotX: 0, spineRotZ: 0, hipsPosY: 0,
-    leftArmRotZ: 0, rightArmRotZ: 0,
-    leftArmRotX: 0, rightArmRotX: 0,
+    headRotX: 0,
+    headRotY: 0,
+    headRotZ: 0,
+    spineRotX: 0,
+    spineRotZ: 0,
+    hipsPosY: 0,
+    leftArmRotZ: 0,
+    rightArmRotZ: 0,
+    leftArmRotX: 0,
+    rightArmRotX: 0,
   });
 
   // 鼠标跟踪
@@ -199,8 +219,8 @@ export default function VRMAvatar({
       mouse.current.x = (e.clientX / window.innerWidth) * 2 - 1;
       mouse.current.y = -(e.clientY / window.innerHeight) * 2 + 1;
     };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
   // 使用单例 VRM 加载器
@@ -229,14 +249,14 @@ export default function VRMAvatar({
 
         const vrm = gltf.userData.vrm as VRM;
         if (!vrm) {
-          onError?.('文件不是有效的 VRM 模型');
+          onError?.("文件不是有效的 VRM 模型");
           return;
         }
 
         // ---- 性能优化（参考 AIRI） ----
         VRMUtils.removeUnnecessaryVertices(gltf.scene);
         // 合并骨骼（AIRI 关键优化，大幅提升性能）
-        if (typeof VRMUtils.combineSkeletons === 'function') {
+        if (typeof VRMUtils.combineSkeletons === "function") {
           VRMUtils.combineSkeletons(gltf.scene);
         }
         VRMUtils.removeUnnecessaryJoints(gltf.scene);
@@ -266,11 +286,7 @@ export default function VRMAvatar({
 
         // ---- 模型定位（参考 AIRI 包围盒计算） ----
         const { size, center } = computeModelBounds(vrm.scene);
-        vrm.scene.position.set(
-          -center.x,
-          -center.y + size.y * 0.05,
-          -center.z,
-        );
+        vrm.scene.position.set(-center.x, -center.y + size.y * 0.05, -center.z);
 
         // 旋转模型朝向摄像机（VRM0 兼容）
         VRMUtils.rotateVRM0(vrm);
@@ -285,19 +301,30 @@ export default function VRMAvatar({
 
         // 如果提供了闲置动画 URL，加载并播放
         if (idleAnimationUrl) {
-          animControllerRef.current.loadAndPlay(idleAnimationUrl).catch((err) => {
-            console.warn('闲置动画加载失败:', err);
-          });
+          animControllerRef.current
+            .loadAndPlay(idleAnimationUrl)
+            .catch((err) => {
+              console.warn("闲置动画加载失败:", err);
+            });
         }
 
         vrmRef.current = vrm;
         setLoaded(true);
         onLoad?.(vrm);
 
-        console.log('VRM 模型加载成功:', vrm.meta);
-        console.log('模型尺寸:', size.toArray().map((v) => v.toFixed(2)));
-        console.log('可用表情:', vrm.expressionManager?.expressions.map((e) => e.expressionName));
-        console.log('Spring Bone 数量:', vrm.springBoneManager?.joints.length ?? 0);
+        console.log("VRM 模型加载成功:", vrm.meta);
+        console.log(
+          "模型尺寸:",
+          size.toArray().map((v) => v.toFixed(2)),
+        );
+        console.log(
+          "可用表情:",
+          vrm.expressionManager?.expressions.map((e) => e.expressionName),
+        );
+        console.log(
+          "Spring Bone 数量:",
+          vrm.springBoneManager?.joints.size ?? 0,
+        );
       },
       (progress) => {
         if (cancelled) return;
@@ -307,8 +334,9 @@ export default function VRMAvatar({
       },
       (error) => {
         if (cancelled) return;
-        const msg = error instanceof Error ? error.message : '加载 VRM 模型失败';
-        console.error('VRM 加载错误:', error);
+        const msg =
+          error instanceof Error ? error.message : "加载 VRM 模型失败";
+        console.error("VRM 加载错误:", error);
         onError?.(msg);
       },
     );
@@ -334,12 +362,16 @@ export default function VRMAvatar({
     const anim = animState.current;
 
     const {
-      currentExpression, isSpeaking, currentAnimation,
-      currentBehavior, expressionIntensity,
+      currentExpression,
+      isSpeaking,
+      currentAnimation,
+      currentBehavior,
+      expressionIntensity,
     } = useDigitalHumanStore.getState();
 
     const intensity = Math.max(0, Math.min(1, expressionIntensity ?? 1));
-    const isAnim = (name: string) => currentAnimation === name || currentBehavior === name;
+    const isAnim = (name: string) =>
+      currentAnimation === name || currentBehavior === name;
 
     // 1. AnimationMixer 更新
     animControllerRef.current?.update(delta);
@@ -360,23 +392,32 @@ export default function VRMAvatar({
     lipSyncRef.current.update(vrm, delta, isSpeaking);
 
     // 5. 空闲眼球微动
-    eyeSaccadesRef.current.update(vrm, {
-      x: mouse.current.x * 0.5,
-      y: mouse.current.y * 0.3,
-      z: -1,
-    }, delta);
+    eyeSaccadesRef.current.update(
+      vrm,
+      {
+        x: mouse.current.x * 0.5,
+        y: mouse.current.y * 0.3,
+        z: -1,
+      },
+      delta,
+    );
 
     // 6. 骨骼叠加动画
     const targets = computeSkeletonTargets(
-      t, mouse.current.x, mouse.current.y,
-      currentBehavior, isSpeaking, isAnim,
+      t,
+      mouse.current.x,
+      mouse.current.y,
+      currentBehavior,
+      isSpeaking,
+      isAnim,
     );
 
-    const headNode = vrm.humanoid.getNormalizedBoneNode('head');
-    const spineNode = vrm.humanoid.getNormalizedBoneNode('spine');
-    const leftUpperArmNode = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
-    const rightUpperArmNode = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
-    const hipsNode = vrm.humanoid.getNormalizedBoneNode('hips');
+    const headNode = vrm.humanoid.getNormalizedBoneNode("head");
+    const spineNode = vrm.humanoid.getNormalizedBoneNode("spine");
+    const leftUpperArmNode = vrm.humanoid.getNormalizedBoneNode("leftUpperArm");
+    const rightUpperArmNode =
+      vrm.humanoid.getNormalizedBoneNode("rightUpperArm");
+    const hipsNode = vrm.humanoid.getNormalizedBoneNode("hips");
 
     anim.headRotX = lerp(anim.headRotX, targets.headRotX, 0.1);
     anim.headRotY = lerp(anim.headRotY, targets.headRotY, 0.1);
@@ -411,7 +452,7 @@ export default function VRMAvatar({
     }
 
     // 呼吸
-    if (spineNode && !isAnim('bow') && !isAnim('sleep')) {
+    if (spineNode && !isAnim("bow") && !isAnim("sleep")) {
       spineNode.rotation.x += Math.sin(t * 1.5) * 0.008;
     }
 
