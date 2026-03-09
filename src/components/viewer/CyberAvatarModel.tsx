@@ -898,13 +898,7 @@ export default function CyberAvatarModel({ refs }: Props) {
         {/* 手链 */}
         <mesh position={[0, -0.62, 0]} rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[0.044, 0.004, 6, 16]} />
-          <meshPhysicalMaterial
-            color="#e8b84b"
-            metalness={0.85}
-            roughness={0.15}
-            clearcoat={0.9}
-            envMapIntensity={2.0}
-          />
+          {goldMat}
         </mesh>
         {/* 手掌 */}
         <mesh position={[0, -0.7, 0]} scale={[0.9, 0.6, 0.55]}>
@@ -949,13 +943,7 @@ export default function CyberAvatarModel({ refs }: Props) {
         {/* 手链 */}
         <mesh position={[0, -0.62, 0]} rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[0.044, 0.004, 6, 16]} />
-          <meshPhysicalMaterial
-            color="#e8b84b"
-            metalness={0.85}
-            roughness={0.15}
-            clearcoat={0.9}
-            envMapIntensity={2.0}
-          />
+          {goldMat}
         </mesh>
         {/* 手掌 */}
         <mesh position={[0, -0.7, 0]} scale={[0.9, 0.6, 0.55]}>
@@ -1049,11 +1037,11 @@ export default function CyberAvatarModel({ refs }: Props) {
       {/* 鞋口金色装饰线 */}
       <mesh position={[0.15, -2.53, 0.03]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.072, 0.003, 4, 12]} />
-        <meshPhysicalMaterial color="#e8b84b" metalness={0.8} roughness={0.2} />
+        {goldMat}
       </mesh>
       <mesh position={[-0.15, -2.53, 0.03]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.072, 0.003, 4, 12]} />
-        <meshPhysicalMaterial color="#e8b84b" metalness={0.8} roughness={0.2} />
+        {goldMat}
       </mesh>
       {/* 鞋扣 */}
       <mesh position={[0.15, -2.55, 0.1]}>
