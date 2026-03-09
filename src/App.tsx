@@ -5,8 +5,8 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useTheme } from "@/hooks/useTheme";
 
 // 懒加载页面组件
+const HomePage = lazy(() => import("@/pages/HomePage"));
 const DigitalHumanPage = lazy(() => import("@/pages/DigitalHumanPage"));
-const AdvancedDigitalHumanPage = lazy(() => import("@/pages/AdvancedDigitalHumanPage"));
 const NotFoundPage = lazy(() => import("@/pages/NotFoundPage"));
 
 // 页面加载 fallback
@@ -29,9 +29,9 @@ export default function App() {
       <Router>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/" element={<AdvancedDigitalHumanPage />} />
+            <Route path="/" element={<HomePage />} />
             <Route path="/digital-human" element={<DigitalHumanPage />} />
-            <Route path="/advanced" element={<AdvancedDigitalHumanPage />} />
+            <Route path="/advanced" element={<HomePage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
