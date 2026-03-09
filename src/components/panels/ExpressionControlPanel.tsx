@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
+// ExpressionControlPanel — 表情控制面板
+// 重构自 ExpressionControlPanel.new.tsx，使用共享 widgets
+import { useState } from 'react';
 import { Palette, Eye, Smile, Frown, Meh, Laugh, Angry } from 'lucide-react';
+import PanelHeader from '@/components/widgets/PanelHeader';
+import Slider from '@/components/widgets/Slider';
 
 interface ExpressionControl {
   name: string;
@@ -41,13 +45,12 @@ export default function ExpressionControlPanel({ currentExpression, onExpression
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-4">
-        <h3 className="text-lg font-medium text-slate-800 dark:text-white">表情控制</h3>
+      <PanelHeader title="表情控制">
         <div className="flex items-center space-x-2 px-3 py-1 bg-slate-100 dark:bg-white/5 rounded-full border border-slate-200 dark:border-white/5">
           <Palette size={14} className="text-slate-500 dark:text-white/60" />
           <span className="text-xs text-slate-700 dark:text-white/80 font-mono uppercase">{currentExpression || 'neutral'}</span>
         </div>
-      </div>
+      </PanelHeader>
 
       {/* 表情网格 */}
       <div className="grid grid-cols-2 gap-3">
@@ -66,29 +69,16 @@ export default function ExpressionControlPanel({ currentExpression, onExpression
             </div>
             <div>
               <div className="font-medium text-slate-700 dark:text-gray-200 text-sm">{expression.label}</div>
-              <div className="text-[10px] text-slate-400 dark:text-white/40">
-                强度: {Math.round(expression.intensity * 100)}%
-              </div>
+              <div className="text-[10px] text-slate-400 dark:text-white/40">强度: {Math.round(expression.intensity * 100)}%</div>
             </div>
           </button>
         ))}
       </div>
 
-      {/* 强度滑块 */}
+      {/* 强度滑块 — 使用共享 Slider */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold text-slate-400 dark:text-white/40 uppercase tracking-wider">表情强度</label>
-          <span className="text-xs font-mono text-blue-500 dark:text-blue-400">{Math.round(intensity * 100)}%</span>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.1"
-          value={intensity}
-          onChange={(e) => handleIntensityChange(parseFloat(e.target.value))}
-          className="w-full h-1.5 bg-slate-200 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500"
-        />
+        <label className="text-xs font-semibold text-slate-400 dark:text-white/40 uppercase tracking-wider">表情强度</label>
+        <Slider label="" value={intensity} onChange={handleIntensityChange} />
       </div>
 
       {/* 微表情触发 */}
@@ -114,10 +104,7 @@ export default function ExpressionControlPanel({ currentExpression, onExpression
 
       <div className="pt-4 border-t border-slate-200 dark:border-white/10">
         <button
-          onClick={() => {
-            onExpressionChange('neutral', 0.5);
-            setIntensity(0.5);
-          }}
+          onClick={() => { onExpressionChange('neutral', 0.5); setIntensity(0.5); }}
           className="w-full px-4 py-2 bg-white/50 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-500 dark:text-white/60 hover:text-slate-800 dark:hover:text-white rounded-lg transition-colors text-sm border border-slate-200 dark:border-transparent"
         >
           重置表情

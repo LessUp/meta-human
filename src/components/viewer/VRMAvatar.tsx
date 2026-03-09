@@ -1,18 +1,17 @@
+// VRM Avatar 组件 — 借鉴 AIRI 项目的模块化架构
+// 从 src/components/VRMAvatar.tsx 迁移到 viewer/ 目录
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { VRM, VRMUtils } from '@pixiv/three-vrm';
-import { useDigitalHumanStore } from '../store/digitalHumanStore';
-import { useVRMLoader } from '../hooks/vrm/useVRMLoader';
-import { useVRMEmote } from '../hooks/vrm/useVRMEmote';
-import { useVRMBlink } from '../hooks/vrm/useVRMBlink';
-import { useVRMLipSync } from '../hooks/vrm/useVRMLipSync';
-import { useVRMEyeSaccades } from '../hooks/vrm/useVRMEyeSaccades';
-import type { VRMEmoteController } from '../hooks/vrm/useVRMEmote';
+import { useDigitalHumanStore } from '@/store/digitalHumanStore';
+import { useVRMLoader } from '@/hooks/vrm/useVRMLoader';
+import { useVRMEmote } from '@/hooks/vrm/useVRMEmote';
+import { useVRMBlink } from '@/hooks/vrm/useVRMBlink';
+import { useVRMLipSync } from '@/hooks/vrm/useVRMLipSync';
+import { useVRMEyeSaccades } from '@/hooks/vrm/useVRMEyeSaccades';
+import type { VRMEmoteController } from '@/hooks/vrm/useVRMEmote';
 
-// ============================================================
-// VRM Avatar 组件 — 借鉴 AIRI 项目的模块化架构
-// ============================================================
 interface VRMAvatarProps {
   url: string;
   onLoad?: (vrm: VRM) => void;
@@ -118,9 +117,7 @@ export default function VRMAvatar({ url, onLoad, onError, onProgress }: VRMAvata
     };
   }, [url]);
 
-  // ============================================================
   // 每帧更新 — 模块化：表情 + 眨眼 + 唇形 + 眼球微动 + 骨骼
-  // ============================================================
   useFrame((state, delta) => {
     const vrm = vrmRef.current;
     if (!vrm) return;
@@ -130,19 +127,15 @@ export default function VRMAvatar({ url, onLoad, onError, onProgress }: VRMAvata
     const anim = animState.current;
 
     const {
-      currentExpression,
-      isSpeaking,
-      currentAnimation,
-      currentBehavior,
-      expressionIntensity,
+      currentExpression, isSpeaking, currentAnimation,
+      currentBehavior, expressionIntensity,
     } = useDigitalHumanStore.getState();
 
     const intensity = Math.max(0, Math.min(1, expressionIntensity ?? 1));
     const isAnim = (name: string) => currentAnimation === name || currentBehavior === name;
 
-    // ---- 模块化表情系统（借鉴 AIRI useVRMEmote） ----
+    // ---- 模块化表情系统 ----
     if (emoteRef.current) {
-      // 检测表情变化，触发平滑过渡
       if (currentExpression !== lastExpressionRef.current) {
         emoteRef.current.setEmotion(currentExpression, intensity);
         lastExpressionRef.current = currentExpression;
@@ -150,27 +143,25 @@ export default function VRMAvatar({ url, onLoad, onError, onProgress }: VRMAvata
       emoteRef.current.update(delta);
     }
 
-    // ---- 自然眨眼（借鉴 AIRI useBlink） ----
+    // ---- 自然眨眼 ----
     blinkRef.current.update(vrm, delta);
-
-    // ---- 唇形同步 — winner+runner 算法（借鉴 AIRI useVRMLipSync） ----
+    // ---- 唇形同步 ----
     lipSyncRef.current.update(vrm, delta, isSpeaking);
-
-    // ---- 空闲眼球微动（借鉴 AIRI useIdleEyeSaccades） ----
+    // ---- 空闲眼球微动 ----
     eyeSaccadesRef.current.update(vrm, {
       x: mouse.current.x * 0.5,
       y: mouse.current.y * 0.3,
       z: -1,
     }, delta);
 
-    // ---- 骨骼动画（保留完整的 16 种动作映射） ----
+    // ---- 骨骼动画 ----
     const headNode = vrm.humanoid.getNormalizedBoneNode('head');
     const spineNode = vrm.humanoid.getNormalizedBoneNode('spine');
     const leftUpperArmNode = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
     const rightUpperArmNode = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
     const hipsNode = vrm.humanoid.getNormalizedBoneNode('hips');
 
-    // ---- 头部目标旋转 ----
+    // 头部目标
     let targetHeadRotY = mouse.current.x * 0.3;
     let targetHeadRotX = -mouse.current.y * 0.2;
     let targetHeadRotZ = 0;
@@ -179,149 +170,84 @@ export default function VRMAvatar({ url, onLoad, onError, onProgress }: VRMAvata
     let targetHipsPosY = 0;
 
     if (isAnim('nod') || currentBehavior === 'listening') {
-      targetHeadRotX = Math.sin(t * 3.5) * 0.2;
-      targetSpineRotX = Math.sin(t * 3.5) * 0.03;
+      targetHeadRotX = Math.sin(t * 3.5) * 0.2; targetSpineRotX = Math.sin(t * 3.5) * 0.03;
     } else if (isAnim('shakeHead')) {
-      targetHeadRotY = Math.sin(t * 5) * 0.4;
-      targetSpineRotZ = Math.sin(t * 5) * 0.02;
+      targetHeadRotY = Math.sin(t * 5) * 0.4; targetSpineRotZ = Math.sin(t * 5) * 0.02;
     } else if (currentBehavior === 'thinking') {
-      targetHeadRotZ = Math.sin(t * 0.8) * 0.12;
-      targetHeadRotY = -0.15 + Math.sin(t * 0.5) * 0.08;
-      targetHeadRotX = 0.05;
+      targetHeadRotZ = Math.sin(t * 0.8) * 0.12; targetHeadRotY = -0.15 + Math.sin(t * 0.5) * 0.08; targetHeadRotX = 0.05;
     } else if (currentBehavior === 'greeting' || isAnim('wave') || isAnim('waveHand')) {
-      targetHeadRotZ = Math.sin(t * 2.5) * 0.1;
-      targetHeadRotY = 0.1 + Math.sin(t * 3) * 0.05;
-      targetHipsPosY = Math.sin(t * 3) * 0.01;
+      targetHeadRotZ = Math.sin(t * 2.5) * 0.1; targetHeadRotY = 0.1 + Math.sin(t * 3) * 0.05; targetHipsPosY = Math.sin(t * 3) * 0.01;
     } else if (isAnim('bow')) {
-      targetHeadRotX = -0.3;
-      targetSpineRotX = -0.25;
+      targetHeadRotX = -0.3; targetSpineRotX = -0.25;
     } else if (isAnim('lookAround')) {
-      targetHeadRotY = Math.sin(t * 1.2) * 0.5;
-      targetHeadRotX = Math.sin(t * 2) * 0.1;
+      targetHeadRotY = Math.sin(t * 1.2) * 0.5; targetHeadRotX = Math.sin(t * 2) * 0.1;
     } else if (isAnim('sleep')) {
-      targetHeadRotX = -0.3 + Math.sin(t * 0.4) * 0.03;
-      targetHeadRotZ = 0.2;
-      targetSpineRotX = -0.1;
+      targetHeadRotX = -0.3 + Math.sin(t * 0.4) * 0.03; targetHeadRotZ = 0.2; targetSpineRotX = -0.1;
     } else if (isAnim('cheer')) {
-      targetHeadRotX = 0.15;
-      targetHeadRotZ = Math.sin(t * 7) * 0.1;
-      targetHipsPosY = Math.abs(Math.sin(t * 5)) * 0.08;
+      targetHeadRotX = 0.15; targetHeadRotZ = Math.sin(t * 7) * 0.1; targetHipsPosY = Math.abs(Math.sin(t * 5)) * 0.08;
     } else if (isAnim('dance')) {
-      targetHeadRotZ = Math.sin(t * 4) * 0.1;
-      targetHipsPosY = Math.abs(Math.sin(t * 4)) * 0.06;
+      targetHeadRotZ = Math.sin(t * 4) * 0.1; targetHipsPosY = Math.abs(Math.sin(t * 4)) * 0.06;
     } else if (isAnim('excited') || currentBehavior === 'excited') {
-      targetHipsPosY = Math.abs(Math.sin(t * 6)) * 0.1;
-      targetHeadRotZ = Math.sin(t * 8) * 0.08;
+      targetHipsPosY = Math.abs(Math.sin(t * 6)) * 0.1; targetHeadRotZ = Math.sin(t * 8) * 0.08;
     } else if (currentBehavior === 'speaking' || isSpeaking) {
       targetHeadRotY = mouse.current.x * 0.15 + Math.sin(t * 1.5) * 0.05;
       targetHeadRotX = -mouse.current.y * 0.08 + Math.sin(t * 2) * 0.03;
     }
 
-    // 平滑插值 — 头部
-    const headLerp = 0.1;
-    anim.headRotX = lerp(anim.headRotX, targetHeadRotX, headLerp);
-    anim.headRotY = lerp(anim.headRotY, targetHeadRotY, headLerp);
-    anim.headRotZ = lerp(anim.headRotZ, targetHeadRotZ, headLerp);
+    // 平滑插值
+    anim.headRotX = lerp(anim.headRotX, targetHeadRotX, 0.1);
+    anim.headRotY = lerp(anim.headRotY, targetHeadRotY, 0.1);
+    anim.headRotZ = lerp(anim.headRotZ, targetHeadRotZ, 0.1);
+    if (headNode) { headNode.rotation.x = anim.headRotX; headNode.rotation.y = anim.headRotY; headNode.rotation.z = anim.headRotZ; }
 
-    if (headNode) {
-      headNode.rotation.x = anim.headRotX;
-      headNode.rotation.y = anim.headRotY;
-      headNode.rotation.z = anim.headRotZ;
-    }
-
-    // 平滑插值 — 脊椎
     anim.spineRotX = lerp(anim.spineRotX, targetSpineRotX, 0.06);
     anim.spineRotZ = lerp(anim.spineRotZ, targetSpineRotZ, 0.06);
-    if (spineNode) {
-      spineNode.rotation.x = anim.spineRotX;
-      spineNode.rotation.z = anim.spineRotZ;
-    }
+    if (spineNode) { spineNode.rotation.x = anim.spineRotX; spineNode.rotation.z = anim.spineRotZ; }
 
-    // 平滑插值 — 臀部位移
     anim.hipsPosY = lerp(anim.hipsPosY, targetHipsPosY, 0.12);
-    if (hipsNode) {
-      hipsNode.position.y = anim.hipsPosY;
-    }
+    if (hipsNode) hipsNode.position.y = anim.hipsPosY;
 
-    // ---- 手臂动画 ----
-    let targetLeftArmRotZ = 0;
-    let targetRightArmRotZ = 0;
-    let targetLeftArmRotX = 0;
-    let targetRightArmRotX = 0;
-
+    // 手臂
+    let tLAZ = 0, tRAZ = 0, tLAX = 0, tRAX = 0;
     if (currentBehavior === 'greeting' || isAnim('wave') || isAnim('waveHand')) {
-      targetRightArmRotZ = -Math.PI * 0.6 + Math.sin(t * 5) * 0.25;
-      targetRightArmRotX = Math.sin(t * 5) * 0.15;
-    } else if (isAnim('raiseHand')) {
-      targetRightArmRotZ = -Math.PI * 0.5;
-    } else if (currentBehavior === 'speaking' || isSpeaking) {
-      targetLeftArmRotZ = Math.sin(t * 2.5) * 0.06;
-      targetRightArmRotZ = -Math.sin(t * 2.5 + 1.2) * 0.06;
-      targetLeftArmRotX = Math.sin(t * 3) * 0.08;
-      targetRightArmRotX = Math.sin(t * 3 + 1) * 0.08;
+      tRAZ = -Math.PI * 0.6 + Math.sin(t * 5) * 0.25; tRAX = Math.sin(t * 5) * 0.15;
+    } else if (isAnim('raiseHand')) { tRAZ = -Math.PI * 0.5; }
+    else if (currentBehavior === 'speaking' || isSpeaking) {
+      tLAZ = Math.sin(t * 2.5) * 0.06; tRAZ = -Math.sin(t * 2.5 + 1.2) * 0.06;
+      tLAX = Math.sin(t * 3) * 0.08; tRAX = Math.sin(t * 3 + 1) * 0.08;
     } else if (isAnim('excited') || currentBehavior === 'excited') {
-      targetLeftArmRotZ = Math.PI * 0.4 + Math.sin(t * 7) * 0.2;
-      targetRightArmRotZ = -Math.PI * 0.4 - Math.sin(t * 7 + 0.5) * 0.2;
-    } else if (isAnim('bow')) {
-      targetLeftArmRotX = -0.15;
-      targetRightArmRotX = -0.15;
-    } else if (isAnim('clap')) {
-      const clapPhase = Math.sin(t * 10);
-      targetLeftArmRotZ = Math.PI * 0.2 + clapPhase * 0.12;
-      targetRightArmRotZ = -Math.PI * 0.2 - clapPhase * 0.12;
-      targetLeftArmRotX = -0.5 + clapPhase * 0.08;
-      targetRightArmRotX = -0.5 + clapPhase * 0.08;
-    } else if (isAnim('thumbsUp')) {
-      targetRightArmRotZ = -Math.PI * 0.45;
-      targetRightArmRotX = -0.3;
-    } else if (isAnim('shrug')) {
-      targetLeftArmRotZ = Math.PI * 0.3;
-      targetRightArmRotZ = -Math.PI * 0.3;
-      targetLeftArmRotX = -0.2;
-      targetRightArmRotX = -0.2;
-    } else if (isAnim('cheer')) {
-      targetLeftArmRotZ = Math.PI * 0.65 + Math.sin(t * 5) * 0.12;
-      targetRightArmRotZ = -Math.PI * 0.65 - Math.sin(t * 5 + 0.4) * 0.12;
-    } else if (isAnim('crossArms')) {
-      targetLeftArmRotZ = Math.PI * 0.2;
-      targetRightArmRotZ = -Math.PI * 0.2;
-      targetLeftArmRotX = -0.4;
-      targetRightArmRotX = -0.4;
-    } else if (isAnim('point')) {
-      targetRightArmRotZ = -Math.PI * 0.35;
-      targetRightArmRotX = -0.55;
-    } else if (isAnim('dance')) {
-      targetLeftArmRotZ = Math.PI * 0.3 + Math.sin(t * 4) * 0.3;
-      targetRightArmRotZ = -Math.PI * 0.3 - Math.sin(t * 4 + Math.PI) * 0.3;
-      targetLeftArmRotX = Math.sin(t * 4) * 0.2;
-      targetRightArmRotX = Math.sin(t * 4 + Math.PI) * 0.2;
+      tLAZ = Math.PI * 0.4 + Math.sin(t * 7) * 0.2; tRAZ = -Math.PI * 0.4 - Math.sin(t * 7 + 0.5) * 0.2;
+    } else if (isAnim('bow')) { tLAX = -0.15; tRAX = -0.15; }
+    else if (isAnim('clap')) {
+      const cp = Math.sin(t * 10);
+      tLAZ = Math.PI * 0.2 + cp * 0.12; tRAZ = -Math.PI * 0.2 - cp * 0.12;
+      tLAX = -0.5 + cp * 0.08; tRAX = -0.5 + cp * 0.08;
+    } else if (isAnim('thumbsUp')) { tRAZ = -Math.PI * 0.45; tRAX = -0.3; }
+    else if (isAnim('shrug')) { tLAZ = Math.PI * 0.3; tRAZ = -Math.PI * 0.3; tLAX = -0.2; tRAX = -0.2; }
+    else if (isAnim('cheer')) {
+      tLAZ = Math.PI * 0.65 + Math.sin(t * 5) * 0.12; tRAZ = -Math.PI * 0.65 - Math.sin(t * 5 + 0.4) * 0.12;
+    } else if (isAnim('crossArms')) { tLAZ = Math.PI * 0.2; tRAZ = -Math.PI * 0.2; tLAX = -0.4; tRAX = -0.4; }
+    else if (isAnim('point')) { tRAZ = -Math.PI * 0.35; tRAX = -0.55; }
+    else if (isAnim('dance')) {
+      tLAZ = Math.PI * 0.3 + Math.sin(t * 4) * 0.3; tRAZ = -Math.PI * 0.3 - Math.sin(t * 4 + Math.PI) * 0.3;
+      tLAX = Math.sin(t * 4) * 0.2; tRAX = Math.sin(t * 4 + Math.PI) * 0.2;
     }
 
-    const armLerp = 0.08;
-    anim.leftArmRotZ = lerp(anim.leftArmRotZ, targetLeftArmRotZ, armLerp);
-    anim.rightArmRotZ = lerp(anim.rightArmRotZ, targetRightArmRotZ, armLerp);
-    anim.leftArmRotX = lerp(anim.leftArmRotX, targetLeftArmRotX, armLerp);
-    anim.rightArmRotX = lerp(anim.rightArmRotX, targetRightArmRotX, armLerp);
+    anim.leftArmRotZ = lerp(anim.leftArmRotZ, tLAZ, 0.08);
+    anim.rightArmRotZ = lerp(anim.rightArmRotZ, tRAZ, 0.08);
+    anim.leftArmRotX = lerp(anim.leftArmRotX, tLAX, 0.08);
+    anim.rightArmRotX = lerp(anim.rightArmRotX, tRAX, 0.08);
+    if (leftUpperArmNode) { leftUpperArmNode.rotation.z = anim.leftArmRotZ; leftUpperArmNode.rotation.x = anim.leftArmRotX; }
+    if (rightUpperArmNode) { rightUpperArmNode.rotation.z = anim.rightArmRotZ; rightUpperArmNode.rotation.x = anim.rightArmRotX; }
 
-    if (leftUpperArmNode) {
-      leftUpperArmNode.rotation.z = anim.leftArmRotZ;
-      leftUpperArmNode.rotation.x = anim.leftArmRotX;
-    }
-    if (rightUpperArmNode) {
-      rightUpperArmNode.rotation.z = anim.rightArmRotZ;
-      rightUpperArmNode.rotation.x = anim.rightArmRotX;
-    }
-
-    // ---- 呼吸动画（微妙的脊椎起伏） ----
+    // 呼吸
     if (spineNode && !isAnim('bow') && !isAnim('sleep')) {
       spineNode.rotation.x += Math.sin(t * 1.5) * 0.008;
     }
 
-    // 更新 VRM（弹簧骨、约束等）
     vrm.update(delta);
   });
 
   if (!loaded || !vrmRef.current) return null;
-
   return <primitive object={vrmRef.current.scene} />;
 }

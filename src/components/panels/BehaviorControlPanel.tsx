@@ -1,5 +1,8 @@
+// BehaviorControlPanel — 行为引擎控制面板
+// 重构自 BehaviorControlPanel.new.tsx，使用共享 widgets
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Activity, Brain, Zap, Target, Clock, TrendingUp, Hand, ThumbsUp, Eye, ArrowUp, HelpCircle, PartyPopper, Moon, Crosshair, Pointer } from 'lucide-react';
+import PanelHeader from '@/components/widgets/PanelHeader';
 
 interface BehaviorState {
   state: string;
@@ -56,13 +59,8 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
     let newParameters: BehaviorParameters = {};
     let newConfidence = 0.7;
 
-    if (Math.random() > 0.7) {
-      newBehavior = 'greeting';
-      newConfidence = 0.8;
-    } else if (Math.random() > 0.9) {
-      newBehavior = 'excited';
-      newConfidence = 0.6;
-    }
+    if (Math.random() > 0.7) { newBehavior = 'greeting'; newConfidence = 0.8; }
+    else if (Math.random() > 0.9) { newBehavior = 'excited'; newConfidence = 0.6; }
 
     const selectedBehavior = behaviors.find(b => b.name === newBehavior);
     if (selectedBehavior) newParameters = selectedBehavior.parameters;
@@ -78,49 +76,35 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
     onBehaviorChange(newBehavior, newParameters);
   }, [behaviors, onBehaviorChange]);
 
-  // Auto Decision Mock
+  // 自动决策
   useEffect(() => {
     if (!isAutoMode) return;
-    const interval = setInterval(() => {
-      makeAutoDecision();
-    }, decisionInterval);
+    const interval = setInterval(() => { makeAutoDecision(); }, decisionInterval);
     return () => clearInterval(interval);
   }, [decisionInterval, isAutoMode, makeAutoDecision]);
 
   const handleBehaviorClick = (behaviorName: string, parameters: BehaviorParameters) => {
     const behavior = behaviors.find(b => b.name === behaviorName);
     if (!behavior) return;
-
-    setBehaviorState({
-      state: behaviorName,
-      confidence: 0.9,
-      lastUpdate: new Date(),
-      activity: behavior.label,
-      goal: `手动切换: ${behavior.label}`
-    });
-
+    setBehaviorState({ state: behaviorName, confidence: 0.9, lastUpdate: new Date(), activity: behavior.label, goal: `手动切换: ${behavior.label}` });
     onBehaviorChange(behaviorName, parameters);
   };
 
   const toggleAutoMode = () => {
     setIsAutoMode(!isAutoMode);
-    setBehaviorState(prev => ({
-      ...prev,
-      goal: !isAutoMode ? '自动模式已开启' : '手动控制'
-    }));
+    setBehaviorState(prev => ({ ...prev, goal: !isAutoMode ? '自动驾驶已启动' : '手动控制' }));
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-4">
-        <h3 className="text-lg font-medium text-slate-800 dark:text-white">行为引擎</h3>
+      <PanelHeader title="行为引擎">
         <div className="flex items-center space-x-2">
-          <div className={`w-1.5 h-1.5 rounded-full ${isAutoMode ? 'bg-green-500 animate-pulse' : 'bg-slate-300 dark:bg-white/20'}`}></div>
+          <div className={`w-1.5 h-1.5 rounded-full ${isAutoMode ? 'bg-green-500 animate-pulse' : 'bg-slate-300 dark:bg-white/20'}`} />
           <span className="text-xs text-slate-500 dark:text-white/60">{isAutoMode ? '自动' : '手动'}</span>
         </div>
-      </div>
+      </PanelHeader>
 
-      {/* State Monitor */}
+      {/* 状态监控 */}
       <div className="bg-slate-50 dark:bg-black/40 rounded-xl p-4 space-y-2 border border-slate-200 dark:border-white/5 font-mono text-xs">
         <div className="flex justify-between">
           <span className="text-slate-400 dark:text-white/40">状态</span>
@@ -136,41 +120,38 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
         </div>
       </div>
 
-      {/* Behavior Grid */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* 行为网格 */}
+      <div className="grid grid-cols-3 gap-2">
         {behaviors.map((behavior) => (
           <button
             key={behavior.name}
             onClick={() => handleBehaviorClick(behavior.name, behavior.parameters)}
             className={`flex flex-col items-center p-3 rounded-xl border transition-all text-center ${
               currentBehavior === behavior.name
-                ? 'border-blue-500/50 bg-blue-100 dark:bg-blue-500/10'
-                : 'border-slate-200 dark:border-white/5 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10'
+                ? 'border-blue-500/50 bg-blue-500/10'
+                : 'border-slate-200 dark:border-white/5 bg-white/50 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10'
             }`}
           >
-            <div className={`p-2 rounded-lg bg-slate-50 dark:bg-black/20 ${behavior.color}`}>
+            <div className={`p-2 rounded-lg bg-slate-100 dark:bg-black/20 ${behavior.color} mb-1.5`}>
               {behavior.icon}
             </div>
-            <div className="mt-1.5">
-              <div className="font-medium text-slate-700 dark:text-gray-200 text-sm">{behavior.label}</div>
-              <div className="text-[10px] text-slate-400 dark:text-white/40">{behavior.description}</div>
-            </div>
+            <div className="font-medium text-slate-700 dark:text-gray-200 text-xs">{behavior.label}</div>
           </button>
         ))}
       </div>
 
-      {/* Auto Switch */}
+      {/* 自动切换 */}
       <div className="pt-4 border-t border-slate-200 dark:border-white/10">
-         <button
-            onClick={toggleAutoMode}
-            className={`w-full px-4 py-3 rounded-xl text-sm font-medium transition-all border ${
-              isAutoMode
-                ? 'bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400 border-green-300 dark:border-green-500/50'
-                : 'bg-white dark:bg-white/5 text-slate-500 dark:text-white/60 border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10'
-            }`}
-          >
-            {isAutoMode ? '关闭自动模式' : '开启自动模式'}
-          </button>
+        <button
+          onClick={toggleAutoMode}
+          className={`w-full px-4 py-3 rounded-xl text-sm font-medium transition-all border ${
+            isAutoMode
+              ? 'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/50'
+              : 'bg-white/50 dark:bg-white/5 text-slate-500 dark:text-white/60 border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10'
+          }`}
+        >
+          {isAutoMode ? '关闭自动驾驶' : '开启自动驾驶'}
+        </button>
       </div>
     </div>
   );

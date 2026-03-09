@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+// KeyboardShortcutsHelp — 快捷键帮助弹窗
+// 从 src/components/KeyboardShortcutsHelp.tsx 迁移到 overlays/
+import { useState } from 'react';
 import { Keyboard, X } from 'lucide-react';
 
 const shortcuts = [

@@ -1,6 +1,8 @@
-import React from 'react';
+// ControlPanel — 主控制面板
+// 重构自 src/components/ControlPanel.tsx，使用共享 widgets
 import { Play, Pause, RotateCcw, Settings, Mic, MicOff, Volume2, VolumeX, Wifi, WifiOff, Loader2 } from 'lucide-react';
-import { useDigitalHumanStore, type ConnectionStatus } from '../store/digitalHumanStore';
+import { useDigitalHumanStore, type ConnectionStatus } from '@/store/digitalHumanStore';
+import PanelHeader from '@/components/widgets/PanelHeader';
 
 interface ControlPanelProps {
   isPlaying: boolean;
@@ -24,21 +26,12 @@ const connectionStatusConfig: Record<ConnectionStatus, { label: string; color: s
 };
 
 export default function ControlPanel({
-  isPlaying,
-  isRecording,
-  isMuted,
-  autoRotate,
-  onPlayPause,
-  onReset,
-  onToggleRecording,
-  onToggleMute,
-  onToggleAutoRotate,
-  onVoiceCommand
+  isPlaying, isRecording, isMuted, autoRotate,
+  onPlayPause, onReset, onToggleRecording, onToggleMute, onToggleAutoRotate, onVoiceCommand
 }: ControlPanelProps) {
-  // 从 store 获取状态
   const { connectionStatus, isSpeaking, currentBehavior } = useDigitalHumanStore();
   const statusConfig = connectionStatusConfig[connectionStatus];
-  
+
   const voiceCommands = [
     { command: '打招呼', label: '👋 打招呼' },
     { command: '跳舞', label: '💃 跳舞' },
@@ -48,116 +41,68 @@ export default function ControlPanel({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10">
-        <h2 className="text-lg font-medium text-slate-800 dark:text-white">控制面板</h2>
+      <PanelHeader title="控制面板">
         <div className="flex items-center space-x-2">
-          <div
-            className={`w-2 h-2 rounded-full ${
-              isRecording ? 'bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-slate-300 dark:bg-white/20'
-            }`}
-          ></div>
+          <div className={`w-2 h-2 rounded-full ${isRecording ? 'bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-slate-300 dark:bg-white/20'}`} />
           <span className="text-xs text-slate-500 dark:text-white/60">{isRecording ? '录音进行中' : '空闲'}</span>
         </div>
-      </div>
+      </PanelHeader>
 
-      {/* Playback Control */}
+      {/* 播放控制 */}
       <div className="space-y-3">
         <h3 className="text-xs font-semibold text-slate-400 dark:text-white/40 uppercase tracking-wider">播放控制</h3>
         <div className="flex gap-2">
-          <button
-            onClick={onPlayPause}
-            className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-xl transition-all ${
-              isPlaying
-                ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/50'
-                : 'bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/50'
-            }`}
-          >
+          <button onClick={onPlayPause} className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-xl transition-all ${isPlaying ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/50' : 'bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/50'}`}>
             {isPlaying ? <Pause size={16} /> : <Play size={16} />}
             <span className="text-sm">{isPlaying ? '暂停' : '播放'}</span>
           </button>
-
-          <button
-            onClick={onReset}
-            className="px-4 py-3 bg-white/50 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-700 dark:text-white rounded-xl transition-all border border-slate-200 dark:border-white/10"
-          >
+          <button onClick={onReset} className="px-4 py-3 bg-white/50 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-700 dark:text-white rounded-xl transition-all border border-slate-200 dark:border-white/10">
             <RotateCcw size={16} />
           </button>
         </div>
-         <button
-            onClick={onToggleAutoRotate}
-            className={`w-full flex items-center justify-center space-x-2 px-4 py-2 rounded-xl transition-all text-sm border ${
-              autoRotate
-                ? 'bg-blue-500/20 text-blue-500 dark:text-blue-400 border-blue-500/50'
-                : 'bg-white/50 dark:bg-white/5 text-slate-500 dark:text-white/60 border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10'
-            }`}
-          >
-            <Settings size={14} />
-            <span>自动旋转摄像机</span>
-          </button>
+        <button onClick={onToggleAutoRotate} className={`w-full flex items-center justify-center space-x-2 px-4 py-2 rounded-xl transition-all text-sm border ${autoRotate ? 'bg-blue-500/20 text-blue-500 dark:text-blue-400 border-blue-500/50' : 'bg-white/50 dark:bg-white/5 text-slate-500 dark:text-white/60 border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10'}`}>
+          <Settings size={14} /><span>自动旋转摄像机</span>
+        </button>
       </div>
 
-      {/* Audio Control */}
+      {/* 语音控制 */}
       <div className="space-y-3">
         <h3 className="text-xs font-semibold text-slate-400 dark:text-white/40 uppercase tracking-wider">语音交互</h3>
         <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={onToggleRecording}
-            className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-xl transition-all ${
-              isRecording
-                ? 'bg-red-500 text-white shadow-lg shadow-red-900/50'
-                : 'bg-white/50 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-700 dark:text-white border border-slate-200 dark:border-white/10'
-            }`}
-          >
+          <button onClick={onToggleRecording} className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-xl transition-all ${isRecording ? 'bg-red-500 text-white shadow-lg shadow-red-900/50' : 'bg-white/50 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-700 dark:text-white border border-slate-200 dark:border-white/10'}`}>
             {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
             <span className="text-sm">{isRecording ? '停止录音' : '开始录音'}</span>
           </button>
-
-          <button
-            onClick={onToggleMute}
-            className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-xl transition-all border ${
-              isMuted
-                ? 'bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/60 border-slate-200 dark:border-white/5'
-                : 'bg-purple-500/20 text-purple-500 dark:text-purple-400 border-purple-500/50'
-            }`}
-          >
+          <button onClick={onToggleMute} className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-xl transition-all border ${isMuted ? 'bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/60 border-slate-200 dark:border-white/5' : 'bg-purple-500/20 text-purple-500 dark:text-purple-400 border-purple-500/50'}`}>
             {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
             <span className="text-sm">{isMuted ? '取消静音' : '静音'}</span>
           </button>
         </div>
       </div>
 
-      {/* Quick Commands */}
+      {/* 快速命令 */}
       <div className="space-y-3">
         <h3 className="text-xs font-semibold text-slate-400 dark:text-white/40 uppercase tracking-wider">快速命令</h3>
         <div className="grid grid-cols-2 gap-2">
           {voiceCommands.map((cmd) => (
-            <button
-              key={cmd.command}
-              onClick={() => onVoiceCommand(cmd.command)}
-              className="px-3 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-500 dark:text-indigo-300 border border-indigo-500/20 rounded-lg text-xs transition-colors text-left truncate"
-            >
+            <button key={cmd.command} onClick={() => onVoiceCommand(cmd.command)} className="px-3 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-500 dark:text-indigo-300 border border-indigo-500/20 rounded-lg text-xs transition-colors text-left truncate">
               {cmd.command}
             </button>
           ))}
         </div>
       </div>
 
-      {/* System Status */}
+      {/* 系统状态 */}
       <div className="bg-slate-50 dark:bg-black/40 rounded-xl p-4 space-y-3 border border-slate-200 dark:border-white/5">
         <h3 className="text-xs font-semibold text-slate-400 dark:text-white/40 uppercase">状态信息</h3>
         <div className="text-xs space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-slate-500 dark:text-white/60">连接状态</span>
-            <span className={`flex items-center gap-1.5 ${statusConfig.color}`}>
-              {statusConfig.icon}
-              {statusConfig.label}
-            </span>
+            <span className={`flex items-center gap-1.5 ${statusConfig.color}`}>{statusConfig.icon}{statusConfig.label}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-slate-500 dark:text-white/60">语音引擎</span>
-            <span className={isSpeaking ? 'text-green-400' : 'text-blue-400'}>
-              {isSpeaking ? '播放中' : '就绪'}
-            </span>
+            <span className={isSpeaking ? 'text-green-400' : 'text-blue-400'}>{isSpeaking ? '播放中' : '就绪'}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-slate-500 dark:text-white/60">当前行为</span>
@@ -165,9 +110,7 @@ export default function ControlPanel({
           </div>
           <div className="flex justify-between items-center">
             <span className="text-slate-500 dark:text-white/60">录音状态</span>
-            <span className={isRecording ? 'text-red-400' : 'text-slate-400 dark:text-white/40'}>
-              {isRecording ? '录音中' : '待机'}
-            </span>
+            <span className={isRecording ? 'text-red-400' : 'text-slate-400 dark:text-white/40'}>{isRecording ? '录音中' : '待机'}</span>
           </div>
         </div>
       </div>
