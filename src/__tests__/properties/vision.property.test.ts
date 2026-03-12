@@ -41,18 +41,11 @@ vi.mock('@mediapipe/pose', () => ({
 
 describe('Vision Service Properties', () => {
     let mockStream: any;
-    let mockVideo: any;
-
     beforeEach(() => {
         mockStream = {
             getTracks: vi.fn(() => [
                 { stop: vi.fn(), kind: 'video' },
             ]),
-        };
-
-        mockVideo = {
-            srcObject: null,
-            play: vi.fn().mockResolvedValue(undefined),
         };
 
         // Mock navigator.mediaDevices
@@ -134,8 +127,6 @@ describe('Vision Service Properties', () => {
                     visionService.updateConfig({ emotionDebounceMs: debounceMs });
 
                     const emittedEmotions: string[] = [];
-                    const onEmotion = (emotion: any) => emittedEmotions.push(emotion);
-
                     // The debounce logic should filter rapid changes
                     // Stable emotions (repeated 3+ times) should be emitted
                     const stableEmotions = emotions.filter((e, i, arr) => {

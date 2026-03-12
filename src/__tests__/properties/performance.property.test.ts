@@ -157,7 +157,7 @@ describe('Performance Properties', () => {
                 fc.asyncProperty(
                     fc.boolean(), // Is page visible
                     fc.integer({ min: 50, max: 500 }), // Pause delay
-                    async (isVisible, pauseDelay) => {
+                    async (isVisible, _pauseDelay) => {
                         let processingPaused = false;
                         let pauseTime: number | null = null;
                         const visibilityChangeTime = Date.now();
@@ -198,11 +198,8 @@ describe('Performance Properties', () => {
         it('VisibilityOptimizer calls pause callbacks when hidden', () => {
             const optimizer = new VisibilityOptimizer({ pauseDelay: 0, resumeDelay: 0 });
 
-            let pauseCalled = false;
-            let resumeCalled = false;
-
-            optimizer.onPause(() => { pauseCalled = true; });
-            optimizer.onResume(() => { resumeCalled = true; });
+            optimizer.onPause(() => { });
+            optimizer.onResume(() => { });
 
             // Initially visible
             expect(optimizer.isVisible()).toBe(true);

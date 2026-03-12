@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { visionService, type VisionStatus } from '../core/vision/visionService';
+import { visionService } from '../core/vision/visionService';
 import type { UserEmotion } from '../core/vision/visionMapper';
 import { Camera, CameraOff, ScanFace, AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';

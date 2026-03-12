@@ -52,7 +52,7 @@ export default function AdvancedDigitalHumanPage() {
   const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 页面可见性优化
-  const { isVisible, onPause, onResume } = usePageVisibility();
+  const { onPause, onResume } = usePageVisibility();
 
   // 页面隐藏时暂停非必要处理
   useEffect(() => {
@@ -114,7 +114,7 @@ export default function AdvancedDigitalHumanPage() {
   }, [error, clearError]);
 
   // --- Event Handlers ---
-  const handleModelLoad = useCallback((model: unknown) => {
+  const handleModelLoad = useCallback((_model: unknown) => {
     toast.success('数字人接口已上线');
   }, []);
 
@@ -154,10 +154,11 @@ export default function AdvancedDigitalHumanPage() {
         speakWith: (textToSpeak) => ttsService.speak(textToSpeak),
       });
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('发送消息失败:', err);
       // 错误已在 dialogueService 中处理，这里只需通知
-      toast.error(err.message || '发送失败，请重试');
+      const message = err instanceof Error ? err.message : '发送失败，请重试';
+      toast.error(message);
     } finally {
       setIsChatLoading(false);
     }

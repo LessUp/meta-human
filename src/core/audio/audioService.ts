@@ -18,7 +18,7 @@ interface SpeechQueueItem {
   reject: (error: Error) => void;
 }
 
-type SpeechRecognitionResultLike = ArrayLike<{ transcript: string }>;
+type SpeechRecognitionResultLike = ArrayLike<{ transcript: string }> & { isFinal?: boolean };
 type SpeechRecognitionResultListLike = ArrayLike<SpeechRecognitionResultLike>;
 
 type SpeechRecognitionEventLike = {
@@ -43,8 +43,6 @@ type SpeechRecognitionLike = {
   stop: () => void;
   abort: () => void;
 };
-
-type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
 
 // 语音合成服务 - 支持队列管理
 export class TTSService {
@@ -212,7 +210,7 @@ export class TTSService {
       rate = 1.0,
       pitch = 1.0,
       volume = 0.8,
-      voiceName,
+      voiceName: _voiceName,
     } = options;
 
     // 使用队列方式
@@ -316,7 +314,7 @@ export class ASRService {
       // 立即停止流，只是为了请求权限
       stream.getTracks().forEach(track => track.stop());
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('麦克风权限请求失败:', error);
       const errorMsg = this.getPermissionErrorMessage(error);
       useDigitalHumanStore.getState().addError(errorMsg);
@@ -324,19 +322,31 @@ export class ASRService {
     }
   }
 
-  private getPermissionErrorMessage(error: any): string {
-    const errorName = error.name || '';
+  private getPermissionErrorMessage(error: unknown): string {
+    const errorName = typeof error === 'object' && error && 'name' in error
+      ? String((error as { name?: unknown }).name ?? '')
+      : '';
+    const errorMessage = typeof error === 'object' && error && 'message' in error
+      ? String((error as { message?: unknown }).message ?? '')
+      : error instanceof Error
+        ? error.message
+        : '';
     const messages: Record<string, string> = {
       'NotAllowedError': '麦克风权限被拒绝，请在浏览器设置中允许访问麦克风',
       'NotFoundError': '未检测到麦克风设备，请确保麦克风已连接',
       'NotReadableError': '麦克风被其他应用占用，请关闭其他使用麦克风的程序',
     };
-    return messages[errorName] || `麦克风访问失败: ${error.message || errorName}`;
+    return messages[errorName] || `麦克风访问失败: ${errorMessage || errorName}`;
   }
 
   private initRecognition(): void {
-    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-    this.recognition = new SpeechRecognition();
+    const win = window as Window & {
+      webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+      SpeechRecognition?: new () => SpeechRecognitionLike;
+    };
+    const SpeechRecognitionCtor = win.webkitSpeechRecognition ?? win.SpeechRecognition;
+    if (!SpeechRecognitionCtor) return;
+    this.recognition = new SpeechRecognitionCtor();
 
     this.recognition.continuous = this.config.continuous!;
     this.recognition.interimResults = this.config.interimResults!;
@@ -359,7 +369,7 @@ export class ASRService {
       const startIndex = event.resultIndex ?? 0;
       for (let i = startIndex; i < event.results.length; i++) {
         const transcript = event.results[i]?.[0]?.transcript ?? '';
-        if ((event.results[i] as any)?.isFinal) {
+        if (event.results[i]?.isFinal) {
           finalTranscript += transcript;
         } else {
           interimTranscript += transcript;
@@ -484,11 +494,11 @@ export class ASRService {
       this.setupTimeout(timeout);
 
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('启动语音识别失败:', error);
 
       // 处理已经在运行的情况
-      if (error.message?.includes('already started')) {
+      if (error instanceof Error && error.message.includes('already started')) {
         this.isRunning = true;
         return true;
       }
@@ -608,7 +618,7 @@ export class ASRService {
         speakWith: (textToSpeak) => this.tts.speak(textToSpeak),
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('对话服务错误:', error);
       store.addError('对话服务暂时不可用，请稍后重试');
       store.setBehavior('idle');

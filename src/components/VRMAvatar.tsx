@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { VRM, VRMUtils } from '@pixiv/three-vrm';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { useVRMLoader } from '../hooks/vrm/useVRMLoader';
-import { useVRMEmote } from '../hooks/vrm/useVRMEmote';
+import { useVRMEmote as createVRMEmote } from '../hooks/vrm/useVRMEmote';
 import { useVRMBlink } from '../hooks/vrm/useVRMBlink';
 import { useVRMLipSync } from '../hooks/vrm/useVRMLipSync';
 import { useVRMEyeSaccades } from '../hooks/vrm/useVRMEyeSaccades';
@@ -54,7 +54,7 @@ export default function VRMAvatar({ url, onLoad, onError, onProgress }: VRMAvata
   }, []);
 
   // 使用单例 VRM 加载器
-  const loader = useMemo(() => useVRMLoader(), []);
+  const loader = useVRMLoader();
 
   // 加载 VRM 模型
   useEffect(() => {
@@ -85,7 +85,7 @@ export default function VRMAvatar({ url, onLoad, onError, onProgress }: VRMAvata
         vrm.scene.position.set(0, -1.8, 0);
 
         // 初始化模块化控制器
-        emoteRef.current = useVRMEmote(vrm);
+        emoteRef.current = createVRMEmote(vrm);
 
         vrmRef.current = vrm;
         setLoaded(true);
@@ -116,7 +116,7 @@ export default function VRMAvatar({ url, onLoad, onError, onProgress }: VRMAvata
         vrmRef.current = null;
       }
     };
-  }, [url]);
+  }, [loader, onError, onLoad, onProgress, url]);
 
   // ============================================================
   // 每帧更新 — 模块化：表情 + 眨眼 + 唇形 + 眼球微动 + 骨骼

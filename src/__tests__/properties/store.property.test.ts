@@ -114,9 +114,6 @@ describe('Store Properties', () => {
      * disconnected → connecting → connected, or any state → error.
      */
     it('Property 29: Store Connection State Transitions - follows valid paths', async () => {
-        vi.resetModules();
-        const { useDigitalHumanStore } = await import('../../store/digitalHumanStore');
-
         const validTransitions: Record<string, string[]> = {
             'disconnected': ['connecting', 'error'],
             'connecting': ['connected', 'error', 'disconnected'],
@@ -160,9 +157,6 @@ describe('Store Properties', () => {
      * adding a new message SHALL remove the oldest message to maintain the limit.
      */
     it('Property 30: Store Chat History Limit - maintains max length', async () => {
-        vi.resetModules();
-        const { useDigitalHumanStore } = await import('../../store/digitalHumanStore');
-
         await fc.assert(
             fc.asyncProperty(
                 fc.integer({ min: 5, max: 20 }),
@@ -204,9 +198,6 @@ describe('Store Properties', () => {
      * Additional: Error queue length limit
      */
     it('Error queue respects max length', async () => {
-        vi.resetModules();
-        const { useDigitalHumanStore } = await import('../../store/digitalHumanStore');
-
         await fc.assert(
             fc.asyncProperty(
                 fc.array(fc.string({ minLength: 1, maxLength: 50 }), { minLength: 1, maxLength: 20 }),
@@ -236,9 +227,6 @@ describe('Store Properties', () => {
      * Additional: Dismiss error removes from queue
      */
     it('Dismiss error removes specific error', async () => {
-        vi.resetModules();
-        const { useDigitalHumanStore } = await import('../../store/digitalHumanStore');
-
         await fc.assert(
             fc.asyncProperty(
                 fc.array(fc.string({ minLength: 1, maxLength: 50 }), { minLength: 2, maxLength: 5 }),

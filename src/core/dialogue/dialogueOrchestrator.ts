@@ -56,7 +56,7 @@ export function waitForAnimationComplete(): Promise<void> {
     }
 
     // 监听动画状态变化
-    const unsubscribe = useDigitalHumanStore.subscribe((state, prevState) => {
+    const unsubscribe = useDigitalHumanStore.subscribe((state, _prevState) => {
       if (state.currentAnimation === 'idle' || !state.isPlaying) {
         unsubscribe();
         resolve();

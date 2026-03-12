@@ -15,7 +15,6 @@ export default function DigitalHumanPage() {
     autoRotate,
     isSpeaking,
     connectionStatus,
-    currentBehavior,
     setRecording,
     toggleMute,
     toggleAutoRotate
@@ -78,12 +77,13 @@ export default function DigitalHumanPage() {
       case '说话':
         ttsService.speak('您好！有什么可以帮助您的吗？');
         break;
-      case '表情':
+      case '表情': {
         const expressions = ['smile', 'surprise', 'laugh'];
         const randomExpr = expressions[Math.floor(Math.random() * expressions.length)];
         digitalHumanEngine.setExpression(randomExpr);
         setTimeout(() => digitalHumanEngine.setExpression('neutral'), 3000);
         break;
+      }
       default:
         ttsService.speak(`收到命令: ${command}`);
     }

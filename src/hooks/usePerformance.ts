@@ -44,7 +44,7 @@ export function useFPSMonitor(config?: Partial<FPSMonitorConfig>) {
             monitor.stop();
             setIsRunning(false);
         };
-    }, []);
+    }, [config]);
 
     // 更新配置
     useEffect(() => {
@@ -89,7 +89,7 @@ export function useStateDebouncer(config?: Partial<DebounceConfig>) {
         return () => {
             debouncer.clear();
         };
-    }, []);
+    }, [config]);
 
     // 更新配置
     useEffect(() => {
@@ -142,7 +142,7 @@ export function usePageVisibility(config?: Partial<VisibilityConfig>) {
             unsubscribePause();
             unsubscribeResume();
         };
-    }, []);
+    }, [config]);
 
     // 更新配置
     useEffect(() => {

@@ -50,7 +50,7 @@ export function useVRMEyeSaccades(): VRMEyeSaccadesController {
 
     // 确保 lookAt 有 target
     if (!vrm.lookAt.target) {
-      vrm.lookAt.target = new Object3D() as any;
+      vrm.lookAt.target = new Object3D();
     }
 
     vrm.lookAt.target?.position.lerp(fixationTarget, 1);

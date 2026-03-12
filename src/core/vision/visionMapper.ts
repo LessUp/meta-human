@@ -101,9 +101,6 @@ function getMouthFeatures(landmarks: Landmark[]): MouthFeatures {
   const rightMouth = landmarks[FACE_LANDMARKS.rightMouth];
   const upperLip = landmarks[FACE_LANDMARKS.upperLip];
   const lowerLip = landmarks[FACE_LANDMARKS.lowerLip];
-  const upperLipTop = landmarks[FACE_LANDMARKS.upperLipTop];
-  const noseTip = landmarks[FACE_LANDMARKS.noseTip];
-  
   if (!leftMouth || !rightMouth || !upperLip || !lowerLip) {
     return { openness: 0, width: 0, cornerPull: 0 };
   }

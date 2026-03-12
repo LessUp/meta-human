@@ -168,13 +168,11 @@ describe('ASR Service Properties', () => {
                     const asr = new ASRService();
 
                     // Multiple starts should not throw
-                    let allSucceeded = true;
                     for (let i = 0; i < startCount; i++) {
                         try {
                             await asr.start();
                         } catch {
                             // Errors are acceptable, but should not crash
-                            allSucceeded = false;
                         }
                     }
 
@@ -242,4 +240,4 @@ describe('ASR Service Properties', () => {
             { numRuns: 50 }
         );
     });
-});;
+});

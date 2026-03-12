@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 
 // 每个测试前重置 store

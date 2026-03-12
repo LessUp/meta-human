@@ -49,7 +49,6 @@ function VisibilityOptimizer({
   onVisibilityChange?: (visible: boolean) => void;
 }) {
   const { gl, invalidate } = useThree();
-  const animationLoopRef = useRef<((time: number) => void) | null>(null);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -111,13 +110,18 @@ const EMOTION_LIGHT_COLORS: Record<string, string> = {
 function CyberAvatar() {
   const group = useRef<THREE.Group>(null);
   const headGroupRef = useRef<THREE.Group>(null);
-  const bodyGroupRef = useRef<THREE.Group>(null);
   const headRef = useRef<THREE.Mesh>(null);
   const leftEyeRef = useRef<THREE.Mesh>(null);
   const rightEyeRef = useRef<THREE.Mesh>(null);
   const mouthRef = useRef<THREE.Mesh>(null);
   const leftBrowRef = useRef<THREE.Mesh>(null);
   const rightBrowRef = useRef<THREE.Mesh>(null);
+  const leftIrisRef = useRef<THREE.Mesh>(null);
+  const rightIrisRef = useRef<THREE.Mesh>(null);
+  const leftPupilRef = useRef<THREE.Mesh>(null);
+  const rightPupilRef = useRef<THREE.Mesh>(null);
+  const leftHighlightRef = useRef<THREE.Mesh>(null);
+  const rightHighlightRef = useRef<THREE.Mesh>(null);
   const ringsRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Mesh>(null);
   const leftArmRef = useRef<THREE.Group>(null);
@@ -146,6 +150,8 @@ function CyberAvatar() {
     leftArmRotX: 0,
     rightArmRotX: 0,
     bodyScale: 1,
+    eyeLookX: 0,
+    eyeLookY: 0,
   });
 
   const {
@@ -159,9 +165,9 @@ function CyberAvatar() {
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
-    const dt = state.clock.getDelta();
     const intensity = Math.max(0, Math.min(1, expressionIntensity ?? 1));
     const lerp = THREE.MathUtils.lerp;
+    const clamp = THREE.MathUtils.clamp;
     const anim = animState.current;
 
     // ---- 目标值初始化 ----
@@ -327,6 +333,36 @@ function CyberAvatar() {
 
     if (leftEyeRef.current) leftEyeRef.current.scale.y = anim.leftEyeScaleY;
     if (rightEyeRef.current) rightEyeRef.current.scale.y = anim.rightEyeScaleY;
+
+    const targetEyeLookX = clamp(mouse.current.x * 0.05 + Math.sin(t * 1.7) * 0.01, -0.06, 0.06);
+    const targetEyeLookY = clamp(mouse.current.y * 0.035 + Math.sin(t * 1.3) * 0.008, -0.045, 0.045);
+    anim.eyeLookX = lerp(anim.eyeLookX, targetEyeLookX, 0.12);
+    anim.eyeLookY = lerp(anim.eyeLookY, targetEyeLookY, 0.12);
+
+    if (leftIrisRef.current) {
+      leftIrisRef.current.position.x = -0.24 + anim.eyeLookX;
+      leftIrisRef.current.position.y = anim.eyeLookY;
+    }
+    if (rightIrisRef.current) {
+      rightIrisRef.current.position.x = 0.24 + anim.eyeLookX;
+      rightIrisRef.current.position.y = anim.eyeLookY;
+    }
+    if (leftPupilRef.current) {
+      leftPupilRef.current.position.x = -0.24 + anim.eyeLookX;
+      leftPupilRef.current.position.y = anim.eyeLookY;
+    }
+    if (rightPupilRef.current) {
+      rightPupilRef.current.position.x = 0.24 + anim.eyeLookX;
+      rightPupilRef.current.position.y = anim.eyeLookY;
+    }
+    if (leftHighlightRef.current) {
+      leftHighlightRef.current.position.x = -0.22 + anim.eyeLookX * 0.8;
+      leftHighlightRef.current.position.y = 0.02 + anim.eyeLookY * 0.8;
+    }
+    if (rightHighlightRef.current) {
+      rightHighlightRef.current.position.x = 0.26 + anim.eyeLookX * 0.8;
+      rightHighlightRef.current.position.y = 0.02 + anim.eyeLookY * 0.8;
+    }
 
     // ---- 眉毛动画 ----
     let targetLeftBrowY = 0;
@@ -531,16 +567,16 @@ function CyberAvatar() {
 
   // 共享材质
   const skinMat = useMemo(() => (
-    <meshPhysicalMaterial color="#e8edf5" metalness={0.3} roughness={0.2} clearcoat={1} clearcoatRoughness={0.05} envMapIntensity={2.5} />
+    <meshPhysicalMaterial color="#e8edf5" metalness={0.25} roughness={0.18} clearcoat={1} clearcoatRoughness={0.05} envMapIntensity={2.8} />
   ), []);
   const armorMat = useMemo(() => (
-    <meshPhysicalMaterial color="#1a2332" metalness={0.9} roughness={0.1} clearcoat={1} clearcoatRoughness={0.03} envMapIntensity={2} />
+    <meshPhysicalMaterial color="#151f2e" metalness={0.95} roughness={0.08} clearcoat={1} clearcoatRoughness={0.025} envMapIntensity={2.3} />
   ), []);
   const frameMat = useMemo(() => (
-    <meshStandardMaterial color="#3a4a5c" metalness={0.85} roughness={0.15} />
+    <meshStandardMaterial color="#3f5266" metalness={0.8} roughness={0.18} />
   ), []);
   const glowCyan = useMemo(() => (
-    <meshStandardMaterial color="#22d3ee" emissive="#22d3ee" emissiveIntensity={3} toneMapped={false} />
+    <meshStandardMaterial color="#22d3ee" emissive="#22d3ee" emissiveIntensity={3.2} toneMapped={false} />
   ), []);
 
   return (
@@ -598,29 +634,29 @@ function CyberAvatar() {
             <meshStandardMaterial color="#e2e8f0" metalness={0.1} roughness={0.3} />
           </mesh>
           {/* 虹膜 */}
-          <mesh position={[-0.24, 0, 0.12]} scale={[1, 1, 0.3]}>
+          <mesh ref={leftIrisRef} position={[-0.24, 0, 0.12]} scale={[1, 1, 0.3]}>
             <sphereGeometry args={[0.065, 24, 24]} />
             <meshStandardMaterial color="#38bdf8" emissive="#38bdf8" emissiveIntensity={2} toneMapped={false} />
           </mesh>
-          <mesh position={[0.24, 0, 0.12]} scale={[1, 1, 0.3]}>
+          <mesh ref={rightIrisRef} position={[0.24, 0, 0.12]} scale={[1, 1, 0.3]}>
             <sphereGeometry args={[0.065, 24, 24]} />
             <meshStandardMaterial color="#38bdf8" emissive="#38bdf8" emissiveIntensity={2} toneMapped={false} />
           </mesh>
           {/* 瞳孔 */}
-          <mesh position={[-0.24, 0, 0.14]} scale={[1, 1, 0.2]}>
+          <mesh ref={leftPupilRef} position={[-0.24, 0, 0.14]} scale={[1, 1, 0.2]}>
             <sphereGeometry args={[0.035, 16, 16]} />
             <meshStandardMaterial color="#0284c7" emissive="#22d3ee" emissiveIntensity={5} toneMapped={false} />
           </mesh>
-          <mesh position={[0.24, 0, 0.14]} scale={[1, 1, 0.2]}>
+          <mesh ref={rightPupilRef} position={[0.24, 0, 0.14]} scale={[1, 1, 0.2]}>
             <sphereGeometry args={[0.035, 16, 16]} />
             <meshStandardMaterial color="#0284c7" emissive="#22d3ee" emissiveIntensity={5} toneMapped={false} />
           </mesh>
           {/* 高光点 */}
-          <mesh position={[-0.22, 0.02, 0.15]}>
+          <mesh ref={leftHighlightRef} position={[-0.22, 0.02, 0.15]}>
             <sphereGeometry args={[0.012, 8, 8]} />
             <meshBasicMaterial color="#ffffff" />
           </mesh>
-          <mesh position={[0.26, 0.02, 0.15]}>
+          <mesh ref={rightHighlightRef} position={[0.26, 0.02, 0.15]}>
             <sphereGeometry args={[0.012, 8, 8]} />
             <meshBasicMaterial color="#ffffff" />
           </mesh>

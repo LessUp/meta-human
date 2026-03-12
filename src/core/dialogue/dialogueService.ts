@@ -129,10 +129,7 @@ function validateResponse(data: unknown): ChatResponsePayload {
 }
 
 // 智能降级响应 - 基于用户输入生成
-function getFallbackResponse(
-  userText: string,
-  context?: { emotion?: string; lastTopic?: string }
-): ChatResponsePayload {
+function getFallbackResponse(userText: string): ChatResponsePayload {
   const lowerText = userText.toLowerCase();
 
   // 问候语
