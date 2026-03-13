@@ -14,7 +14,20 @@ vi.mock('../../store/digitalHumanStore', () => ({
         getState: vi.fn(() => ({
             setSpeaking: vi.fn(),
             setBehavior: vi.fn(),
+            setAnimation: vi.fn(),
+            setEmotion: vi.fn(),
+            setExpression: vi.fn(),
+            setPlaying: vi.fn(),
+            setExpressionIntensity: vi.fn(),
             addError: vi.fn(),
+            avatarType: 'cyber',
+            currentAnimation: 'idle',
+            currentBehavior: 'idle',
+            currentEmotion: 'neutral',
+            currentExpression: 'neutral',
+            expressionIntensity: 0.8,
+            isRecording: false,
+            isSpeaking: false,
         })),
     },
 }));
@@ -133,7 +146,20 @@ describe('TTS Service Properties', () => {
         (useDigitalHumanStore.getState as any).mockReturnValue({
             setSpeaking: mockSetSpeaking,
             setBehavior: vi.fn(),
+            setAnimation: vi.fn(),
+            setEmotion: vi.fn(),
+            setExpression: vi.fn(),
+            setPlaying: vi.fn(),
+            setExpressionIntensity: vi.fn(),
             addError: vi.fn(),
+            avatarType: 'cyber',
+            currentAnimation: 'idle',
+            currentBehavior: 'idle',
+            currentEmotion: 'neutral',
+            currentExpression: 'neutral',
+            expressionIntensity: 0.8,
+            isRecording: false,
+            isSpeaking: false,
         });
 
         await fc.assert(

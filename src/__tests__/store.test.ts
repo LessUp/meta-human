@@ -87,6 +87,13 @@ describe('digitalHumanStore — 行为', () => {
     expect(useDigitalHumanStore.getState().currentBehavior).toBe('greeting');
   });
 
+  it('setBehavior 不强制覆盖当前动画', () => {
+    const store = useDigitalHumanStore.getState();
+    store.setAnimation('wave');
+    store.setBehavior('greeting');
+    expect(useDigitalHumanStore.getState().currentAnimation).toBe('wave');
+  });
+
   it('setAnimation 更新动画', () => {
     useDigitalHumanStore.getState().setAnimation('wave');
     expect(useDigitalHumanStore.getState().currentAnimation).toBe('wave');

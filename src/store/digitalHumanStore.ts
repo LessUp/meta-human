@@ -1,11 +1,31 @@
 import { create } from 'zustand';
+import {
+  EMOTION_TO_EXPRESSION,
+  applyAvatarCommand,
+  clampExpressionIntensity,
+  selectAvatarPresentation,
+} from '../core/avatar/avatarPresentation';
+import type {
+  AvatarCommand,
+  AvatarPresentation,
+  AvatarPresentationState,
+  AvatarType,
+  BehaviorType,
+  EmotionType,
+  ExpressionType,
+} from '../core/avatar/avatarPresentation';
 
-// 表情类型定义
-export type EmotionType = 'neutral' | 'happy' | 'surprised' | 'sad' | 'angry';
-export type ExpressionType = 'neutral' | 'smile' | 'laugh' | 'surprise' | 'sad' | 'angry' | 'blink' | 'eyebrow_raise' | 'eye_blink' | 'mouth_open' | 'head_nod';
-export type BehaviorType = 'idle' | 'greeting' | 'listening' | 'thinking' | 'speaking' | 'excited' | 'wave' | 'greet' | 'think' | 'nod' | 'shakeHead' | 'dance' | 'speak' | 'waveHand' | 'raiseHand' | 'bow' | 'clap' | 'thumbsUp' | 'headTilt' | 'shrug' | 'lookAround' | 'cheer' | 'sleep' | 'crossArms' | 'point';
+export type {
+  AvatarCommand,
+  AvatarPresentation,
+  AvatarPresentationState,
+  AvatarType,
+  BehaviorType,
+  EmotionType,
+  ExpressionType,
+} from '../core/avatar/avatarPresentation';
+
 export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'error';
-export type AvatarType = 'cyber' | 'vrm';
 
 // 错误项接口
 export interface ErrorItem {
@@ -186,6 +206,10 @@ interface DigitalHumanState {
   toggleAutoRotate: () => void;
 }
 
+export function getAvatarPresentation(state: AvatarPresentationState): AvatarPresentation {
+  return selectAvatarPresentation(state);
+}
+
 // 生成唯一会话ID
 const generateSessionId = (): string => {
   return `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -274,10 +298,18 @@ export const useDigitalHumanStore = create<DigitalHumanState>((set, get) => ({
   setVrmModelUrl: (url) => set({ vrmModelUrl: url, avatarType: url ? 'vrm' : 'cyber' }),
   setRecording: (recording) => set({ isRecording: recording }),
   setMuted: (muted) => set({ isMuted: muted }),
-  setSpeaking: (speaking) => set({ isSpeaking: speaking }),
-  setEmotion: (emotion) => set({ currentEmotion: emotion }),
+  setSpeaking: (speaking) => set((state) => ({
+    ...applyAvatarCommand(state, { speaking }),
+  })),
+  setEmotion: (emotion) => set((state) => ({
+    currentEmotion: emotion,
+    currentExpression:
+      state.currentExpression === 'neutral' || state.currentExpression === EMOTION_TO_EXPRESSION[state.currentEmotion]
+        ? EMOTION_TO_EXPRESSION[emotion]
+        : state.currentExpression,
+  })),
   setExpression: (expression) => set({ currentExpression: expression }),
-  setExpressionIntensity: (intensity) => set({ expressionIntensity: Math.max(0, Math.min(1, intensity)) }),
+  setExpressionIntensity: (intensity) => set({ expressionIntensity: clampExpressionIntensity(intensity) }),
   setBehavior: (behavior) => set({ currentBehavior: behavior }),
   setConnected: (connected) => set({ isConnected: connected }),
 

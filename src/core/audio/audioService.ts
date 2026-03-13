@@ -1,4 +1,5 @@
 import { useDigitalHumanStore } from '../../store/digitalHumanStore';
+import { digitalHumanEngine } from '../avatar/DigitalHumanEngine';
 import { sendUserInput } from '../dialogue/dialogueService';
 import { handleDialogueResponse } from '../dialogue/dialogueOrchestrator';
 
@@ -108,7 +109,7 @@ export class TTSService {
     this.synth.cancel();
     this.isProcessingQueue = false;
     useDigitalHumanStore.getState().setSpeaking(false);
-    useDigitalHumanStore.getState().setBehavior('idle');
+    digitalHumanEngine.setBehavior('idle');
   }
 
   // 语音合成 - 支持队列
@@ -177,14 +178,14 @@ export class TTSService {
 
       utterance.onstart = () => {
         useDigitalHumanStore.getState().setSpeaking(true);
-        useDigitalHumanStore.getState().setBehavior('speaking');
+        digitalHumanEngine.setBehavior('speaking');
       };
 
       utterance.onend = () => {
         // 只有队列为空时才重置状态
         if (this.speechQueue.length === 0) {
           useDigitalHumanStore.getState().setSpeaking(false);
-          useDigitalHumanStore.getState().setBehavior('idle');
+          digitalHumanEngine.setBehavior('idle');
         }
         resolve();
       };
@@ -192,7 +193,7 @@ export class TTSService {
       utterance.onerror = (event) => {
         console.error('语音合成错误:', event);
         useDigitalHumanStore.getState().setSpeaking(false);
-        useDigitalHumanStore.getState().setBehavior('idle');
+        digitalHumanEngine.setBehavior('idle');
         useDigitalHumanStore.getState().addError(`语音合成失败: ${event.error}`);
         reject(new Error(event.error));
       };
@@ -355,7 +356,7 @@ export class ASRService {
 
     this.recognition.onstart = () => {
       this.isRunning = true;
-      useDigitalHumanStore.getState().setBehavior('listening');
+      digitalHumanEngine.setBehavior('listening');
       this.callbacks.onStart?.();
     };
 
@@ -450,7 +451,7 @@ export class ASRService {
     this.clearTimeout();
     this.isRunning = false;
     useDigitalHumanStore.getState().setRecording(false);
-    useDigitalHumanStore.getState().setBehavior('idle');
+    digitalHumanEngine.setBehavior('idle');
   }
 
   async start(options?: ASRStartOptions): Promise<boolean> {
@@ -523,7 +524,7 @@ export class ASRService {
     this.mode = 'command';
     this.isRunning = false;
     useDigitalHumanStore.getState().setRecording(false);
-    useDigitalHumanStore.getState().setBehavior('idle');
+    digitalHumanEngine.setBehavior('idle');
   }
 
   abort(): void {
@@ -604,7 +605,7 @@ export class ASRService {
     const store = useDigitalHumanStore.getState();
 
     store.setLoading(true);
-    store.setBehavior('thinking');
+    digitalHumanEngine.setBehavior('thinking');
     store.addChatMessage('user', text);
 
     try {
@@ -621,7 +622,7 @@ export class ASRService {
     } catch (error: unknown) {
       console.error('对话服务错误:', error);
       store.addError('对话服务暂时不可用，请稍后重试');
-      store.setBehavior('idle');
+      digitalHumanEngine.setBehavior('idle');
 
       // 本地降级回复
       const fallbackReply = '抱歉，我暂时无法处理您的请求，请稍后再试。';
@@ -636,75 +637,63 @@ export class ASRService {
 
   // 预设动作：打招呼
   performGreeting(): void {
-    const store = useDigitalHumanStore.getState();
-    store.setEmotion('happy');
-    store.setExpression('smile');
-    store.setBehavior('greeting');
-    store.setAnimation('wave');
+    digitalHumanEngine.setEmotion('happy');
+    digitalHumanEngine.setExpression('smile');
+    digitalHumanEngine.playAnimation('wave');
 
     this.tts.speak('您好！很高兴见到您！有什么可以帮助您的吗？');
 
     setTimeout(() => {
-      store.setEmotion('neutral');
-      store.setExpression('neutral');
-      store.setBehavior('idle');
-      store.setAnimation('idle');
+      digitalHumanEngine.setEmotion('neutral');
+      digitalHumanEngine.setExpression('neutral');
+      digitalHumanEngine.setBehavior('idle');
     }, 4000);
   }
 
   // 预设动作：跳舞
   performDance(): void {
-    const store = useDigitalHumanStore.getState();
-    store.setAnimation('dance');
-    store.setBehavior('excited');
-    store.setEmotion('happy');
+    digitalHumanEngine.setEmotion('happy');
+    digitalHumanEngine.playAnimation('dance');
 
     this.tts.speak('让我为您跳一支舞！');
 
     setTimeout(() => {
-      store.setAnimation('idle');
-      store.setBehavior('idle');
-      store.setEmotion('neutral');
+      digitalHumanEngine.setEmotion('neutral');
+      digitalHumanEngine.setBehavior('idle');
     }, 6000);
   }
 
   // 预设动作：点头
   performNod(): void {
-    const store = useDigitalHumanStore.getState();
-    store.setAnimation('nod');
-    store.setBehavior('listening');
+    digitalHumanEngine.playAnimation('nod');
 
     this.tts.speak('好的，我明白了。');
 
     setTimeout(() => {
-      store.setAnimation('idle');
-      store.setBehavior('idle');
+      digitalHumanEngine.setBehavior('idle');
     }, 2000);
   }
 
   // 预设动作：摇头
   performShakeHead(): void {
-    const store = useDigitalHumanStore.getState();
-    store.setAnimation('shakeHead');
+    digitalHumanEngine.playAnimation('shakeHead');
 
     this.tts.speak('不太确定呢。');
 
     setTimeout(() => {
-      store.setAnimation('idle');
+      digitalHumanEngine.setBehavior('idle');
     }, 2000);
   }
 
   // 预设动作：思考
   performThinking(): void {
-    const store = useDigitalHumanStore.getState();
-    store.setBehavior('thinking');
-    store.setAnimation('think');
+    digitalHumanEngine.setBehavior('thinking');
+    digitalHumanEngine.playAnimation('think');
 
     this.tts.speak('让我想想...');
 
     setTimeout(() => {
-      store.setBehavior('idle');
-      store.setAnimation('idle');
+      digitalHumanEngine.setBehavior('idle');
     }, 3000);
   }
 }

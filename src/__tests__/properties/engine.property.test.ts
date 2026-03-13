@@ -240,7 +240,8 @@ describe('Digital Human Engine Properties', () => {
 
         const validBehaviors = [
             'idle', 'greeting', 'listening', 'thinking', 'speaking', 'excited',
-            'wave', 'greet', 'think', 'nod', 'shakeHead', 'dance', 'speak', 'waveHand', 'raiseHand'
+            'wave', 'greet', 'think', 'nod', 'shakeHead', 'dance', 'speak', 'waveHand', 'raiseHand',
+            'bow', 'clap', 'thumbsUp', 'headTilt', 'shrug', 'lookAround', 'cheer', 'sleep', 'crossArms', 'point'
         ];
 
         await fc.assert(

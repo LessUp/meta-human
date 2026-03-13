@@ -22,8 +22,14 @@ vi.mock('../../store/digitalHumanStore', () => ({
             setEmotion: vi.fn((val: string) => {
                 stateChanges.push({ type: 'emotion', value: val, timestamp: Date.now() });
             }),
+            setAnimation: vi.fn(),
             currentEmotion: 'neutral',
             currentBehavior: 'idle',
+            currentAnimation: 'idle',
+            currentExpression: 'neutral',
+            expressionIntensity: 0.8,
+            avatarType: 'cyber',
+            isRecording: false,
             isSpeaking: false,
             isLoading: false,
         })),
@@ -39,6 +45,9 @@ vi.mock('../../core/avatar/DigitalHumanEngine', () => ({
         }),
         playAnimation: vi.fn((val: string) => {
             stateChanges.push({ type: 'engine-animation', value: val, timestamp: Date.now() });
+        }),
+        setBehavior: vi.fn((val: string) => {
+            stateChanges.push({ type: 'engine-behavior', value: val, timestamp: Date.now() });
         }),
     },
 }));

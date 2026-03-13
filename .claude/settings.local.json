@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh repo:*)",
+      "Bash(gh api:*)",
+      "Bash(python -c \"import json,re; p='/home/shane/.claude/projects/-home-shane-lessup-meta-human/c37b280f-e7b8-4089-954f-88436d3bd09a/tool-results/b0cdlho3r.txt'; data=json.load\\(open\\(p\\)\\); pats=re.compile\\(r'\\(live2d|vrm|avatar|character|portrait|model\\)',re.I\\); matches=[x['path'] for x in data['tree'] if pats.search\\(x['path']\\)]; print\\('\\\\n'.join\\(matches[:300]\\)\\)\")",
+      "Bash(python -c \"import json,re; p='/home/shane/.claude/projects/-home-shane-lessup-meta-human/c37b280f-e7b8-4089-954f-88436d3bd09a/tool-results/b0cdlho3r.txt'; data=json.load\\(open\\(p\\)\\); pats=re.compile\\(r'\\(frontend|web|app|components|widgets|store|state\\)',re.I\\); matches=[x['path'] for x in data['tree'] if pats.search\\(x['path']\\)]; print\\('\\\\n'.join\\(matches[:300]\\)\\)\")"
+    ]
+  }
+}

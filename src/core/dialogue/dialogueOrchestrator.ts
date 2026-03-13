@@ -1,6 +1,7 @@
 import { ChatResponsePayload } from './dialogueService';
 import { useDigitalHumanStore, type EmotionType, type BehaviorType } from '../../store/digitalHumanStore';
 import { digitalHumanEngine } from '../avatar/DigitalHumanEngine';
+import { VALID_BEHAVIORS, VALID_EMOTIONS } from '../avatar/avatarPresentation';
 
 export interface DialogueHandleOptions {
   isMuted?: boolean;
@@ -9,15 +10,6 @@ export interface DialogueHandleOptions {
   waitForSpeech?: boolean;
   transitionDuration?: number;
 }
-
-// 有效的情感值
-const VALID_EMOTIONS: EmotionType[] = ['neutral', 'happy', 'surprised', 'sad', 'angry'];
-
-// 有效的动作值
-const VALID_ACTIONS: BehaviorType[] = [
-  'idle', 'greeting', 'listening', 'thinking', 'speaking', 'excited',
-  'wave', 'greet', 'think', 'nod', 'shakeHead', 'dance', 'speak', 'waveHand', 'raiseHand'
-];
 
 // 验证情感值
 function validateEmotion(emotion: string): EmotionType {
@@ -30,7 +22,7 @@ function validateEmotion(emotion: string): EmotionType {
 
 // 验证动作值
 function validateAction(action: string): BehaviorType {
-  if (VALID_ACTIONS.includes(action as BehaviorType)) {
+  if (VALID_BEHAVIORS.includes(action as BehaviorType)) {
     return action as BehaviorType;
   }
   console.warn(`无效的动作值: ${action}, 使用默认 idle`);
@@ -125,7 +117,7 @@ export async function handleDialogueResponse(
   // 4. 语音合成 (第三步，如果未静音)
   if (res.replyText && !isMuted && speakWith) {
     // 设置说话状态
-    store.setBehavior('speaking');
+    digitalHumanEngine.setBehavior('speaking');
 
     try {
       await speakWith(res.replyText);
@@ -144,8 +136,8 @@ export async function handleDialogueResponse(
     if (validAction !== 'idle') {
       // 等待动画完成后重置
       setTimeout(() => {
-        store.setBehavior('idle');
-        store.setEmotion('neutral');
+        digitalHumanEngine.setBehavior('idle');
+        digitalHumanEngine.setEmotion('neutral');
       }, 3000);
     }
   }
