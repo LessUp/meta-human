@@ -1,220 +1,192 @@
-# Digital Human Platform
+# MetaHuman
 
-基于Web技术的3D数字人交互平台
+基于 React + Three.js 的数字人交互 Demo/SDK，聚焦 3D 展示、语音交互、视觉镜像与 LLM 对话联动。
 
-## 🚀 项目介绍
+## 项目定位
 
-这是一个完整的数字人项目，实现了3D建模与动画系统、语音交互系统、行为控制系统和渲染引擎等核心功能。
+本仓库的目标是提供一个可运行、可二次开发的数字人交互样例，而不是完整的平台化产品。
 
-## ✨ 核心功能
+当前重点：
 
-### 1. 3D建模与动画系统
-- ✅ 基于Three.js的高精度3D渲染
-- ✅ 支持FBX/GLTF模型格式
-- ✅ 实时光影渲染和材质系统
-- ✅ 骨骼绑定和面部表情控制
+- 3D 数字人展示与动作/表情驱动
+- 文本与语音输入输出
+- 摄像头视觉镜像与 MediaPipe 推理
+- 前后端联调的对话链路
+- 无云端配置时的本地 Mock 回退
 
-### 2. 语音交互系统
-- ✅ TTS语音合成技术（Web Speech API）
-- ✅ ASR语音识别功能
-- ✅ 多语言支持（中文优先）
-- ✅ 自定义语音参数（音量、音调、语速）
+当前**不包含**：
 
-### 3. 行为控制系统
-- ✅ 情感状态机
-- ✅ AI驱动的智能决策
-- ✅ 可视化行为编辑器
-- ✅ 复杂动作序列支持
+- 用户系统与权限管理
+- 模型管理后台
+- 可视化行为编排平台
+- 多租户与平台化运维能力
 
-### 4. 渲染引擎
-- ✅ WebGL实时渲染
-- ✅ 响应式设计
-- ✅ 多平台适配
-- ✅ 性能优化
+## 核心能力
 
-## 🛠️ 技术栈
+### 1. 数字人渲染
+- 基于 Three.js + React Three Fiber 渲染 3D 数字人
+- 支持 GLB/GLTF 模型加载
+- 模型缺失或加载失败时可回退到内置 procedural avatar
+- 支持表情、情绪与动作联动驱动
 
-- **前端框架**: React 18 + TypeScript
-- **3D渲染**: Three.js + React Three Fiber
-- **状态管理**: Zustand
-- **UI组件**: Tailwind CSS + Lucide React
-- **构建工具**: Vite
-- **部署**: Vercel
+### 2. 语音交互
+- 基于 Web Speech API 的 TTS / ASR 能力
+- 支持录音、播报、静音等交互状态同步
+- 可将语音识别结果接入对话链路
 
-## 📦 快速开始
+### 3. 对话编排
+- 前端通过 `/v1/chat` 与后端通信
+- 后端返回结构化结果：`replyText`、`emotion`、`action`
+- 前端将结果同步到 UI、数字人引擎与语音播报
+- 未配置 LLM Key 或调用失败时自动回退 Mock
 
-### 安装依赖
+### 4. 视觉镜像
+- 支持摄像头预览与 MediaPipe 推理
+- 输出简化的情绪与头部动作映射结果
+- 可将视觉状态驱动到数字人表现层
+
+## 技术栈
+
+- 前端：React 18 + TypeScript + Vite
+- 3D：Three.js + React Three Fiber + drei
+- 状态管理：Zustand
+- UI：Tailwind CSS + Lucide React
+- 视觉：MediaPipe Face Mesh / Pose
+- 后端：FastAPI
+
+## 快速开始
+
+## 1. 前端启动
+
+安装依赖：
+
 ```bash
-npm install
+npm ci
 ```
 
-### 开发模式
+开发模式：
+
 ```bash
 npm run dev
 ```
 
-### 构建项目
+构建：
+
 ```bash
-# 标准构建
 npm run build
-
-# 移动端构建
-npm run build:mobile
-
-# 桌面端构建
-npm run build:desktop
-
-# AR模式构建
-npm run build:ar
 ```
 
-### 部署
+预览构建产物：
+
 ```bash
-# 部署到Vercel
-npm run deploy
+npm run preview
 ```
 
-## 🎯 使用说明
+## 2. 后端启动
 
-### 基础控制
-- **播放/暂停**: 控制数字人动画播放
-- **重置**: 重置数字人到初始状态
-- **自动旋转**: 开启/关闭自动旋转展示
+创建虚拟环境并安装依赖：
 
-### 语音交互
-- **录音**: 点击录音按钮开始语音识别
-- **语音合成**: 支持自定义文本转语音
-- **快速命令**: 预设常用语音命令
-
-### 表情控制
-- **基础表情**: 微笑、惊讶、悲伤、愤怒等
-- **强度调节**: 0-100%表情强度控制
-- **自定义颜色**: 支持表情颜色自定义
-
-### 行为控制
-- **行为模式**: 待机、打招呼、倾听、思考、说话、兴奋
-- **自动决策**: AI驱动的自动行为决策
-- **高级控制**: 专注倾听、思考模式、演讲模式等
-
-## 🔧 开发文档
-
-### 项目结构
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r server/requirements.txt
 ```
+
+启动服务：
+
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+
+启动后默认接口：
+
+- `GET http://localhost:8000/health`
+- `POST http://localhost:8000/v1/chat`
+
+## 3. 环境变量
+
+前端：
+
+- `VITE_API_BASE_URL`：后端地址，默认 `http://localhost:8000`
+
+后端：
+
+- `OPENAI_API_KEY`：可选；不配置时使用本地 Mock 回复
+- `OPENAI_MODEL`：可选；默认模型名
+- `OPENAI_BASE_URL`：可选；支持自定义 OpenAI 兼容网关
+- `CORS_ALLOW_ORIGINS`：可选；逗号分隔的允许来源列表
+
+## 页面与能力概览
+
+- `/`、`/advanced`：高级数字人页面，功能最完整
+- `/digital-human`：简化版数字人页面
+
+主要组件：
+
+- `src/components/DigitalHumanViewer.tsx`：3D 数字人渲染
+- `src/components/VoiceInteractionPanel.tsx`：语音交互面板
+- `src/components/VisionMirrorPanel.tsx`：视觉镜像面板
+- `src/components/ExpressionControlPanel.tsx`：表情控制
+- `src/components/BehaviorControlPanel.tsx`：行为控制
+- `src/components/ControlPanel.tsx`：快捷控制区
+
+核心模块：
+
+- `src/core/avatar/DigitalHumanEngine.ts`：数字人表现驱动
+- `src/core/audio/audioService.ts`：TTS / ASR 服务
+- `src/core/dialogue/dialogueService.ts`：对话接口调用
+- `src/core/dialogue/dialogueOrchestrator.ts`：对话结果编排
+- `src/core/vision/visionService.ts`：摄像头与推理服务
+- `src/core/vision/visionMapper.ts`：视觉结果映射
+
+## 目录结构
+
+```text
 src/
-├── components/          # React组件
-│   ├── DigitalHumanViewer.tsx    # 3D数字人查看器
-│   ├── ControlPanel.tsx          # 基础控制面板
-│   ├── VoiceInteractionPanel.tsx # 语音交互面板
-│   ├── ExpressionControlPanel.tsx # 表情控制面板
-│   └── BehaviorControlPanel.tsx  # 行为控制面板
-├── pages/               # 页面组件
-│   ├── DigitalHumanPage.tsx      # 基础数字人页面
-│   └── AdvancedDigitalHumanPage.tsx # 高级数字人页面
-├── store/               # 状态管理
-│   └── digitalHumanStore.ts      # 数字人状态管理
-└── utils/               # 工具函数
+├── components/          # UI 组件
+├── core/                # 数字人、语音、对话、视觉核心能力
+├── pages/               # 页面入口
+├── store/               # Zustand 状态管理
+└── utils/               # 通用工具
+
+server/
+└── app/
+    ├── api/             # HTTP 路由
+    ├── services/        # 后端服务
+    └── main.py          # FastAPI 入口
 ```
 
-### 核心API
+## 文档导航
 
-#### 数字人查看器组件
-```tsx
-<DigitalHumanViewer
-  modelUrl="/models/digital-human.glb"
-  autoRotate={true}
-  showControls={true}
-  onModelLoad={(model) => console.log('模型加载完成')}
-/>
-```
+- `docs/project-overview.md`：一页式项目总览，适合汇报、路演、对外介绍
+- `docs/architecture.md`：架构说明，聚焦模块边界、职责与数据流
+- `docs/development.md`：本地开发、联调顺序与排障指南
+- `docs/api.md`：后端 API 契约与回退策略
+- `.trae/documents/digital-human-prd.md`：产品设计文档
+- `.trae/documents/digital-human-technical-architecture.md`：技术设计文档
 
-#### 语音服务
-```typescript
-// 语音合成
-const tts = new TTSService();
-tts.speak('你好，我是数字人助手！', 'zh-CN');
+推荐阅读顺序：
+1. `README.md`
+2. `docs/project-overview.md`
+3. `docs/architecture.md`
+4. `docs/development.md`
+5. `docs/api.md`
 
-// 语音识别
-const asr = new ASRService();
-asr.start(); // 开始录音
-```
+## 浏览器说明
 
-#### 状态管理
-```typescript
-const {
-  isPlaying,
-  currentExpression,
-  setExpression,
-  play,
-  pause
-} = useDigitalHumanStore();
-```
+- 语音能力依赖 Web Speech API，推荐 Chromium 系浏览器
+- 摄像头 / 麦克风权限通常要求 `https` 或 `localhost`
+- 不同浏览器和系统的语音列表、识别效果可能存在差异
 
-## 🌐 多平台支持
+## 许可证
 
-### Web平台
-- ✅ 现代浏览器支持
-- ✅ 响应式设计
-- ✅ PWA支持
+本项目采用 [MIT License](LICENSE)。
 
-### 移动端
-- ✅ 触摸交互优化
-- ✅ 移动端UI适配
-- ✅ 性能优化
+## 贡献
 
-### 桌面端
-- ✅ 桌面级交互体验
-- ✅ 键盘快捷键支持
-- ✅ 多窗口支持
+1. Fork 本仓库
+2. 创建分支：`git checkout -b feature/your-feature`
+3. 提交修改
+4. 推送分支并发起 Pull Request
 
-### AR/VR
-- ✅ WebXR支持
-- ✅ 空间交互
-- ✅ 沉浸式体验
-
-## 📊 性能指标
-
-- **首次加载时间**: < 3秒
-- **3D渲染帧率**: 60 FPS
-- **语音响应延迟**: < 500ms
-- **内存占用**: < 200MB
-- **CPU使用率**: < 30%
-
-## 🔒 安全特性
-
-- ✅ HTTPS强制
-- ✅ CSP安全策略
-- ✅ XSS防护
-- ✅ 内容安全策略
-
-## 🤝 贡献指南
-
-1. Fork项目
-2. 创建特性分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add some amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 创建Pull Request
-
-## 📄 许可证
-
-本项目采用MIT许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
-
-## 🆘 支持
-
-如遇到问题，请通过以下方式获取支持：
-- 📧 邮箱: support@digital-human.com
-- 💬 社区: [GitHub Discussions](https://github.com/digital-human/platform/discussions)
-- 🐛 问题报告: [GitHub Issues](https://github.com/digital-human/platform/issues)
-
-## 🌟 更新日志
-
-### v1.0.0 (2024-01)
-- 🎉 初始版本发布
-- ✅ 基础3D渲染功能
-- ✅ 语音交互系统
-- ✅ 表情控制系统
-- ✅ 行为控制系统
-- ✅ 多平台支持
-
----
-
-**⭐ 如果这个项目对你有帮助，请给我们一个星标！**
+如果这个项目对你有帮助，欢迎点个 Star。
