@@ -1,117 +1,93 @@
-# 2025-11-24 行为与语音管线集成
+# MetaHuman 行为、语音与对话管线集成
 
-## 前端行为状态与引擎
+**日期**: 2025-11-24
+**类型**: 功能整合、语音管线增强、对话能力升级
 
-- 在 `digitalHumanStore` 中新增行为状态字段：
-  - `currentBehavior: string`
-  - `setBehavior(behavior: string)`
-  - 在 `reset()` 时将 `currentBehavior` 重置为 `"idle"`。
-- 更新 `DigitalHumanEngine`：
-  - 新增 `setBehavior(behavior: string, params?: any)` 方法，用于根据行为语义驱动动画与全局状态：
-    - `greeting → waveHand`
-    - `listening → nod`
-    - `thinking → shakeHead`
-    - `speaking → nod`
-    - `excited → excited`
-    - 其他行为回退到 `idle`。
-  - 保留 `playAnimation(name: string)` 作为底层动画控制接口。
-- 更新 `AdvancedDigitalHumanPage`：
-  - 现在从 store 中正确读取 `currentBehavior`。
-  - 将 `BehaviorControlPanel` 的 `onBehaviorChange` 直接接到 `digitalHumanEngine.setBehavior`，行为面板操作会真实更新全局行为状态和动画。
+---
 
-## 语音服务统一（Web Speech API 管线）
+## 概述
 
-- 扩展 `core/audio/audioService.ts`：
-  - `TTSService`：
-    - 新增 `getVoices()`，用于前端 UI 获取可用语音列表。
-    - 新增 `speakWithOptions(text, { lang, rate, pitch, volume, voiceName })`，支持自定义语速、音高、音量和具体 voice name。
-    - 原 `speak(text, lang)` 现在内部委托给 `speakWithOptions`。
-  - `ASRService`：
-    - 新增回调和模式控制：`onResultCallback` 与 `mode: 'command' | 'dictation'`。
-    - `start(options)` 支持传入 `onResult` 与 `mode`，在识别结果时：
-      - 回调 UI 层 `onResult`。
-      - 当处于 `command` 模式时仍会走内建的 `processVoiceCommand` 语音指令逻辑。
-    - `stop()` 时会清理回调并恢复模式为 `command`。
-- 重构 `VoiceInteractionPanel` 组件：
-  - 不再直接 new `SpeechRecognition`/`SpeechSynthesis`，改为统一调用：
-    - 语音识别：使用单例 `asrService.start({ mode: 'dictation', onResult })` / `asrService.stop()`。
-    - 语音合成：使用单例 `ttsService.speakWithOptions(...)`。
-  - 仍然对外暴露：
-    - `onTranscript(text)`：将识别结果上报给上层（例如对话系统）。
-    - `onSpeak(text)`：在触发 TTS 时通知上层（可用于记录对话日志）。
-  - 语音设置（音量/音调/语速/voice 选择）直接作用于 `ttsService` 的参数。
+本次更新的重点，是把行为控制、语音输入输出、后端对话服务和页面交互真正串成一条统一链路。
 
-## 影响与兼容性
+主要目标：
+- 统一行为状态与数字人引擎
+- 统一语音服务调用方式
+- 增强后端对话能力与会话上下文
+- 打通“语音 → 文本 → 对话 → 表情/动作”的完整流程
 
-- 现有基于 `ttsService`/`asrService` 的调用保持兼容；
-- `VoiceInteractionPanel` 现在作为统一语音 UI 层，可以在页面中按需挂载，不会再与全局语音状态产生冲突；
-- 行为状态 `currentBehavior` 与 `BehaviorControlPanel`、`DigitalHumanEngine` 已经贯通，为后续接入 LLM 决策（根据对话内容自动切换行为）打下基础。
-- 在高级页面中新增 `voice` 控制 Tab，将 `VoiceInteractionPanel` 的语音识别结果通过 `onTranscript` 直接接入对话链路（调用同一个 `handleChatSend`），实现“语音→文本→LLM→表情/行为”的统一管线。
+---
 
-## 后端对话大脑增强（OpenAI + 会话记忆）
+## 变更记录
 
-- `server/app/services/dialogue.py` 中的 `DialogueService` 新增会话级内存：
-  - 在实例上维护 `_session_messages: dict[str, list[dict[str, str]]]`。
-  - 通过环境变量 `DIALOGUE_MAX_SESSION_MESSAGES` 控制每个会话保留的历史消息条数（默认 10），超出时仅保留最近若干条。
-- `generate_reply` 调用 LLM 时现在会：
-  - 在 system prompt 之后拼接当前 `session_id` 的历史消息，再追加本轮用户输入。
-  - 若传入 `meta`，继续以额外的 system 消息形式附加在最后。
-- 在成功解析 LLM 返回并通过校验后：
-  - 将本轮 `{role: 'user', content: user_text}` 与 `{role: 'assistant', content: replyText}` 追加写入对应 `session_id` 的会话历史。
-- 行为保持：
-  - 当环境变量 `OPENAI_API_KEY` 缺失时仍然走本地 Mock 回退逻辑，不写入会话历史；
-  - 当调用 LLM 发生异常时仍然返回降级提示文本，并且不会污染原有会话历史。
+### 1) 行为状态与数字人引擎打通
 
-## Prompt 精调：活泼人格与表情/动作策略
+- `digitalHumanStore` 新增并完善行为状态管理。
+- `DigitalHumanEngine` 新增 `setBehavior()`，可根据行为语义驱动动画和全局状态。
+- `AdvancedDigitalHumanPage` 正式从 store 读取行为状态。
+- `BehaviorControlPanel` 的行为操作接入 `digitalHumanEngine.setBehavior`，行为面板不再只是展示，而是能真实驱动数字人表现。
 
-- 更新 `DialogueService` 中的 `system_prompt`：
-  - 设定数字人为**活泼、友好**的对话风格，使用简体中文的自然口语，语气偏轻松、积极。
-  - 明确要求：在合适情况下尽量多用非 `neutral` 的 `emotion` 和非 `idle` 的 `action`，
-    但在严肃、负面话题下要适当收敛，不要过度夸张。
-  - 对 `emotion` 给出具体使用建议：
-    - 正向/开心场景多用 `happy`；
-    - 明显意外或惊喜时用 `surprised`；
-    - 安慰、共情或讨论负面情绪时用 `sad`；
-    - 不合理请求或需要严肃提醒时可用 `angry`；
-    - 普通说明性回答无特别情绪时用 `neutral`。
-  - 对 `action` 给出具体使用建议：
-    - 问候/欢迎/告别时用 `greet` 或 `wave`；
-    - 认真倾听或思考时用 `think` 或 `nod`；
-    - 否定、不赞同或不确定时用 `shakeHead`；
-    - 需要明显展现情绪或庆祝氛围时用 `dance`；
-    - 一般说话但希望有一定口型/动态时用 `speak`；
-    - 只有在没有合适动作或需要静止时才用 `idle`。
-  - 强调：**无论何种情况严禁输出 JSON 以外的任何文字、注释或解释**，确保前端解析稳定。
+### 2) 语音服务统一
 
-## 多 LLM Provider 抽象（预留扩展点）
+- `core/audio/audioService.ts` 中统一封装 TTS 与 ASR。
+- `TTSService` 增加语音列表获取与更灵活的参数控制能力。
+- `ASRService` 增加模式区分和回调机制，支持命令模式与听写模式。
+- `VoiceInteractionPanel` 不再直接操作底层 Web Speech API，而是统一走 `ttsService` / `asrService`。
 
-- 在 `DialogueService` 中引入轻量级 Provider 抽象：
-  - 新增环境变量：
-    - `LLM_PROVIDER`：当前使用的 LLM 提供方标识，默认 `openai`；
-    - `LLM_BASE_URL`：可选，覆盖默认的 OpenAI Chat Completions URL，方便对接 OpenAI 兼容网关。
-  - 新增私有方法 `_call_llm(messages)`：
-    - 统一封装 HTTP 请求逻辑，当前实现为调用 OpenAI Chat Completions 接口；
-    - 记录调试日志：`provider`、`model`、`messages` 数量等；
-    - 当 `LLM_PROVIDER` 不是 `openai` 时，会输出告警日志并暂时回退到 OpenAI，实现“先有接口，再慢慢接其他 Provider”的策略。
+这次调整的核心收益是：
+- 页面层不再重复封装语音能力
+- 面板和全局状态更一致
+- 后续更容易扩展语音参数和交互方式
 
-## 前端交互与调试体验微调
+### 3) 语音与对话链路贯通
 
-- 高级页面 Chat Dock：
-  - 输入框回车发送逻辑增加防抖：在 `isChatLoading` 或 `isRecording` 时禁止再次触发 `handleChatSend`，避免重复请求。
-  - 输入框占位文案根据状态切换：
-    - 录音中：显示 `Listening... press mic again to stop`；
-    - 加载中：显示 `Thinking...`；
-    - 其他情况：保持原有 `Type a message to interact...`。
-  - 发送按钮：
-    - 在 `isChatLoading` 为 `true` 时禁用按钮，防止重复发送；
-    - 同时保留加载态的圆形 spinner。
-  - 录音按钮：
-    - 在 `isChatLoading` 时禁用，避免在模型回复过程中开启新的录音；
-    - 增加 `disabled` 的视觉反馈（透明度和光标样式）。
-- 调试日志：
-  - 在前端 `AdvancedDigitalHumanPage` 中：
-    - 对每次 LLM 返回的 `emotion`/`action` 输出 `console.debug`，便于在 DevTools 中观察映射效果；
-    - 在切换录音状态时输出 `console.debug`，方便排查麦克风交互问题。
-  - 在后端 `DialogueService` 中：
-    - 每次调用 LLM 时输出 provider、model 与消息数量；
-    - 在会话历史被截断时输出包含 `session_id` 和最终长度的调试日志，便于观察内存行为。
+- 高级页面新增语音控制入口。
+- `VoiceInteractionPanel` 的识别结果可直接进入统一对话链路。
+- 形成“语音输入 → 文本识别 → 后端对话 → 数字人响应”的完整闭环。
+
+这让语音交互不再是孤立能力，而真正接入了核心产品体验。
+
+### 4) 后端对话能力增强
+
+- `DialogueService` 增加会话级上下文管理。
+- 支持按 `sessionId` 维护有限历史消息。
+- `generate_reply()` 调用 LLM 时会带上历史上下文和可选 `meta` 信息。
+- 成功返回时追加用户与助手消息到会话历史。
+- 未配置 `OPENAI_API_KEY` 或调用失败时，继续走 Mock 回退，不污染历史状态。
+
+### 5) Prompt 与结构化输出策略增强
+
+- 更新 system prompt，强化数字人的人格与中文口语风格。
+- 增强对 `emotion` 与 `action` 的使用引导，使回复更适合驱动数字人表现。
+- 明确要求模型只输出 JSON，避免前端解析不稳定。
+
+这一步的意义在于：
+- 对话结果不只是“能回答”，而是“更像一个会表现的数字人”。
+
+### 6) LLM Provider 预留扩展位
+
+- 引入轻量级 provider 抽象。
+- 增加 `LLM_PROVIDER` 等环境变量作为扩展预留。
+- 当前实现仍以 OpenAI 兼容接口为主，但为未来接入其他 provider 留出接口层空间。
+
+### 7) 前端交互体验微调
+
+- 聊天输入在加载中或录音中时避免重复触发发送。
+- 输入框占位文案可根据状态变化。
+- 发送按钮与录音按钮在特定状态下禁用，减少误操作。
+- 增加部分调试日志，便于联调语音、行为与对话映射关系。
+
+---
+
+## 影响
+
+- 项目首次形成较完整的“行为 + 语音 + 对话”一体化链路。
+- 语音能力从独立面板升级为核心交互入口之一。
+- 后端对话结果更适合直接驱动数字人表情和动作。
+- 为后续接入更复杂的行为决策、更多 LLM Provider 和更完整会话系统打下基础。
+
+---
+
+## 总结
+
+这次更新的关键价值，不是单点增强某个模块，而是把多个原本分散的能力真正串成了一条可用的交互管线。
+从这里开始，项目更像一个完整的数字人 Demo，而不是一组分散功能的集合。

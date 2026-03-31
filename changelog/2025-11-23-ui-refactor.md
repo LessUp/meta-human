@@ -1,31 +1,57 @@
-# 2025-11-23 UI Refactoring & Character Design Update
+# MetaHuman UI 重构与数字人形象升级
 
-## Context
-The original frontend design was identified as "terrible" with an overly simplistic "box robot" character representation. The goal is to completely refactor the UI and character design to achieve a professional, high-end "Digital Human" aesthetic.
+**日期**: 2025-11-23
+**类型**: UI 重构、视觉升级
 
-## Changes
+---
 
-### Character Design (DigitalHumanViewer)
-- Replaced the primitive "Box + Sphere" robot with a sophisticated **Cybernetic Avatar**.
-- **Visuals**:
-  - Head: Smooth geometry with a physical metallic material.
-  - Eyes: Glowing emissive lenses.
-  - Environment: Added a "Holographic Core" with rotating rings and floating particles.
-  - Lighting: Dramatic 3-point lighting with rim lights and environmental reflections.
-- **Animation**: Added smooth floating idle animations and dynamic eye blinking.
+## 概述
 
-### UI Architecture (AdvancedDigitalHumanPage)
-- **Layout**: Switched from a standard grid dashboard to a **Full-Screen Immersive Experience**.
-- **Style**:
-  - Adopted a "Glassmorphism" aesthetic (blur filters, semi-transparent dark backgrounds).
-  - Floating UI panels instead of static blocks.
-  - Modernized typography and iconography using `lucide-react`.
-- **Components**:
-  - **Main Stage**: Full-screen 3D canvas.
-  - **Control Dock**: Floating bottom bar for primary interactions (Mic, Chat).
-  - **Side Panel**: Collapsible glass panel for advanced settings (Parameters, Expressions).
-  - **Status HUD**: Top-left minimalist status indicators.
+本次更新聚焦前端视觉与交互形态重构，目标是将项目从早期原型风格提升为更适合展示的数字人 Demo 界面。
 
-### Technical Details
-- Leveraged `react-three-fiber` and `@react-three/drei` for advanced PBR materials and environmental lighting.
-- Used Tailwind CSS for complex transparency and absolute positioning layouts.
+主要方向：
+- 重做数字人默认形象
+- 重构主页面布局
+- 提升整体视觉一致性与沉浸感
+
+---
+
+## 变更记录
+
+### 1) 数字人形象升级
+
+- `DigitalHumanViewer` 从早期的简单几何体角色升级为更完整的 cybernetic avatar 风格形象。
+- 增强头部、眼部、材质、环境特效与灯光表现。
+- 增加更自然的 idle 动画与眨眼效果，提升角色生命感。
+
+### 2) 页面布局重构
+
+- `AdvancedDigitalHumanPage` 从传统面板式布局调整为全屏沉浸式展示结构。
+- 主舞台改为全屏 3D 视图，控制入口改为浮层式布局。
+- 引入底部控制区、侧边设置面板与顶部状态区，减少页面割裂感。
+
+### 3) UI 风格统一
+
+- 采用更偏 glassmorphism 的视觉风格。
+- 增强半透明、模糊、悬浮层与暗色背景的组合效果。
+- 使用 `lucide-react` 统一图标表达，提升界面现代感。
+
+### 4) 工程实现说明
+
+- 基于 `react-three-fiber` 与 `@react-three/drei` 增强 3D 画面表现。
+- 使用 Tailwind CSS 完成复杂布局、透明度和定位样式。
+
+---
+
+## 影响
+
+- 项目从“功能原型”更接近“可展示 Demo”。
+- 页面更适合用于演示、汇报和后续体验优化。
+- 为后续接入更完整的交互与状态面板提供了 UI 基础。
+
+---
+
+## 总结
+
+这次更新的核心价值，是先把“能看”这件事做好，为后续功能完善提供更好的展示载体。
+项目的对外感知质量因此有了明显提升。
