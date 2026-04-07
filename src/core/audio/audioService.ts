@@ -1,6 +1,5 @@
 import { useDigitalHumanStore } from '../../store/digitalHumanStore';
-import { sendUserInput } from '../dialogue/dialogueService';
-import { handleDialogueResponse } from '../dialogue/dialogueOrchestrator';
+import { runDialogueTurn } from '../dialogue/dialogueOrchestrator';
 
 // TTS 配置接口
 export interface TTSConfig {
@@ -302,7 +301,7 @@ export class ASRService {
           this.onResultCallback(finalTranscript);
         }
         if (this.mode === 'command') {
-          this.processVoiceInput(finalTranscript);
+          void this.processVoiceInput(finalTranscript);
         }
       }
     };
@@ -451,35 +450,17 @@ export class ASRService {
   // 发送到对话服务
   private async sendToDialogueService(text: string): Promise<void> {
     const store = useDigitalHumanStore.getState();
-    
-    store.setLoading(true);
-    store.setBehavior('thinking');
-    store.addChatMessage('user', text);
-    
+
     try {
-      const response = await sendUserInput({
-        userText: text,
+      await runDialogueTurn(text, {
         sessionId: store.sessionId,
-      });
-      
-      await handleDialogueResponse(response, {
         isMuted: store.isMuted,
         speakWith: (textToSpeak) => this.tts.speak(textToSpeak),
       });
-      
     } catch (error: any) {
       console.error('对话服务错误:', error);
       store.setError('对话服务暂时不可用，请稍后重试');
       store.setBehavior('idle');
-      
-      // 本地降级回复
-      const fallbackReply = '抱歉，我暂时无法处理您的请求，请稍后再试。';
-      store.addChatMessage('assistant', fallbackReply);
-      if (!store.isMuted) {
-        await this.tts.speak(fallbackReply);
-      }
-    } finally {
-      store.setLoading(false);
     }
   }
   

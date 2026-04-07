@@ -1,5 +1,3 @@
-import { useDigitalHumanStore } from '../../store/digitalHumanStore';
-
 export interface ChatRequestPayload {
   sessionId?: string;
   userText: string;
@@ -10,6 +8,13 @@ export interface ChatResponsePayload {
   replyText: string;
   emotion: string;
   action: string;
+}
+
+export interface DialogueServiceResult {
+  response: ChatResponsePayload;
+  connectionStatus: 'connected' | 'error';
+  error: string | null;
+  usedFallback: boolean;
 }
 
 // 对话服务配置

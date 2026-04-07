@@ -8,8 +8,8 @@ import BehaviorControlPanel from '../components/BehaviorControlPanel';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { ttsService, asrService } from '../core/audio/audioService';
 import { digitalHumanEngine } from '../core/avatar/DigitalHumanEngine';
-import { sendUserInput, checkServerHealth } from '../core/dialogue/dialogueService';
-import { handleDialogueResponse } from '../core/dialogue/dialogueOrchestrator';
+import { checkServerHealth } from '../core/dialogue/dialogueService';
+import { runDialogueTurn } from '../core/dialogue/dialogueOrchestrator';
 import { Toaster, toast } from 'sonner';
 import { Mic, MessageSquare, Settings, Activity, X, Radio, AlertCircle, Wifi, WifiOff, RefreshCw, RotateCcw } from 'lucide-react';
 
@@ -30,7 +30,6 @@ export default function AdvancedDigitalHumanPage() {
     setRecording,
     toggleMute,
     toggleAutoRotate,
-    addChatMessage,
     clearError,
     setConnectionStatus,
     initSession
@@ -106,31 +105,21 @@ export default function AdvancedDigitalHumanPage() {
     const content = (text ?? chatInput).trim();
     if (!content || isChatLoading) return;
 
-    // 添加用户消息到 store
-    addChatMessage('user', content);
     if (!text) setChatInput('');
 
-    setIsChatLoading(true);
     try {
-      const res = await sendUserInput({ 
-        userText: content, 
-        sessionId: sessionId,
-        meta: { timestamp: Date.now() }
-      });
-      
-      await handleDialogueResponse(res, {
+      await runDialogueTurn(content, {
+        sessionId,
+        meta: { timestamp: Date.now() },
         isMuted,
         speakWith: (textToSpeak) => ttsService.speak(textToSpeak),
+        setLoading: setIsChatLoading,
       });
-
     } catch (err: any) {
       console.error('发送消息失败:', err);
-      // 错误已在 dialogueService 中处理，这里只需通知
       toast.error(err.message || '发送失败，请重试');
-    } finally {
-      setIsChatLoading(false);
     }
-  }, [chatInput, isChatLoading, sessionId, isMuted, addChatMessage]);
+  }, [chatInput, isChatLoading, sessionId, isMuted]);
 
   const handleToggleRecording = useCallback(() => {
     if (isRecording) {
