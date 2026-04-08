@@ -509,6 +509,81 @@ describe('Dialogue orchestration', () => {
   });
 });
 
+describe('Error throttle and session lifecycle', () => {
+  beforeEach(() => {
+    useDigitalHumanStore.setState({
+      error: null,
+      lastErrorTime: null,
+      sessionId: 'test-session',
+      chatHistory: [],
+      connectionStatus: 'connected',
+      isConnected: true,
+      isLoading: false,
+    });
+  });
+
+  it('throttles identical error messages within 2 seconds', () => {
+    const nowSpy = vi.spyOn(Date, 'now');
+
+    try {
+      nowSpy.mockReturnValue(1000);
+      useDigitalHumanStore.getState().setError('网络错误');
+      expect(useDigitalHumanStore.getState().error).toBe('网络错误');
+
+      nowSpy.mockReturnValue(2000);
+      useDigitalHumanStore.getState().setError('网络错误');
+      expect(useDigitalHumanStore.getState().lastErrorTime).toBe(1000);
+
+      nowSpy.mockReturnValue(3500);
+      useDigitalHumanStore.getState().setError('网络错误');
+      expect(useDigitalHumanStore.getState().lastErrorTime).toBe(3500);
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  it('allows different error messages without throttling', () => {
+    const nowSpy = vi.spyOn(Date, 'now');
+
+    try {
+      nowSpy.mockReturnValue(1000);
+      useDigitalHumanStore.getState().setError('错误A');
+      expect(useDigitalHumanStore.getState().error).toBe('错误A');
+
+      nowSpy.mockReturnValue(1500);
+      useDigitalHumanStore.getState().setError('错误B');
+      expect(useDigitalHumanStore.getState().error).toBe('错误B');
+      expect(useDigitalHumanStore.getState().lastErrorTime).toBe(1500);
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  it('initSession resets error, loading and connection status', () => {
+    useDigitalHumanStore.setState({
+      error: '旧错误',
+      lastErrorTime: 999,
+      isLoading: true,
+      connectionStatus: 'error',
+      isConnected: false,
+    });
+
+    const oldSessionId = useDigitalHumanStore.getState().sessionId;
+
+    useDigitalHumanStore.getState().initSession();
+
+    const state = useDigitalHumanStore.getState();
+
+    expect(state.sessionId).not.toBe(oldSessionId);
+    expect(state.chatHistory).toHaveLength(0);
+    expect(state.error).toBeNull();
+    expect(state.lastErrorTime).toBeNull();
+    expect(state.isLoading).toBe(false);
+    expect(state.connectionStatus).toBe('connected');
+    expect(state.isConnected).toBe(true);
+  });
+});
+
 describe('Performance Tests', () => {
   it('renders DigitalHumanViewer within acceptable time', async () => {
     const startTime = performance.now();

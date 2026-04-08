@@ -129,6 +129,20 @@ export async function checkServerHealth(): Promise<boolean> {
   }
 }
 
+// 清理远程会话历史（best-effort，不影响前端流程）
+export async function clearRemoteSession(sessionId: string): Promise<void> {
+  if (!sessionId) return;
+  try {
+    await fetchWithTimeout(
+      `${API_BASE_URL}/v1/session/${encodeURIComponent(sessionId)}`,
+      { method: 'DELETE' },
+      5000
+    );
+  } catch {
+    // 静默失败，不影响前端新会话的创建
+  }
+}
+
 // 主发送函数 - 带重试和降级
 export async function sendUserInput(
   payload: ChatRequestPayload,
