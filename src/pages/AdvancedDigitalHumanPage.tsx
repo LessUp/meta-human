@@ -8,7 +8,7 @@ import BehaviorControlPanel from '../components/BehaviorControlPanel';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { ttsService, asrService } from '../core/audio/audioService';
 import { digitalHumanEngine } from '../core/avatar/DigitalHumanEngine';
-import { checkServerHealth } from '../core/dialogue/dialogueService';
+import { checkServerHealth, clearRemoteSession } from '../core/dialogue/dialogueService';
 import { runDialogueTurn } from '../core/dialogue/dialogueOrchestrator';
 import { Toaster, toast } from 'sonner';
 import { Mic, MessageSquare, Settings, Activity, X, Radio, AlertCircle, Wifi, WifiOff, RefreshCw, RotateCcw } from 'lucide-react';
@@ -302,9 +302,11 @@ export default function AdvancedDigitalHumanPage() {
           )}
           <button
             onClick={() => {
+              const oldSessionId = sessionId;
               initSession();
               setChatInput('');
               toast.success('已开启新会话');
+              void clearRemoteSession(oldSessionId);
             }}
             className="p-3 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all active:scale-95"
             title="新会话"
@@ -428,8 +430,8 @@ export default function AdvancedDigitalHumanPage() {
               >
                 <div
                   className={`max-w-[80%] px-5 py-3 rounded-2xl text-sm backdrop-blur-md border shadow-xl ${msg.role === 'user'
-                      ? 'bg-blue-600/80 border-blue-500/50 text-white rounded-br-none'
-                      : 'bg-white/10 border-white/10 text-gray-100 rounded-bl-none'
+                    ? 'bg-blue-600/80 border-blue-500/50 text-white rounded-br-none'
+                    : 'bg-white/10 border-white/10 text-gray-100 rounded-bl-none'
                     }`}
                 >
                   {msg.text}
@@ -444,8 +446,8 @@ export default function AdvancedDigitalHumanPage() {
         <div className={`bg-black/60 backdrop-blur-2xl border rounded-2xl p-2 pl-4 flex items-center gap-3 shadow-2xl shadow-blue-900/20 ring-1 ring-white/5 transition-colors ${isLoading ? 'border-blue-500/50' : 'border-white/10'
           }`}>
           <div className={`p-2 rounded-lg transition-colors ${isLoading ? 'bg-gradient-to-tr from-yellow-500 to-orange-500' :
-              isSpeaking ? 'bg-gradient-to-tr from-green-500 to-emerald-500' :
-                'bg-gradient-to-tr from-blue-500 to-purple-500'
+            isSpeaking ? 'bg-gradient-to-tr from-green-500 to-emerald-500' :
+              'bg-gradient-to-tr from-blue-500 to-purple-500'
             }`}>
             <Radio className={`w-5 h-5 text-white ${isSpeaking || isLoading ? 'animate-pulse' : ''}`} />
           </div>
@@ -465,8 +467,8 @@ export default function AdvancedDigitalHumanPage() {
               onClick={handleToggleRecording}
               disabled={isLoading || isChatLoading}
               className={`p-3 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${isRecording
-                  ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]'
-                  : 'hover:bg-white/10 text-white/70 hover:text-white'
+                ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]'
+                : 'hover:bg-white/10 text-white/70 hover:text-white'
                 }`}
               title={isRecording ? '停止录音' : '开始录音'}
             >

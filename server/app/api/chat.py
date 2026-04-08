@@ -31,3 +31,13 @@ async def chat(req: ChatRequest) -> ChatResponse:
     meta=req.meta,
   )
   return ChatResponse(**result)
+
+
+@router.delete("/session/{session_id}")
+async def delete_session(session_id: str) -> dict:
+  """清除指定会话的后端历史记录。"""
+  session_id = (session_id or "").strip()
+  if not session_id:
+    return {"cleared": False}
+  cleared = dialogue_service.clear_session(session_id)
+  return {"cleared": cleared}

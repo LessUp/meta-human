@@ -126,6 +126,32 @@ class DialogueServiceTestCase(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(result["replyText"], "收到")
     self.assertEqual(user_contents.count("本轮提问"), 1)
 
+  async def test_session_id_is_stripped_and_normalized(self) -> None:
+    result = await self.service.generate_reply("你好", session_id="  spaced-id  ")
+
+    history = self.service.get_session_history("spaced-id")
+    self.assertEqual(len(history), 2)
+    self.assertEqual(history[0]["content"], "你好")
+    self.assertEqual(history[1]["content"], result["replyText"])
+
+  async def test_clear_session_on_nonexistent_session_returns_false(self) -> None:
+    cleared = self.service.clear_session("no-such-session")
+    self.assertFalse(cleared)
+
+  async def test_sessions_are_isolated(self) -> None:
+    await self.service.generate_reply("消息A", session_id="session-a")
+    await self.service.generate_reply("消息B", session_id="session-b")
+
+    history_a = self.service.get_session_history("session-a")
+    history_b = self.service.get_session_history("session-b")
+
+    self.assertTrue(all("消息A" != m["content"] for m in history_b if m["role"] == "user"))
+    self.assertTrue(all("消息B" != m["content"] for m in history_a if m["role"] == "user"))
+
+    self.service.clear_session("session-a")
+    self.assertEqual(self.service.get_session_history("session-a"), [])
+    self.assertEqual(len(self.service.get_session_history("session-b")), 2)
+
 
 if __name__ == "__main__":
   unittest.main()
