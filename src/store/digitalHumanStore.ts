@@ -82,6 +82,8 @@ const generateSessionId = (): string => {
 let nextChatMessageId = 0;
 let recordingTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
+const ERROR_THROTTLE_MS = 2000;
+
 const generateChatMessageId = (): number => {
   nextChatMessageId += 1;
   return Date.now() + nextChatMessageId;
@@ -158,7 +160,18 @@ export const useDigitalHumanStore = create<DigitalHumanState>((set, get) => ({
     isConnected: status === 'connected'
   }),
   setLoading: (loading) => set({ isLoading: loading }),
-  setError: (error) => set({ error, lastErrorTime: error ? Date.now() : null }),
+  setError: (error) => {
+    if (!error) {
+      set({ error: null, lastErrorTime: null });
+      return;
+    }
+    const { error: prevError, lastErrorTime } = get();
+    const now = Date.now();
+    if (prevError === error && lastErrorTime && now - lastErrorTime < ERROR_THROTTLE_MS) {
+      return;
+    }
+    set({ error, lastErrorTime: now });
+  },
   clearError: () => set({ error: null, lastErrorTime: null }),
 
   // 会话管理
@@ -168,7 +181,15 @@ export const useDigitalHumanStore = create<DigitalHumanState>((set, get) => ({
     if (storage) {
       storage.setItem('metahuman_session_id', newId);
     }
-    set({ sessionId: newId, chatHistory: [] });
+    set({
+      sessionId: newId,
+      chatHistory: [],
+      error: null,
+      lastErrorTime: null,
+      connectionStatus: 'connected',
+      isConnected: true,
+      isLoading: false,
+    });
   },
 
   addChatMessage: (role, text) => set((state) => {
