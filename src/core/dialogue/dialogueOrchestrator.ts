@@ -15,12 +15,19 @@ export interface DialogueTurnOptions extends DialogueHandleOptions {
   setLoading?: (loading: boolean) => void;
 }
 
+let pendingTurn: Promise<ChatResponsePayload | undefined> | null = null;
+
 export async function runDialogueTurn(
   userText: string,
   options: DialogueTurnOptions = {}
 ): Promise<ChatResponsePayload | undefined> {
   const content = userText.trim();
   if (!content) {
+    return undefined;
+  }
+
+  if (pendingTurn) {
+    console.warn('对话请求被忽略：上一轮对话仍在进行中');
     return undefined;
   }
 
@@ -43,28 +50,34 @@ export async function runDialogueTurn(
   setLoading?.(true);
   store.setBehavior('thinking');
 
-  try {
-    const response = await sendUserInput({
-      sessionId,
-      userText: content,
-      meta,
-    });
+  const execute = async (): Promise<ChatResponsePayload | undefined> => {
+    try {
+      const response = await sendUserInput({
+        sessionId,
+        userText: content,
+        meta,
+      });
 
-    await handleDialogueResponse(response, {
-      isMuted,
-      speakWith,
-      addAssistantMessage,
-    });
+      await handleDialogueResponse(response, {
+        isMuted,
+        speakWith,
+        addAssistantMessage,
+      });
 
-    return response;
-  } finally {
-    store.setLoading(false);
-    setLoading?.(false);
+      return response;
+    } finally {
+      store.setLoading(false);
+      setLoading?.(false);
+      pendingTurn = null;
 
-    if (useDigitalHumanStore.getState().currentBehavior === 'thinking') {
-      useDigitalHumanStore.getState().setBehavior('idle');
+      if (useDigitalHumanStore.getState().currentBehavior === 'thinking') {
+        useDigitalHumanStore.getState().setBehavior('idle');
+      }
     }
-  }
+  };
+
+  pendingTurn = execute();
+  return pendingTurn;
 }
 
 export async function handleDialogueResponse(
