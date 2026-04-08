@@ -4,6 +4,7 @@ import DigitalHumanViewer from '../components/DigitalHumanViewer';
 import ControlPanel from '../components/ControlPanel';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { TTSService, ASRService } from '../core/audio/audioService';
+import { handleDialogueResponse } from '../core/dialogue/dialogueOrchestrator';
 import React from 'react';
 
 // Mock React's useRef before Three.js mocks
@@ -25,7 +26,7 @@ vi.spyOn(React, 'useRef').mockImplementation(() => {
       }
     })
   };
-  
+
   return {
     current: groupMock
   };
@@ -42,7 +43,7 @@ vi.mock('@react-three/fiber', () => ({
       }
     });
   }),
-  useThree: vi.fn(() => ({ 
+  useThree: vi.fn(() => ({
     scene: {
       add: vi.fn(),
       remove: vi.fn()
@@ -150,7 +151,7 @@ describe('DigitalHumanViewer', () => {
     const { rerender } = render(<DigitalHumanViewer autoRotate={false} />);
     expect(screen.getByText('自动旋转:')).toBeInTheDocument();
     expect(screen.getByText('关闭')).toBeInTheDocument();
-    
+
     rerender(<DigitalHumanViewer autoRotate={true} />);
     expect(screen.getByText('自动旋转:')).toBeInTheDocument();
     expect(screen.getByText('开启')).toBeInTheDocument();
@@ -224,6 +225,24 @@ describe('ControlPanel', () => {
 });
 
 describe('DigitalHumanStore', () => {
+  beforeEach(() => {
+    useDigitalHumanStore.setState({
+      isPlaying: false,
+      autoRotate: false,
+      currentAnimation: 'idle',
+      isRecording: false,
+      isMuted: false,
+      isSpeaking: false,
+      currentEmotion: 'neutral',
+      currentExpression: 'neutral',
+      expressionIntensity: 0.8,
+      currentBehavior: 'idle',
+      chatHistory: [],
+      error: null,
+      lastErrorTime: null,
+    });
+  });
+
   it('initializes with correct default state', () => {
     const { isPlaying, isRecording, isMuted, autoRotate } = useDigitalHumanStore.getState();
     expect(isPlaying).toBe(false);
@@ -260,6 +279,56 @@ describe('DigitalHumanStore', () => {
     const { startRecording } = useDigitalHumanStore.getState();
     startRecording();
     expect(useDigitalHumanStore.getState().isRecording).toBe(true);
+  });
+
+  it('does not add empty chat messages', () => {
+    const { addChatMessage } = useDigitalHumanStore.getState();
+    addChatMessage('user', '   ');
+    expect(useDigitalHumanStore.getState().chatHistory).toHaveLength(0);
+  });
+
+  it('generates unique chat message ids under the same timestamp', () => {
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(1000);
+
+    try {
+      const { addChatMessage } = useDigitalHumanStore.getState();
+      addChatMessage('user', '第一条消息');
+      addChatMessage('assistant', '第二条消息');
+
+      const [firstMessage, secondMessage] = useDigitalHumanStore.getState().chatHistory;
+
+      expect(firstMessage.id).not.toBe(secondMessage.id);
+      expect(firstMessage.timestamp).toBe(1000);
+      expect(secondMessage.timestamp).toBe(1000);
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  it('clears stale recording timers when recording restarts', () => {
+    vi.useFakeTimers();
+
+    try {
+      const { startRecording, stopRecording } = useDigitalHumanStore.getState();
+
+      startRecording();
+      vi.advanceTimersByTime(10000);
+
+      stopRecording();
+      vi.advanceTimersByTime(5000);
+
+      startRecording();
+      vi.advanceTimersByTime(20000);
+
+      expect(useDigitalHumanStore.getState().isRecording).toBe(true);
+
+      vi.advanceTimersByTime(10000);
+
+      expect(useDigitalHumanStore.getState().isRecording).toBe(false);
+    } finally {
+      useDigitalHumanStore.getState().stopRecording();
+      vi.useRealTimers();
+    }
   });
 
   it('handles mute toggle', () => {
@@ -397,6 +466,47 @@ describe('ASRService', () => {
     // Verify no errors are thrown
     expect(asrService).toBeDefined();
   });
+
+  it('handles cancel mute voice command correctly', () => {
+    asrService = new ASRService();
+    useDigitalHumanStore.getState().setMuted(true);
+
+    const matched = (asrService as any).tryLocalCommand('取消静音');
+
+    expect(matched).toBe(true);
+    expect(useDigitalHumanStore.getState().isMuted).toBe(false);
+  });
+});
+
+describe('Dialogue orchestration', () => {
+  beforeEach(() => {
+    useDigitalHumanStore.getState().clearChatHistory();
+    useDigitalHumanStore.getState().clearError();
+    useDigitalHumanStore.getState().setMuted(false);
+    useDigitalHumanStore.getState().setBehavior('idle');
+    useDigitalHumanStore.getState().setSpeaking(false);
+  });
+
+  it('keeps dialogue successful when speech playback fails', async () => {
+    const speakWith = vi.fn().mockRejectedValue(new Error('tts failed'));
+
+    await handleDialogueResponse(
+      {
+        replyText: '你好，我仍然可以继续回答。',
+        emotion: 'happy',
+        action: 'idle',
+      },
+      {
+        speakWith,
+      }
+    );
+
+    const state = useDigitalHumanStore.getState();
+
+    expect(speakWith).toHaveBeenCalledWith('你好，我仍然可以继续回答。');
+    expect(state.chatHistory[state.chatHistory.length - 1]?.text).toBe('你好，我仍然可以继续回答。');
+    expect(state.error).toBe('tts failed');
+  });
 });
 
 describe('Performance Tests', () => {
@@ -404,14 +514,14 @@ describe('Performance Tests', () => {
     const startTime = performance.now();
     render(<DigitalHumanViewer />);
     const endTime = performance.now();
-    
+
     // Should render in less than 100ms
     expect(endTime - startTime).toBeLessThan(100);
   });
 
   it('handles rapid state changes efficiently', () => {
     const { play, pause } = useDigitalHumanStore.getState();
-    
+
     const startTime = performance.now();
     for (let i = 0; i < 100; i++) {
       if (i % 2 === 0) {
@@ -421,7 +531,7 @@ describe('Performance Tests', () => {
       }
     }
     const endTime = performance.now();
-    
+
     // 100 state changes should complete in less than 50ms
     expect(endTime - startTime).toBeLessThan(50);
   });
@@ -444,7 +554,7 @@ describe('Integration Tests', () => {
   it('integrates control panel with digital human viewer', () => {
     const TestComponent = () => {
       const { isPlaying, play, pause } = useDigitalHumanStore();
-      
+
       return (
         <div>
           <DigitalHumanViewer />
@@ -454,18 +564,18 @@ describe('Integration Tests', () => {
             isMuted={false}
             autoRotate={false}
             onPlayPause={() => isPlaying ? pause() : play()}
-            onReset={() => {}}
-            onToggleRecording={() => {}}
-            onToggleMute={() => {}}
-            onToggleAutoRotate={() => {}}
-            onVoiceCommand={() => {}}
+            onReset={() => { }}
+            onToggleRecording={() => { }}
+            onToggleMute={() => { }}
+            onToggleAutoRotate={() => { }}
+            onVoiceCommand={() => { }}
           />
         </div>
       );
     };
 
     render(<TestComponent />);
-    
+
     // Both components should render without conflicts
     expect(screen.getByText('数字人控制')).toBeInTheDocument();
     expect(screen.getByText('播放控制')).toBeInTheDocument();
@@ -475,10 +585,10 @@ describe('Integration Tests', () => {
     const onVoiceCommand = vi.fn();
     const props = { ...defaultProps, onVoiceCommand };
     render(<ControlPanel {...props} />);
-    
+
     const greetButton = screen.getByText('打招呼');
     fireEvent.click(greetButton);
-    
+
     await waitFor(() => {
       expect(onVoiceCommand).toHaveBeenCalledWith('打招呼');
     });

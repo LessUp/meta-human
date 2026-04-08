@@ -41,6 +41,7 @@ export default function AdvancedDigitalHumanPage() {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastConnectionStatusRef = useRef<string | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -55,10 +56,20 @@ export default function AdvancedDigitalHumanPage() {
   useEffect(() => {
     const checkConnection = async () => {
       const isHealthy = await checkServerHealth();
-      setConnectionStatus(isHealthy ? 'connected' : 'disconnected');
-      if (!isHealthy) {
+      const nextStatus = isHealthy ? 'connected' : 'disconnected';
+      const previousStatus = lastConnectionStatusRef.current;
+
+      setConnectionStatus(nextStatus);
+
+      if (!isHealthy && previousStatus !== 'disconnected') {
         toast.warning('服务器连接不稳定，部分功能可能受限');
       }
+
+      if (isHealthy && previousStatus && previousStatus !== 'connected') {
+        toast.success('服务器连接已恢复');
+      }
+
+      lastConnectionStatusRef.current = nextStatus;
     };
     checkConnection();
 
@@ -82,7 +93,7 @@ export default function AdvancedDigitalHumanPage() {
   }, [error, clearError]);
 
   // --- Event Handlers ---
-  const handleModelLoad = useCallback((model: unknown) => {
+  const handleModelLoad = useCallback((_model: unknown) => {
     toast.success('数字人接口已上线');
   }, []);
 
@@ -174,13 +185,17 @@ export default function AdvancedDigitalHumanPage() {
   // 重新连接服务器
   const handleReconnect = useCallback(async () => {
     setConnectionStatus('connecting');
-    toast.loading('正在重新连接...');
+    const toastId = toast.loading('正在重新连接...');
     const isHealthy = await checkServerHealth();
-    setConnectionStatus(isHealthy ? 'connected' : 'error');
+    const nextStatus = isHealthy ? 'connected' : 'error';
+
+    setConnectionStatus(nextStatus);
+    lastConnectionStatusRef.current = nextStatus;
+
     if (isHealthy) {
-      toast.success('连接成功');
+      toast.success('连接成功', { id: toastId });
     } else {
-      toast.error('连接失败，请稍后重试');
+      toast.error('连接失败，请稍后重试', { id: toastId });
     }
   }, [setConnectionStatus]);
 
@@ -246,9 +261,9 @@ export default function AdvancedDigitalHumanPage() {
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80 z-10 pointer-events-none" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-black/0 to-black/0 z-0 pointer-events-none" />
-        <DigitalHumanViewer 
-          autoRotate={autoRotate} 
-          showControls={false} 
+        <DigitalHumanViewer
+          autoRotate={autoRotate}
+          showControls={false}
           onModelLoad={handleModelLoad}
         />
       </div>
@@ -277,7 +292,7 @@ export default function AdvancedDigitalHumanPage() {
 
         <div className="pointer-events-auto flex space-x-3">
           {connectionStatus !== 'connected' && (
-            <button 
+            <button
               onClick={handleReconnect}
               className="p-3 rounded-full bg-yellow-500/20 backdrop-blur-md border border-yellow-500/30 hover:bg-yellow-500/30 transition-all active:scale-95"
               title="重新连接"
@@ -296,7 +311,7 @@ export default function AdvancedDigitalHumanPage() {
           >
             <RotateCcw className="w-5 h-5 text-white/80" />
           </button>
-          <button 
+          <button
             onClick={() => setShowSettings(!showSettings)}
             className="p-3 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 transition-all active:scale-95"
           >
@@ -306,7 +321,7 @@ export default function AdvancedDigitalHumanPage() {
       </div>
 
       {/* Right Settings Drawer */}
-      <div 
+      <div
         className={`absolute top-0 right-0 h-full w-80 sm:w-96 bg-black/80 backdrop-blur-xl border-l border-white/10 z-30 transform transition-transform duration-500 ease-out ${showSettings ? 'translate-x-0' : 'translate-x-full'}`}
       >
         <div className="p-6 h-full flex flex-col">
@@ -325,9 +340,8 @@ export default function AdvancedDigitalHumanPage() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-2 text-xs font-medium rounded-md transition-all capitalize ${
-                  activeTab === tab ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-gray-400 hover:text-white hover:bg-white/5'
-                }`}
+                className={`flex-1 py-2 text-xs font-medium rounded-md transition-all capitalize ${activeTab === tab ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
               >
                 {tab}
               </button>
@@ -339,7 +353,7 @@ export default function AdvancedDigitalHumanPage() {
             {activeTab === 'basic' && (
               <div className="space-y-4">
                 <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                   <ControlPanel
+                  <ControlPanel
                     isPlaying={isPlaying}
                     isRecording={isRecording}
                     isMuted={isMuted}
@@ -367,25 +381,25 @@ export default function AdvancedDigitalHumanPage() {
               />
             )}
             {activeTab === 'vision' && (
-               <div className="text-sm text-gray-400 p-4 border border-white/10 rounded-xl bg-white/5">
-                  Vision Mirror Module requires camera access.
-                  <VisionMirrorPanel 
-                    onEmotionChange={(emotion) => {
-                      if (emotion === 'happy') {
-                        digitalHumanEngine.setExpression('smile');
-                      } else if (emotion === 'surprised') {
-                        digitalHumanEngine.setExpression('surprise');
-                      } else {
-                        digitalHumanEngine.setExpression('neutral');
-                      }
-                      digitalHumanEngine.setEmotion(emotion);
-                    }} 
-                    onHeadMotion={(motion) => {
-                      digitalHumanEngine.playAnimation(motion);
-                      toast(`Motion Detected: ${motion}`, { icon: '📸' });
-                    }} 
-                  />
-               </div>
+              <div className="text-sm text-gray-400 p-4 border border-white/10 rounded-xl bg-white/5">
+                Vision Mirror Module requires camera access.
+                <VisionMirrorPanel
+                  onEmotionChange={(emotion) => {
+                    if (emotion === 'happy') {
+                      digitalHumanEngine.setExpression('smile');
+                    } else if (emotion === 'surprised') {
+                      digitalHumanEngine.setExpression('surprise');
+                    } else {
+                      digitalHumanEngine.setExpression('neutral');
+                    }
+                    digitalHumanEngine.setEmotion(emotion);
+                  }}
+                  onHeadMotion={(motion) => {
+                    digitalHumanEngine.playAnimation(motion);
+                    toast(`Motion Detected: ${motion}`, { icon: '📸' });
+                  }}
+                />
+              </div>
             )}
             {activeTab === 'voice' && (
               <div className="space-y-4">
@@ -413,11 +427,10 @@ export default function AdvancedDigitalHumanPage() {
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`}
               >
                 <div
-                  className={`max-w-[80%] px-5 py-3 rounded-2xl text-sm backdrop-blur-md border shadow-xl ${
-                    msg.role === 'user'
+                  className={`max-w-[80%] px-5 py-3 rounded-2xl text-sm backdrop-blur-md border shadow-xl ${msg.role === 'user'
                       ? 'bg-blue-600/80 border-blue-500/50 text-white rounded-br-none'
                       : 'bg-white/10 border-white/10 text-gray-100 rounded-bl-none'
-                  }`}
+                    }`}
                 >
                   {msg.text}
                 </div>
@@ -428,17 +441,15 @@ export default function AdvancedDigitalHumanPage() {
         </div>
 
         {/* Input Bar */}
-        <div className={`bg-black/60 backdrop-blur-2xl border rounded-2xl p-2 pl-4 flex items-center gap-3 shadow-2xl shadow-blue-900/20 ring-1 ring-white/5 transition-colors ${
-          isLoading ? 'border-blue-500/50' : 'border-white/10'
-        }`}>
-          <div className={`p-2 rounded-lg transition-colors ${
-            isLoading ? 'bg-gradient-to-tr from-yellow-500 to-orange-500' : 
-            isSpeaking ? 'bg-gradient-to-tr from-green-500 to-emerald-500' :
-            'bg-gradient-to-tr from-blue-500 to-purple-500'
+        <div className={`bg-black/60 backdrop-blur-2xl border rounded-2xl p-2 pl-4 flex items-center gap-3 shadow-2xl shadow-blue-900/20 ring-1 ring-white/5 transition-colors ${isLoading ? 'border-blue-500/50' : 'border-white/10'
           }`}>
+          <div className={`p-2 rounded-lg transition-colors ${isLoading ? 'bg-gradient-to-tr from-yellow-500 to-orange-500' :
+              isSpeaking ? 'bg-gradient-to-tr from-green-500 to-emerald-500' :
+                'bg-gradient-to-tr from-blue-500 to-purple-500'
+            }`}>
             <Radio className={`w-5 h-5 text-white ${isSpeaking || isLoading ? 'animate-pulse' : ''}`} />
           </div>
-          
+
           <input
             type="text"
             value={chatInput}
@@ -453,16 +464,15 @@ export default function AdvancedDigitalHumanPage() {
             <button
               onClick={handleToggleRecording}
               disabled={isLoading || isChatLoading}
-              className={`p-3 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
-                isRecording 
-                  ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]' 
+              className={`p-3 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${isRecording
+                  ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]'
                   : 'hover:bg-white/10 text-white/70 hover:text-white'
-              }`}
+                }`}
               title={isRecording ? '停止录音' : '开始录音'}
             >
               <Mic className="w-5 h-5" />
             </button>
-            
+
             <button
               onClick={() => handleChatSend()}
               disabled={!chatInput.trim() || isChatLoading || isLoading}
@@ -477,7 +487,7 @@ export default function AdvancedDigitalHumanPage() {
             </button>
           </div>
         </div>
-        
+
         {/* Error Banner */}
         {error && (
           <div className="mt-3 px-4 py-2 bg-red-500/20 border border-red-500/30 rounded-xl flex items-center gap-2 text-red-300 text-sm">
@@ -489,7 +499,7 @@ export default function AdvancedDigitalHumanPage() {
           </div>
         )}
       </div>
-      
+
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { bg: transparent; }
