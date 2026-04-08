@@ -66,7 +66,7 @@ export default function DigitalHumanPage() {
   // 处理语音命令
   const handleVoiceCommand = useCallback((command: string) => {
     toast.success(`执行命令: ${command}`);
-    
+
     // 根据命令执行不同操作
     switch (command) {
       case '打招呼':
@@ -76,7 +76,7 @@ export default function DigitalHumanPage() {
         asrService.performDance();
         break;
       case '说话':
-        ttsService.speak('您好！有什么可以帮助您的吗？');
+        void ttsService.speak('您好！有什么可以帮助您的吗？').catch(() => undefined);
         break;
       case '表情':
         const expressions = ['smile', 'surprise', 'laugh'];
@@ -85,7 +85,7 @@ export default function DigitalHumanPage() {
         setTimeout(() => digitalHumanEngine.setExpression('neutral'), 3000);
         break;
       default:
-        ttsService.speak(`收到命令: ${command}`);
+        void ttsService.speak(`收到命令: ${command}`).catch(() => undefined);
     }
   }, []);
 
@@ -105,7 +105,7 @@ export default function DigitalHumanPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <Toaster position="top-right" />
-      
+
       {/* 页面标题 */}
       <div className="pt-8 pb-4 text-center">
         <h1 className="text-4xl font-bold text-white mb-2">数字人交互系统</h1>
@@ -125,7 +125,7 @@ export default function DigitalHumanPage() {
                   onModelLoad={handleModelLoad}
                 />
               </div>
-              
+
               {/* 状态栏 */}
               <div className="bg-gray-50 px-6 py-4 border-t">
                 <div className="flex items-center justify-between">
@@ -136,14 +136,14 @@ export default function DigitalHumanPage() {
                         {modelLoaded ? '模型已加载' : '模型加载中...'}
                       </span>
                     </div>
-                    
+
                     {isSpeaking && (
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                         <span className="text-sm text-blue-600">正在说话</span>
                       </div>
                     )}
-                    
+
                     {isRecording && (
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
@@ -151,11 +151,11 @@ export default function DigitalHumanPage() {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="text-xs text-gray-500">
                     Three.js 渲染引擎 | WebGL
                   </div>
-                  
+
                   {/* 连接状态 */}
                   <div className="flex items-center space-x-1">
                     {connectionStatus === 'connected' ? (
@@ -183,7 +183,7 @@ export default function DigitalHumanPage() {
               onToggleAutoRotate={handleToggleAutoRotate}
               onVoiceCommand={handleVoiceCommand}
             />
-            
+
             {/* 功能说明 */}
             <div className="mt-6 bg-white rounded-lg shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">功能说明</h3>

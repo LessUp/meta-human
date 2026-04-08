@@ -5,35 +5,43 @@ export type EmotionType = 'neutral' | 'happy' | 'surprised' | 'sad' | 'angry';
 export type ExpressionType = 'neutral' | 'smile' | 'laugh' | 'surprise' | 'sad' | 'angry' | 'blink' | 'eyebrow_raise' | 'eye_blink' | 'mouth_open' | 'head_nod';
 export type BehaviorType = 'idle' | 'greeting' | 'listening' | 'thinking' | 'speaking' | 'excited' | 'wave' | 'greet' | 'think' | 'nod' | 'shakeHead' | 'dance' | 'speak' | 'waveHand' | 'raiseHand';
 export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'error';
+export type ChatRole = 'user' | 'assistant';
+
+export interface ChatMessage {
+  id: number;
+  role: ChatRole;
+  text: string;
+  timestamp: number;
+}
 
 interface DigitalHumanState {
   // 模型状态
   isPlaying: boolean;
   autoRotate: boolean;
   currentAnimation: string;
-  
+
   // 语音状态
   isRecording: boolean;
   isMuted: boolean;
   isSpeaking: boolean;
-  
+
   // 行为状态
   currentEmotion: EmotionType;
   currentExpression: ExpressionType;
   expressionIntensity: number;
   currentBehavior: BehaviorType;
-  
+
   // 会话状态
   sessionId: string;
-  chatHistory: { id: number; role: 'user' | 'assistant'; text: string; timestamp: number }[];
-  
+  chatHistory: ChatMessage[];
+
   // 系统状态
   isConnected: boolean;
   connectionStatus: ConnectionStatus;
   isLoading: boolean;
   error: string | null;
   lastErrorTime: number | null;
-  
+
   // 动作
   setPlaying: (playing: boolean) => void;
   setAutoRotate: (rotate: boolean) => void;
@@ -50,12 +58,12 @@ interface DigitalHumanState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearError: () => void;
-  
+
   // 会话管理
   initSession: () => void;
-  addChatMessage: (role: 'user' | 'assistant', text: string) => void;
+  addChatMessage: (role: ChatRole, text: string) => void;
   clearChatHistory: () => void;
-  
+
   // 控制方法
   play: () => void;
   pause: () => void;
@@ -69,6 +77,21 @@ interface DigitalHumanState {
 // 生成唯一会话ID
 const generateSessionId = (): string => {
   return `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+};
+
+let nextChatMessageId = 0;
+let recordingTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+const generateChatMessageId = (): number => {
+  nextChatMessageId += 1;
+  return Date.now() + nextChatMessageId;
+};
+
+const clearRecordingTimeout = (): void => {
+  if (recordingTimeoutId) {
+    clearTimeout(recordingTimeoutId);
+    recordingTimeoutId = null;
+  }
 };
 
 const getSafeLocalStorage = (): Storage | null => {
@@ -112,12 +135,17 @@ export const useDigitalHumanStore = create<DigitalHumanState>((set, get) => ({
   isLoading: false,
   error: null,
   lastErrorTime: null,
-  
+
   // 状态设置方法
   setPlaying: (playing) => set({ isPlaying: playing }),
   setAutoRotate: (rotate) => set({ autoRotate: rotate }),
   setAnimation: (animation) => set({ currentAnimation: animation }),
-  setRecording: (recording) => set({ isRecording: recording }),
+  setRecording: (recording) => {
+    if (!recording) {
+      clearRecordingTimeout();
+    }
+    set({ isRecording: recording });
+  },
   setMuted: (muted) => set({ isMuted: muted }),
   setSpeaking: (speaking) => set({ isSpeaking: speaking }),
   setEmotion: (emotion) => set({ currentEmotion: emotion }),
@@ -125,14 +153,14 @@ export const useDigitalHumanStore = create<DigitalHumanState>((set, get) => ({
   setExpressionIntensity: (intensity) => set({ expressionIntensity: Math.max(0, Math.min(1, intensity)) }),
   setBehavior: (behavior) => set({ currentBehavior: behavior }),
   setConnected: (connected) => set({ isConnected: connected }),
-  setConnectionStatus: (status) => set({ 
+  setConnectionStatus: (status) => set({
     connectionStatus: status,
     isConnected: status === 'connected'
   }),
   setLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error, lastErrorTime: error ? Date.now() : null }),
   clearError: () => set({ error: null, lastErrorTime: null }),
-  
+
   // 会话管理
   initSession: () => {
     const newId = generateSessionId();
@@ -142,27 +170,36 @@ export const useDigitalHumanStore = create<DigitalHumanState>((set, get) => ({
     }
     set({ sessionId: newId, chatHistory: [] });
   },
-  
-  addChatMessage: (role, text) => set((state) => ({
-    chatHistory: [
-      ...state.chatHistory,
-      { id: Date.now(), role, text, timestamp: Date.now() }
-    ]
-  })),
-  
+
+  addChatMessage: (role, text) => set((state) => {
+    const normalizedText = text.trim();
+    if (!normalizedText) {
+      return state;
+    }
+
+    const timestamp = Date.now();
+
+    return {
+      chatHistory: [
+        ...state.chatHistory,
+        { id: generateChatMessageId(), role, text: normalizedText, timestamp }
+      ]
+    };
+  }),
+
   clearChatHistory: () => set({ chatHistory: [] }),
-  
+
   // 控制方法
   play: () => {
     set({ isPlaying: true });
   },
-  
+
   pause: () => {
     set({ isPlaying: false });
   },
-  
+
   reset: () => {
-    set({ 
+    set({
       isPlaying: false,
       currentAnimation: 'idle',
       currentEmotion: 'neutral',
@@ -173,26 +210,28 @@ export const useDigitalHumanStore = create<DigitalHumanState>((set, get) => ({
       lastErrorTime: null
     });
   },
-  
+
   startRecording: () => {
+    clearRecordingTimeout();
     set({ isRecording: true });
-    // 录音超时保护
-    setTimeout(() => {
+    recordingTimeoutId = setTimeout(() => {
       if (get().isRecording) {
         get().stopRecording();
       }
-    }, 30000); // 30秒后自动停止
+      recordingTimeoutId = null;
+    }, 30000);
   },
-  
+
   stopRecording: () => {
+    clearRecordingTimeout();
     set({ isRecording: false });
   },
-  
+
   toggleMute: () => {
     const { isMuted } = get();
     set({ isMuted: !isMuted });
   },
-  
+
   toggleAutoRotate: () => {
     const { autoRotate } = get();
     set({ autoRotate: !autoRotate });

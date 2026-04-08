@@ -30,6 +30,33 @@ class DialogueService:
     except ValueError:
       self.max_session_messages = 10
 
+  def _normalize_user_text(self, user_text: str) -> str:
+    return (user_text or "").strip()
+
+  def _append_session_history(self, session_id: str, role: str, content: str) -> None:
+    if not session_id or not content:
+      return
+    session_histories[session_id].append({
+      "role": role,
+      "content": content,
+      "timestamp": datetime.now().isoformat(),
+    })
+    if len(session_histories[session_id]) > MAX_HISTORY_LENGTH * 2:
+      session_histories[session_id] = session_histories[session_id][-MAX_HISTORY_LENGTH * 2:]
+
+  def _append_turn(self, session_id: Optional[str], user_text: str, reply_text: str) -> None:
+    if not session_id:
+      return
+    self._append_session_history(session_id, "user", user_text)
+    self._append_session_history(session_id, "assistant", reply_text)
+    self._append_session_messages(
+      session_id,
+      [
+        {"role": "user", "content": user_text},
+        {"role": "assistant", "content": reply_text},
+      ],
+    )
+
   def _get_smart_mock_reply(self, user_text: str) -> Dict[str, Any]:
     """智能本地 Mock 回复，根据用户输入生成合理的响应"""
     text_lower = user_text.lower()
@@ -69,27 +96,19 @@ class DialogueService:
     
     支持会话历史管理和 LLM 调用，当 API Key 未配置时使用智能 Mock 回复。
     """
-    # 记录用户消息到会话历史
-    if session_id:
-      session_histories[session_id].append({
-        "role": "user",
-        "content": user_text,
-        "timestamp": datetime.now().isoformat(),
-      })
-      # 限制历史长度
-      if len(session_histories[session_id]) > MAX_HISTORY_LENGTH * 2:
-        session_histories[session_id] = session_histories[session_id][-MAX_HISTORY_LENGTH * 2:]
+    session_id = (session_id or "").strip() or None
+    user_text = self._normalize_user_text(user_text)
+    if not user_text:
+      return {
+        "replyText": "我在听，请告诉我您想聊什么。",
+        "emotion": "neutral",
+        "action": "idle",
+      }
 
     if not self.api_key:
       logger.info("OPENAI_API_KEY 未配置，使用智能 Mock 回复")
       result = self._get_smart_mock_reply(user_text)
-      # 记录助手回复到历史
-      if session_id:
-        session_histories[session_id].append({
-          "role": "assistant",
-          "content": result["replyText"],
-          "timestamp": datetime.now().isoformat(),
-        })
+      self._append_turn(session_id, user_text, result["replyText"])
       return result
 
     system_prompt = (
@@ -141,11 +160,13 @@ class DialogueService:
         parsed = json.loads(content)
       except json.JSONDecodeError:
         logger.warning("LLM 返回内容不是合法 JSON，将内容作为 replyText 使用: %s", content)
-        return {
+        result = {
           "replyText": content,
           "emotion": "neutral",
           "action": "idle",
         }
+        self._append_turn(session_id, user_text, result["replyText"])
+        return result
 
       reply_text = str(parsed.get("replyText", "")).strip() or f"你刚才说：{user_text}"
       emotion = str(parsed.get("emotion", "neutral")).strip() or "neutral"
@@ -156,20 +177,7 @@ class DialogueService:
       if action not in {"idle", "wave", "greet", "think", "nod", "shakeHead", "dance", "speak"}:
         action = "idle"
 
-      # 记录消息到会话历史
-      if session_id:
-        session_histories[session_id].append({
-          "role": "assistant",
-          "content": reply_text,
-          "timestamp": datetime.now().isoformat(),
-        })
-        self._append_session_messages(
-          session_id,
-          [
-            {"role": "user", "content": user_text},
-            {"role": "assistant", "content": reply_text},
-          ],
-        )
+      self._append_turn(session_id, user_text, reply_text)
 
       return {
         "replyText": reply_text,
@@ -181,7 +189,9 @@ class DialogueService:
         "LLM 请求超时 url=%s，将使用智能 Mock 回复",
         self._get_openai_chat_completions_url(),
       )
-      return self._get_smart_mock_reply(user_text)
+      result = self._get_smart_mock_reply(user_text)
+      self._append_turn(session_id, user_text, result["replyText"])
+      return result
     except httpx.HTTPStatusError as exc:
       body_preview = (exc.response.text or "")[:500]
       logger.error(
@@ -190,7 +200,9 @@ class DialogueService:
         str(exc.request.url),
         body_preview,
       )
-      return self._get_smart_mock_reply(user_text)
+      result = self._get_smart_mock_reply(user_text)
+      self._append_turn(session_id, user_text, result["replyText"])
+      return result
     except httpx.RequestError as exc:
       req_url = str(exc.request.url) if exc.request else self._get_openai_chat_completions_url()
       logger.error(
@@ -198,21 +210,29 @@ class DialogueService:
         req_url,
         exc,
       )
-      return self._get_smart_mock_reply(user_text)
+      result = self._get_smart_mock_reply(user_text)
+      self._append_turn(session_id, user_text, result["replyText"])
+      return result
     except Exception as exc:
       logger.exception("调用 LLM 失败，将使用智能 Mock 回复: %s", exc)
-      return self._get_smart_mock_reply(user_text)
+      result = self._get_smart_mock_reply(user_text)
+      self._append_turn(session_id, user_text, result["replyText"])
+      return result
 
   def clear_session(self, session_id: str) -> bool:
     """清除指定会话的历史记录"""
+    removed = False
     if session_id in session_histories:
       del session_histories[session_id]
-      return True
-    return False
+      removed = True
+    if session_id in self._session_messages:
+      del self._session_messages[session_id]
+      removed = True
+    return removed
 
   def get_session_history(self, session_id: str) -> List[Dict[str, str]]:
     """获取指定会话的历史记录"""
-    return session_histories.get(session_id, [])
+    return list(session_histories.get(session_id, []))
 
   def _get_openai_chat_completions_url(self) -> str:
     base_url = (self.base_url or "").strip()
@@ -268,7 +288,7 @@ class DialogueService:
     return resp.json()
 
   def _get_session_messages(self, session_id: str) -> list[dict[str, str]]:
-    return self._session_messages.get(session_id, [])
+    return list(self._session_messages.get(session_id, []))
 
   def _append_session_messages(
     self,

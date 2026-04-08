@@ -91,6 +91,11 @@ export async function handleDialogueResponse(
   }
 
   if (res.replyText && !isMuted && speakWith) {
-    await speakWith(res.replyText);
+    try {
+      await speakWith(res.replyText);
+    } catch (error: any) {
+      console.warn('语音播报失败，但对话文本已返回:', error);
+      store.setError(error?.message || '语音播报失败');
+    }
   }
 }

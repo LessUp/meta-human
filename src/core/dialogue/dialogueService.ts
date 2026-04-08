@@ -1,3 +1,5 @@
+import { useDigitalHumanStore } from '../../store/digitalHumanStore';
+
 export interface ChatRequestPayload {
   sessionId?: string;
   userText: string;
@@ -38,7 +40,7 @@ export class DialogueApiError extends Error {
 }
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/+$/, '');
 
 const DEFAULT_CONFIG: Required<DialogueServiceConfig> = {
   maxRetries: 3,
