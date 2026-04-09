@@ -80,6 +80,13 @@ export default function AdvancedDigitalHumanPage() {
     return () => clearInterval(interval);
   }, [setConnectionStatus]);
 
+  // 组件卸载时清理引擎资源
+  useEffect(() => {
+    return () => {
+      digitalHumanEngine.dispose();
+    };
+  }, []);
+
   // 自动清除错误
   useEffect(() => {
     if (error) {
@@ -120,8 +127,6 @@ export default function AdvancedDigitalHumanPage() {
 
     if (!text) setChatInput('');
 
-    addChatMessage('user', content);
-
     try {
       await runDialogueTurn(content, {
         sessionId,
@@ -129,6 +134,7 @@ export default function AdvancedDigitalHumanPage() {
         isMuted,
         speakWith: (textToSpeak) => ttsService.speak(textToSpeak),
         setLoading: setIsChatLoading,
+        onAddUserMessage: (t) => addChatMessage('user', t),
         onAddAssistantMessage: (text) => addChatMessage('assistant', text),
         onConnectionChange: (status) => setConnectionStatus(status),
         onClearError: () => clearError(),
