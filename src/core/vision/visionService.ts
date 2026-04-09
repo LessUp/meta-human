@@ -1,5 +1,4 @@
 import { mapFaceToEmotion, UserEmotion } from './visionMapper';
-import { useDigitalHumanStore } from '../../store/digitalHumanStore';
 
 type EmotionCallback = (emotion: UserEmotion) => void;
 type MotionCallback = (motion: 'nod' | 'shakeHead' | 'raiseHand' | 'waveHand') => void;
@@ -73,7 +72,6 @@ class VisionService {
     console.error(message, error);
     this.setStatus('error');
     this.callbacks.onError?.(message);
-    useDigitalHumanStore.getState().setError(message);
   }
 
   // 检查摄像头权限

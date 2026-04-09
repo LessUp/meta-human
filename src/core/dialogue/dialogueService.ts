@@ -1,4 +1,5 @@
 import { sleep } from '../../lib/utils';
+import type { EmotionType } from '../../store/digitalHumanStore';
 
 export interface ChatRequestPayload {
   sessionId?: string;
@@ -8,7 +9,7 @@ export interface ChatRequestPayload {
 
 export interface ChatResponsePayload {
   replyText: string;
-  emotion: string;
+  emotion: EmotionType;
   action: string;
 }
 
@@ -16,7 +17,6 @@ export interface DialogueServiceResult {
   response: ChatResponsePayload;
   connectionStatus: 'connected' | 'error';
   error: string | null;
-  usedFallback: boolean;
 }
 
 // 对话服务配置
@@ -186,7 +186,6 @@ export async function sendUserInput(
         },
         connectionStatus: 'connected',
         error: null,
-        usedFallback: false,
       };
 
     } catch (error: unknown) {
@@ -218,7 +217,6 @@ export async function sendUserInput(
     response: getFallbackResponse(payload.userText),
     connectionStatus: 'error',
     error: errorMsg,
-    usedFallback: true,
   };
 }
 
