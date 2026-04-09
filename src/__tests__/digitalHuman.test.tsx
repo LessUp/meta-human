@@ -489,6 +489,7 @@ describe('Dialogue orchestration', () => {
 
   it('keeps dialogue successful when speech playback fails', async () => {
     const speakWith = vi.fn().mockRejectedValue(new Error('tts failed'));
+    const onError = vi.fn();
 
     await handleDialogueResponse(
       {
@@ -498,14 +499,12 @@ describe('Dialogue orchestration', () => {
       },
       {
         speakWith,
+        onError,
       }
     );
 
-    const state = useDigitalHumanStore.getState();
-
     expect(speakWith).toHaveBeenCalledWith('你好，我仍然可以继续回答。');
-    expect(state.chatHistory[state.chatHistory.length - 1]?.text).toBe('你好，我仍然可以继续回答。');
-    expect(state.error).toBe('tts failed');
+    expect(onError).toHaveBeenCalledWith('tts failed');
   });
 });
 

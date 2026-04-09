@@ -392,12 +392,12 @@ export class ASRService {
       this.recognition.start();
       useDigitalHumanStore.getState().setRecording(true);
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('启动语音识别失败:', error);
       useDigitalHumanStore.getState().setRecording(false);
 
       // 处理已经在运行的情况
-      if (error.message?.includes('already started')) {
+      if (error instanceof Error && error.message?.includes('already started')) {
         this.recognition.stop();
         this.pendingRestartTimer = setTimeout(() => {
           this.pendingRestartTimer = null;
@@ -507,12 +507,19 @@ export class ASRService {
     const store = useDigitalHumanStore.getState();
 
     try {
+      store.addChatMessage('user', text);
       await runDialogueTurn(text, {
         sessionId: store.sessionId,
         isMuted: store.isMuted,
         speakWith: (textToSpeak) => this.tts.speak(textToSpeak),
+        onAddAssistantMessage: (replyText) => store.addChatMessage('assistant', replyText),
+        onResetBehavior: () => {
+          if (useDigitalHumanStore.getState().currentBehavior === 'thinking') {
+            this.tts.stop();
+          }
+        },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('对话服务错误:', error);
       store.setError('对话服务暂时不可用，请稍后重试');
       store.setBehavior('idle');
