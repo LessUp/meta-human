@@ -32,6 +32,8 @@ export default function AdvancedDigitalHumanPage() {
     toggleAutoRotate,
     clearError,
     setConnectionStatus,
+    setError,
+    addChatMessage,
     initSession
   } = useDigitalHumanStore();
 
@@ -118,6 +120,8 @@ export default function AdvancedDigitalHumanPage() {
 
     if (!text) setChatInput('');
 
+    addChatMessage('user', content);
+
     try {
       await runDialogueTurn(content, {
         sessionId,
@@ -125,12 +129,21 @@ export default function AdvancedDigitalHumanPage() {
         isMuted,
         speakWith: (textToSpeak) => ttsService.speak(textToSpeak),
         setLoading: setIsChatLoading,
+        onAddAssistantMessage: (text) => addChatMessage('assistant', text),
+        onConnectionChange: (status) => setConnectionStatus(status),
+        onClearError: () => clearError(),
+        onError: (msg) => setError(msg),
+        onResetBehavior: () => {
+          if (useDigitalHumanStore.getState().currentBehavior === 'thinking') {
+            digitalHumanEngine.setBehavior('idle');
+          }
+        },
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('发送消息失败:', err);
-      toast.error(err.message || '发送失败，请重试');
+      toast.error(err instanceof Error ? err.message : '发送失败，请重试');
     }
-  }, [chatInput, isChatLoading, sessionId, isMuted]);
+  }, [chatInput, isChatLoading, sessionId, isMuted, addChatMessage, setConnectionStatus, clearError, setError]);
 
   const handleToggleRecording = useCallback(() => {
     if (isRecording) {

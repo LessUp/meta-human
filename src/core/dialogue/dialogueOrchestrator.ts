@@ -1,18 +1,20 @@
 import { ChatResponsePayload, sendUserInput } from './dialogueService';
-import { useDigitalHumanStore } from '../../store/digitalHumanStore';
 import { digitalHumanEngine } from '../avatar/DigitalHumanEngine';
 
 export interface DialogueHandleOptions {
   isMuted?: boolean;
   speakWith?: (text: string) => Promise<void> | void;
-  addAssistantMessage?: boolean;
+  onAddAssistantMessage?: (text: string) => void;
+  onError?: (message: string) => void;
 }
 
 export interface DialogueTurnOptions extends DialogueHandleOptions {
   sessionId?: string;
   meta?: Record<string, unknown>;
-  addUserMessage?: boolean;
   setLoading?: (loading: boolean) => void;
+  onConnectionChange?: (status: 'connected' | 'error') => void;
+  onClearError?: () => void;
+  onResetBehavior?: () => void;
 }
 
 let pendingTurn: Promise<ChatResponsePayload | undefined> | null = null;
@@ -31,48 +33,51 @@ export async function runDialogueTurn(
     return undefined;
   }
 
-  const store = useDigitalHumanStore.getState();
   const {
-    sessionId = store.sessionId,
+    sessionId,
     meta,
-    isMuted = store.isMuted,
+    isMuted = false,
     speakWith,
-    addUserMessage = true,
-    addAssistantMessage = true,
     setLoading,
+    onConnectionChange,
+    onClearError,
+    onError,
+    onResetBehavior,
   } = options;
 
-  if (addUserMessage) {
-    store.addChatMessage('user', content);
-  }
-
-  store.setLoading(true);
   setLoading?.(true);
-  store.setBehavior('thinking');
+  digitalHumanEngine.setBehavior('thinking');
 
   const execute = async (): Promise<ChatResponsePayload | undefined> => {
     try {
-      const response = await sendUserInput({
+      const result = await sendUserInput({
         sessionId,
         userText: content,
         meta,
       });
 
-      await handleDialogueResponse(response, {
+      if (result.connectionStatus === 'connected') {
+        onConnectionChange?.('connected');
+        onClearError?.();
+      } else if (result.connectionStatus === 'error') {
+        onConnectionChange?.('error');
+        if (result.error) {
+          onError?.(result.error);
+        }
+      }
+
+      await handleDialogueResponse(result.response, {
         isMuted,
         speakWith,
-        addAssistantMessage,
+        onAddAssistantMessage: options.onAddAssistantMessage,
+        onError,
       });
 
-      return response;
+      return result.response;
     } finally {
-      store.setLoading(false);
       setLoading?.(false);
       pendingTurn = null;
-
-      if (useDigitalHumanStore.getState().currentBehavior === 'thinking') {
-        useDigitalHumanStore.getState().setBehavior('idle');
-      }
+      onResetBehavior?.();
     }
   };
 
@@ -84,15 +89,15 @@ export async function handleDialogueResponse(
   res: ChatResponsePayload,
   options: DialogueHandleOptions = {}
 ): Promise<void> {
-  const store = useDigitalHumanStore.getState();
   const {
     isMuted = false,
     speakWith,
-    addAssistantMessage = true,
+    onAddAssistantMessage,
+    onError,
   } = options;
 
-  if (addAssistantMessage && res.replyText) {
-    store.addChatMessage('assistant', res.replyText);
+  if (res.replyText) {
+    onAddAssistantMessage?.(res.replyText);
   }
 
   if (res.emotion) {
@@ -106,9 +111,9 @@ export async function handleDialogueResponse(
   if (res.replyText && !isMuted && speakWith) {
     try {
       await speakWith(res.replyText);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.warn('语音播报失败，但对话文本已返回:', error);
-      store.setError(error?.message || '语音播报失败');
+      onError?.(error instanceof Error ? error.message : '语音播报失败');
     }
   }
 }

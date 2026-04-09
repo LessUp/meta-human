@@ -10,6 +10,7 @@ export type {
   ChatResponsePayload,
   DialogueServiceResult,
   DialogueServiceConfig,
+  StreamCallbacks,
 } from './dialogueService';
 
 export { runDialogueTurn, handleDialogueResponse } from './dialogueOrchestrator';
