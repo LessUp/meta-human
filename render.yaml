@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: meta-human-api
+    runtime: python
+    rootDir: server
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /health
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: CORS_ALLOW_ORIGINS
+        value: https://lessup.github.io
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: OPENAI_BASE_URL
+        value: https://api.openai.com/v1
+      - key: LLM_PROVIDER
+        value: openai
+      - key: TTS_PROVIDER
+        value: edge
+      - key: TTS_VOICE
+        value: zh-CN-XiaoxiaoNeural
+      - key: TTS_RATE
+        value: +0%
+      - key: ASR_PROVIDER
+        value: whisper
+      - key: ASR_MODEL
+        value: whisper-1
+      - key: ASR_LANGUAGE
+        value: zh
+      - key: DIALOGUE_MAX_HISTORY_LENGTH
+        value: 20
+      - key: DIALOGUE_MAX_SESSION_MESSAGES
+        value: 10
+      - key: RATE_LIMIT_RPM
+        value: 60
+      - key: LOG_LEVEL
+        value: INFO
