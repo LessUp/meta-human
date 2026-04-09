@@ -13,6 +13,7 @@ export interface ChatMessage {
   role: ChatRole;
   text: string;
   timestamp: number;
+  isStreaming?: boolean;
 }
 
 interface DigitalHumanState {
@@ -62,7 +63,8 @@ interface DigitalHumanState {
 
   // 会话管理
   initSession: () => void;
-  addChatMessage: (role: ChatRole, text: string) => void;
+  addChatMessage: (role: ChatRole, text: string, isStreaming?: boolean) => void;
+  updateChatMessage: (id: number, updates: Partial<Pick<ChatMessage, 'text' | 'isStreaming'>>) => void;
   clearChatHistory: () => void;
 
   // 控制方法
@@ -193,9 +195,9 @@ export const useDigitalHumanStore = create<DigitalHumanState>()(devtools((set, g
     });
   },
 
-  addChatMessage: (role, text) => set((state) => {
+  addChatMessage: (role, text, isStreaming = false) => set((state) => {
     const normalizedText = text.trim();
-    if (!normalizedText) {
+    if (!normalizedText && !isStreaming) {
       return state;
     }
 
@@ -204,10 +206,16 @@ export const useDigitalHumanStore = create<DigitalHumanState>()(devtools((set, g
     return {
       chatHistory: [
         ...state.chatHistory,
-        { id: generateChatMessageId(), role, text: normalizedText, timestamp }
+        { id: generateChatMessageId(), role, text: normalizedText, timestamp, isStreaming }
       ]
     };
   }),
+
+  updateChatMessage: (id, updates) => set((state) => ({
+    chatHistory: state.chatHistory.map((msg) =>
+      msg.id === id ? { ...msg, ...updates } : msg
+    ),
+  })),
 
   clearChatHistory: () => set({ chatHistory: [] }),
 
