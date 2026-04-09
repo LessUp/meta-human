@@ -1,7 +1,7 @@
 from typing import Any, AsyncGenerator, Dict, List, Optional
 import json
 import logging
-import os
+import time
 import random
 from datetime import datetime
 from collections import defaultdict
@@ -9,33 +9,58 @@ from urllib.parse import urlparse, urlunparse
 
 import httpx
 
+from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
 
 # 会话历史存储（生产环境应使用 Redis 等持久化存储）
 session_histories: Dict[str, List[Dict[str, str]]] = defaultdict(list)
+session_last_active: Dict[str, float] = {}
 MAX_HISTORY_LENGTH = 20  # 最大保留的历史对话轮数
+_last_cleanup_time: float = 0.0
 
 
 class DialogueService:
   def __init__(self) -> None:
-    self.api_key = os.getenv("OPENAI_API_KEY")
-    self.model = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
-    self.base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
-    self.provider = os.getenv("LLM_PROVIDER", "openai").lower()
+    settings = get_settings()
+    self.api_key = settings.openai_api_key
+    self.model = settings.openai_model
+    self.base_url = settings.openai_base_url
+    self.provider = settings.llm_provider
+    self.max_session_messages = settings.max_session_messages
+    self.session_ttl = settings.session_ttl_seconds
+    self.cleanup_interval = settings.session_cleanup_interval
     self._session_messages: dict[str, list[dict[str, str]]] = {}
-    try:
-      self.max_session_messages = int(os.getenv("DIALOGUE_MAX_SESSION_MESSAGES", "10"))
-    except ValueError:
-      self.max_session_messages = 10
 
   def _normalize_user_text(self, user_text: str) -> str:
     return (user_text or "").strip()
 
+  def _maybe_cleanup_sessions(self) -> None:
+    """定期清理过期会话，防止内存无限增长"""
+    global _last_cleanup_time
+    now = time.monotonic()
+    if now - _last_cleanup_time < self.cleanup_interval:
+      return
+    _last_cleanup_time = now
+
+    cutoff = time.monotonic() - self.session_ttl
+    expired = [sid for sid, ts in session_last_active.items() if ts < cutoff]
+    for sid in expired:
+      session_histories.pop(sid, None)
+      session_last_active.pop(sid, None)
+      self._session_messages.pop(sid, None)
+    if expired:
+      logger.info("清理了 %d 个过期会话", len(expired))
+
+  def _touch_session(self, session_id: str) -> None:
+    """更新会话最后活跃时间"""
+    session_last_active[session_id] = time.monotonic()
+
   def _append_session_history(self, session_id: str, role: str, content: str) -> None:
     if not session_id or not content:
       return
+    self._touch_session(session_id)
     session_histories[session_id].append({
       "role": role,
       "content": content,
@@ -104,6 +129,8 @@ class DialogueService:
         "emotion": "neutral",
         "action": "idle",
       }
+
+    self._maybe_cleanup_sessions()
 
     if not self.api_key:
       logger.info("OPENAI_API_KEY 未配置，使用智能 Mock 回复")
@@ -228,6 +255,8 @@ class DialogueService:
     if session_id in self._session_messages:
       del self._session_messages[session_id]
       removed = True
+    if session_id in session_last_active:
+      del session_last_active[session_id]
     return removed
 
   def get_session_history(self, session_id: str) -> List[Dict[str, str]]:
@@ -236,6 +265,7 @@ class DialogueService:
 
   def list_sessions(self) -> List[Dict[str, Any]]:
     """列出所有活跃会话的摘要信息"""
+    self._maybe_cleanup_sessions()
     sessions = []
     for sid, history in session_histories.items():
       if not history:
@@ -271,6 +301,8 @@ class DialogueService:
         ensure_ascii=False,
       )
       return
+
+    self._maybe_cleanup_sessions()
 
     if not self.api_key:
       logger.info("OPENAI_API_KEY 未配置，流式模式使用智能 Mock 回复")
