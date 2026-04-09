@@ -259,6 +259,7 @@ export class ASRService {
   private onResultCallback: ((text: string) => void) | null = null;
   private mode: 'command' | 'dictation' = 'command';
   private pendingRestartTimer: ReturnType<typeof setTimeout> | null = null;
+  private presetTimers: ReturnType<typeof setTimeout>[] = [];
 
   constructor(config: ASRConfig = {}) {
     this.isSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
@@ -412,6 +413,7 @@ export class ASRService {
   }
 
   stop(): void {
+    this.clearPresetTimers();
     if (this.pendingRestartTimer) {
       clearTimeout(this.pendingRestartTimer);
       this.pendingRestartTimer = null;
@@ -428,6 +430,7 @@ export class ASRService {
   }
 
   abort(): void {
+    this.clearPresetTimers();
     if (this.pendingRestartTimer) {
       clearTimeout(this.pendingRestartTimer);
       this.pendingRestartTimer = null;
@@ -507,11 +510,11 @@ export class ASRService {
     const store = useDigitalHumanStore.getState();
 
     try {
-      store.addChatMessage('user', text);
       await runDialogueTurn(text, {
         sessionId: store.sessionId,
         isMuted: store.isMuted,
         speakWith: (textToSpeak) => this.tts.speak(textToSpeak),
+        onAddUserMessage: (t) => store.addChatMessage('user', t),
         onAddAssistantMessage: (replyText) => store.addChatMessage('assistant', replyText),
         onResetBehavior: () => {
           if (useDigitalHumanStore.getState().currentBehavior === 'thinking') {
@@ -526,6 +529,15 @@ export class ASRService {
     }
   }
 
+  private clearPresetTimers(): void {
+    this.presetTimers.forEach(clearTimeout);
+    this.presetTimers = [];
+  }
+
+  private schedulePresetReset(fn: () => void, delay: number): void {
+    this.presetTimers.push(setTimeout(fn, delay));
+  }
+
   // 预设动作：打招呼
   performGreeting(): void {
     const store = useDigitalHumanStore.getState();
@@ -536,7 +548,7 @@ export class ASRService {
 
     this.speakSafely('您好！很高兴见到您！有什么可以帮助您的吗？');
 
-    setTimeout(() => {
+    this.schedulePresetReset(() => {
       store.setEmotion('neutral');
       store.setExpression('neutral');
       store.setBehavior('idle');
@@ -553,7 +565,7 @@ export class ASRService {
 
     this.speakSafely('让我为您跳一支舞！');
 
-    setTimeout(() => {
+    this.schedulePresetReset(() => {
       store.setAnimation('idle');
       store.setBehavior('idle');
       store.setEmotion('neutral');
@@ -568,7 +580,7 @@ export class ASRService {
 
     this.speakSafely('好的，我明白了。');
 
-    setTimeout(() => {
+    this.schedulePresetReset(() => {
       store.setAnimation('idle');
       store.setBehavior('idle');
     }, 2000);
@@ -581,23 +593,9 @@ export class ASRService {
 
     this.speakSafely('不太确定呢。');
 
-    setTimeout(() => {
+    this.schedulePresetReset(() => {
       store.setAnimation('idle');
     }, 2000);
-  }
-
-  // 预设动作：思考
-  performThinking(): void {
-    const store = useDigitalHumanStore.getState();
-    store.setBehavior('thinking');
-    store.setAnimation('think');
-
-    this.speakSafely('让我想想...');
-
-    setTimeout(() => {
-      store.setBehavior('idle');
-      store.setAnimation('idle');
-    }, 3000);
   }
 }
 

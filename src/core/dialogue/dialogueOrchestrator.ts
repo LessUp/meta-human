@@ -4,6 +4,7 @@ import { digitalHumanEngine } from '../avatar/DigitalHumanEngine';
 export interface DialogueHandleOptions {
   isMuted?: boolean;
   speakWith?: (text: string) => Promise<void> | void;
+  onAddUserMessage?: (text: string) => void;
   onAddAssistantMessage?: (text: string) => void;
   onError?: (message: string) => void;
 }
@@ -43,7 +44,11 @@ export async function runDialogueTurn(
     onClearError,
     onError,
     onResetBehavior,
+    onAddUserMessage,
   } = options;
+
+  // 在 pendingTurn 守卫内添加用户消息，防止 ASR 和手动聊天产生重复
+  onAddUserMessage?.(content);
 
   setLoading?.(true);
   digitalHumanEngine.setBehavior('thinking');
