@@ -1,6 +1,7 @@
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.services.dialogue import dialogue_service
@@ -22,9 +23,9 @@ class ChatResponse(BaseModel):
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest) -> ChatResponse:
-  """对话接口（初版 Mock 实现）。
+  """对话接口：输入文本，返回结构化的数字人驱动信息。
 
-  后续将接入真实的 LLM 与业务逻辑，目前仅进行简单 echo。"""
+  支持 LLM 调用（配置 OPENAI_API_KEY）或 Mock 回复（未配置时自动回退）。"""
   result = await dialogue_service.generate_reply(
     user_text=req.userText,
     session_id=req.sessionId,
@@ -33,11 +34,30 @@ async def chat(req: ChatRequest) -> ChatResponse:
   return ChatResponse(**result)
 
 
-@router.delete("/session/{session_id}")
-async def delete_session(session_id: str) -> dict:
-  """清除指定会话的后端历史记录。"""
-  session_id = (session_id or "").strip()
-  if not session_id:
-    return {"cleared": False}
-  cleared = dialogue_service.clear_session(session_id)
-  return {"cleared": cleared}
+@router.post("/chat/stream")
+async def chat_stream(req: ChatRequest) -> StreamingResponse:
+  """流式对话接口（SSE）。
+
+  返回 Server-Sent Events 流，每个事件为 JSON 对象：
+  - {"type": "token", "content": "..."}  逐 token 推送
+  - {"type": "done", "replyText": "...", "emotion": "...", "action": "..."}  完成
+  - {"type": "error", "message": "..."}  错误
+  """
+
+  async def event_generator():
+    async for chunk in dialogue_service.generate_reply_stream(
+      user_text=req.userText,
+      session_id=req.sessionId,
+      meta=req.meta,
+    ):
+      yield f"data: {chunk}\n\n"
+
+  return StreamingResponse(
+    event_generator(),
+    media_type="text/event-stream",
+    headers={
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+      "X-Accel-Buffering": "no",
+    },
+  )

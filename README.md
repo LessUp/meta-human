@@ -1,220 +1,238 @@
-# Digital Human Platform
+<p align="center">
+  <img src="public/favicon.svg" width="80" alt="MetaHuman Engine" />
+</p>
 
-基于Web技术的3D数字人交互平台
+<h1 align="center">MetaHuman Engine</h1>
 
-## 🚀 项目介绍
+<p align="center">
+  A modular, real-time 3D digital human interaction engine for the browser.
+</p>
 
-这是一个完整的数字人项目，实现了3D建模与动画系统、语音交互系统、行为控制系统和渲染引擎等核心功能。
+<p align="center">
+  <strong>English</strong> | <a href="README.zh-CN.md">简体中文</a>
+</p>
 
-## ✨ 核心功能
-
-### 1. 3D建模与动画系统
-- ✅ 基于Three.js的高精度3D渲染
-- ✅ 支持FBX/GLTF模型格式
-- ✅ 实时光影渲染和材质系统
-- ✅ 骨骼绑定和面部表情控制
-
-### 2. 语音交互系统
-- ✅ TTS语音合成技术（Web Speech API）
-- ✅ ASR语音识别功能
-- ✅ 多语言支持（中文优先）
-- ✅ 自定义语音参数（音量、音调、语速）
-
-### 3. 行为控制系统
-- ✅ 情感状态机
-- ✅ AI驱动的智能决策
-- ✅ 可视化行为编辑器
-- ✅ 复杂动作序列支持
-
-### 4. 渲染引擎
-- ✅ WebGL实时渲染
-- ✅ 响应式设计
-- ✅ 多平台适配
-- ✅ 性能优化
-
-## 🛠️ 技术栈
-
-- **前端框架**: React 18 + TypeScript
-- **3D渲染**: Three.js + React Three Fiber
-- **状态管理**: Zustand
-- **UI组件**: Tailwind CSS + Lucide React
-- **构建工具**: Vite
-- **部署**: Vercel
-
-## 📦 快速开始
-
-### 安装依赖
-```bash
-npm install
-```
-
-### 开发模式
-```bash
-npm run dev
-```
-
-### 构建项目
-```bash
-# 标准构建
-npm run build
-
-# 移动端构建
-npm run build:mobile
-
-# 桌面端构建
-npm run build:desktop
-
-# AR模式构建
-npm run build:ar
-```
-
-### 部署
-```bash
-# 部署到Vercel
-npm run deploy
-```
-
-## 🎯 使用说明
-
-### 基础控制
-- **播放/暂停**: 控制数字人动画播放
-- **重置**: 重置数字人到初始状态
-- **自动旋转**: 开启/关闭自动旋转展示
-
-### 语音交互
-- **录音**: 点击录音按钮开始语音识别
-- **语音合成**: 支持自定义文本转语音
-- **快速命令**: 预设常用语音命令
-
-### 表情控制
-- **基础表情**: 微笑、惊讶、悲伤、愤怒等
-- **强度调节**: 0-100%表情强度控制
-- **自定义颜色**: 支持表情颜色自定义
-
-### 行为控制
-- **行为模式**: 待机、打招呼、倾听、思考、说话、兴奋
-- **自动决策**: AI驱动的自动行为决策
-- **高级控制**: 专注倾听、思考模式、演讲模式等
-
-## 🔧 开发文档
-
-### 项目结构
-```
-src/
-├── components/          # React组件
-│   ├── DigitalHumanViewer.tsx    # 3D数字人查看器
-│   ├── ControlPanel.tsx          # 基础控制面板
-│   ├── VoiceInteractionPanel.tsx # 语音交互面板
-│   ├── ExpressionControlPanel.tsx # 表情控制面板
-│   └── BehaviorControlPanel.tsx  # 行为控制面板
-├── pages/               # 页面组件
-│   ├── DigitalHumanPage.tsx      # 基础数字人页面
-│   └── AdvancedDigitalHumanPage.tsx # 高级数字人页面
-├── store/               # 状态管理
-│   └── digitalHumanStore.ts      # 数字人状态管理
-└── utils/               # 工具函数
-```
-
-### 核心API
-
-#### 数字人查看器组件
-```tsx
-<DigitalHumanViewer
-  modelUrl="/models/digital-human.glb"
-  autoRotate={true}
-  showControls={true}
-  onModelLoad={(model) => console.log('模型加载完成')}
-/>
-```
-
-#### 语音服务
-```typescript
-// 语音合成
-const tts = new TTSService();
-tts.speak('你好，我是数字人助手！', 'zh-CN');
-
-// 语音识别
-const asr = new ASRService();
-asr.start(); // 开始录音
-```
-
-#### 状态管理
-```typescript
-const {
-  isPlaying,
-  currentExpression,
-  setExpression,
-  play,
-  pause
-} = useDigitalHumanStore();
-```
-
-## 🌐 多平台支持
-
-### Web平台
-- ✅ 现代浏览器支持
-- ✅ 响应式设计
-- ✅ PWA支持
-
-### 移动端
-- ✅ 触摸交互优化
-- ✅ 移动端UI适配
-- ✅ 性能优化
-
-### 桌面端
-- ✅ 桌面级交互体验
-- ✅ 键盘快捷键支持
-- ✅ 多窗口支持
-
-### AR/VR
-- ✅ WebXR支持
-- ✅ 空间交互
-- ✅ 沉浸式体验
-
-## 📊 性能指标
-
-- **首次加载时间**: < 3秒
-- **3D渲染帧率**: 60 FPS
-- **语音响应延迟**: < 500ms
-- **内存占用**: < 200MB
-- **CPU使用率**: < 30%
-
-## 🔒 安全特性
-
-- ✅ HTTPS强制
-- ✅ CSP安全策略
-- ✅ XSS防护
-- ✅ 内容安全策略
-
-## 🤝 贡献指南
-
-1. Fork项目
-2. 创建特性分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add some amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 创建Pull Request
-
-## 📄 许可证
-
-本项目采用MIT许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
-
-## 🆘 支持
-
-如遇到问题，请通过以下方式获取支持：
-- 📧 邮箱: support@digital-human.com
-- 💬 社区: [GitHub Discussions](https://github.com/digital-human/platform/discussions)
-- 🐛 问题报告: [GitHub Issues](https://github.com/digital-human/platform/issues)
-
-## 🌟 更新日志
-
-### v1.0.0 (2024-01)
-- 🎉 初始版本发布
-- ✅ 基础3D渲染功能
-- ✅ 语音交互系统
-- ✅ 表情控制系统
-- ✅ 行为控制系统
-- ✅ 多平台支持
+<p align="center">
+  <img src="https://img.shields.io/badge/React-18-61dafb?logo=react" alt="React" />
+  <img src="https://img.shields.io/badge/Three.js-r158-black?logo=threedotjs" alt="Three.js" />
+  <img src="https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Vite-5-646cff?logo=vite" alt="Vite" />
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
+</p>
 
 ---
 
-**⭐ 如果这个项目对你有帮助，请给我们一个星标！**
+## Overview
+
+**MetaHuman Engine** is a browser-native digital human interaction engine that provides **3D avatar rendering**, **voice conversation**, **visual perception**, and **behavior control** as composable modules. Built for virtual customer service, live streaming avatars, educational assistants, and more.
+
+## Key Features
+
+| Module | Capabilities | Technology |
+|--------|-------------|------------|
+| **Avatar** | Real-time 3D rendering, facial expressions, skeletal animation | Three.js + React Three Fiber |
+| **Audio** | TTS speech synthesis, ASR speech recognition | Web Speech API |
+| **Dialogue** | Multi-turn conversation, local fallback, streaming (planned) | REST API with retry & degradation |
+| **Vision** | Facial emotion analysis, head motion detection, gesture recognition | MediaPipe Face Mesh & Pose |
+
+## Quick Start
+
+### Prerequisites
+
+- **Node.js** >= 18.0.0
+- **npm** >= 9.0.0
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/LessUp/meta-human.git
+cd meta-human
+
+# Install dependencies
+npm install
+
+# Start the development server
+npm run dev
+```
+
+### Environment Variables
+
+Copy `.env.example` to `.env.local` and configure as needed:
+
+```bash
+cp .env.example .env.local
+```
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `VITE_API_BASE_URL` | Backend dialogue service URL | `http://localhost:8000` |
+
+## Project Structure
+
+```
+src/
+├── core/                   # Core engine layer
+│   ├── avatar/             #   3D avatar engine
+│   ├── audio/              #   Audio services (TTS / ASR)
+│   ├── dialogue/           #   Dialogue orchestration & transport
+│   └── vision/             #   Visual perception & emotion mapping
+├── components/             # UI components
+│   ├── ui/                 #   Shared UI primitives
+│   ├── DigitalHumanViewer  #   3D viewer
+│   ├── ControlPanel        #   Control panel
+│   └── ...                 #   Expression / Behavior / Voice / Vision panels
+├── hooks/                  # Custom React hooks
+├── store/                  # Zustand global state
+├── pages/                  # Page components
+├── lib/                    # Utility functions
+├── App.tsx                 # Router entry
+└── main.tsx                # Application entry
+```
+
+## Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start the development server |
+| `npm run build` | Production build |
+| `npm run build:pages` | GitHub Pages build (`/meta-human/`) |
+| `npm run preview` | Preview production build |
+| `npm run lint` | Run ESLint checks |
+| `npm run lint:fix` | Auto-fix ESLint issues |
+| `npm run format` | Format code with Prettier |
+| `npm run test` | Run tests in watch mode |
+| `npm run test:run` | Run tests once |
+| `npm run test:coverage` | Generate coverage report |
+| `npm run typecheck` | TypeScript type checking |
+
+## Tech Stack
+
+- **Framework** — React 18 + TypeScript
+- **3D Rendering** — Three.js + React Three Fiber + Drei
+- **State Management** — Zustand
+- **Styling** — Tailwind CSS
+- **Build Tool** — Vite 5
+- **Testing** — Vitest + Testing Library
+- **CI/CD** — GitHub Actions
+- **Deployment** — GitHub Pages
+
+## Deployment
+
+### GitHub Pages
+
+This repository now uses **GitHub Pages** as the primary deployment target.
+
+1. Add a repository variable named `VITE_API_BASE_URL`
+2. Push to `master` or run the `Deploy Pages` workflow manually
+3. After the first successful deployment, the site will be available at:
+
+```text
+https://lessup.github.io/meta-human/
+```
+
+Client-side routes use hash URLs on Pages, for example:
+
+```text
+https://lessup.github.io/meta-human/#/advanced
+```
+
+### Build commands
+
+```bash
+# Standard production build
+npm run build
+
+# GitHub Pages build (/meta-human/ base path)
+npm run build:pages
+```
+
+> The Pages workflow reads `VITE_API_BASE_URL` from GitHub Actions repository variables. If it is missing, the deployed app will fall back to `http://localhost:8000`, which is not suitable for production.
+
+## Architecture
+
+
+```
+┌──────────────────────────────────────────┐
+│                  UI Layer                 │
+│   Pages ← Components ← Hooks ← Store    │
+├──────────────────────────────────────────┤
+│               Core Engine                │
+│  ┌────────┐ ┌───────┐ ┌────────┐ ┌─────┐│
+│  │ Avatar │ │ Audio │ │Dialogue│ │Vision││
+│  └────────┘ └───────┘ └────────┘ └─────┘│
+├──────────────────────────────────────────┤
+│            External Services             │
+│  Three.js  Web Speech  REST API MediaPipe│
+└──────────────────────────────────────────┘
+```
+
+## API Quick Reference
+
+### Avatar Engine
+
+```typescript
+import { digitalHumanEngine } from '@/core/avatar';
+
+digitalHumanEngine.setExpression('smile');
+digitalHumanEngine.setEmotion('happy');
+digitalHumanEngine.playAnimation('wave');
+digitalHumanEngine.performGreeting();
+```
+
+### Audio Services
+
+```typescript
+import { ttsService, asrService } from '@/core/audio';
+
+// Text-to-Speech
+await ttsService.speak('Hello, how can I help you?');
+
+// Speech Recognition
+asrService.start({ mode: 'command' });
+```
+
+### State Management
+
+```typescript
+import { useDigitalHumanStore } from '@/store/digitalHumanStore';
+
+const { isPlaying, currentExpression, play, pause } = useDigitalHumanStore();
+```
+
+## Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Space` | Play / Pause |
+| `R` | Reset |
+| `M` | Toggle mute |
+| `V` | Toggle recording |
+| `S` | Toggle settings panel |
+| `1` – `4` | Quick actions |
+| `Esc` | Close settings |
+
+## Browser Support
+
+| Browser | Version |
+|---------|---------|
+| Chrome | >= 90 |
+| Edge | >= 90 |
+| Firefox | >= 90 |
+| Safari | >= 15 |
+
+> Speech Recognition (ASR) requires **Chrome** or **Edge** due to Web Speech API limitations.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feat/my-feature`)
+3. Commit your changes (`git commit -m 'feat: add my feature'`)
+4. Push to the branch (`git push origin feat/my-feature`)
+5. Open a Pull Request
+
+Please follow [Conventional Commits](https://www.conventionalcommits.org/) specification.
+
+## License
+
+[MIT](LICENSE)
