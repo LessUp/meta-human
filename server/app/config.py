@@ -29,6 +29,8 @@ class Settings:
     # Session
     max_history_length: int = 20
     max_session_messages: int = 10
+    session_ttl_seconds: int = 1800
+    session_cleanup_interval: int = 300
 
     # Rate limit
     rate_limit_rpm: int = 60
@@ -70,6 +72,8 @@ def get_settings() -> Settings:
         asr_language=os.getenv("ASR_LANGUAGE", "zh"),
         max_history_length=_int("DIALOGUE_MAX_HISTORY_LENGTH", 20),
         max_session_messages=_int("DIALOGUE_MAX_SESSION_MESSAGES", 10),
+        session_ttl_seconds=_int("SESSION_TTL_SECONDS", 1800),
+        session_cleanup_interval=_int("SESSION_CLEANUP_INTERVAL", 300),
         rate_limit_rpm=_int("RATE_LIMIT_RPM", 60),
         cors_allow_origins=os.getenv("CORS_ALLOW_ORIGINS", ""),
     )
