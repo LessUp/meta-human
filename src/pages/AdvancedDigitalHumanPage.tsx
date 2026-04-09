@@ -9,7 +9,7 @@ import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { ttsService, asrService } from '../core/audio/audioService';
 import { digitalHumanEngine } from '../core/avatar/DigitalHumanEngine';
 import { checkServerHealth, clearRemoteSession } from '../core/dialogue/dialogueService';
-import { runDialogueTurn } from '../core/dialogue/dialogueOrchestrator';
+import { runDialogueTurnStream } from '../core/dialogue/dialogueOrchestrator';
 import { Toaster, toast } from 'sonner';
 import { Mic, MessageSquare, Settings, Activity, X, Radio, AlertCircle, Wifi, WifiOff, RefreshCw, RotateCcw } from 'lucide-react';
 
@@ -34,6 +34,7 @@ export default function AdvancedDigitalHumanPage() {
     setConnectionStatus,
     setError,
     addChatMessage,
+    updateChatMessage,
     initSession
   } = useDigitalHumanStore();
 
@@ -127,18 +128,31 @@ export default function AdvancedDigitalHumanPage() {
 
     if (!text) setChatInput('');
 
+    // 创建占位消息用于流式更新
+    const store = useDigitalHumanStore.getState();
+    const nextId = Date.now();
+    addChatMessage('assistant', '', true);
+
     try {
-      await runDialogueTurn(content, {
+      await runDialogueTurnStream(content, {
         sessionId,
         meta: { timestamp: Date.now() },
         isMuted,
         speakWith: (textToSpeak) => ttsService.speak(textToSpeak),
         setLoading: setIsChatLoading,
         onAddUserMessage: (t) => addChatMessage('user', t),
-        onAddAssistantMessage: (text) => addChatMessage('assistant', text),
+        onStreamToken: (accumulatedText) => {
+          updateChatMessage(nextId, { text: accumulatedText });
+        },
+        onStreamEnd: () => {
+          updateChatMessage(nextId, { isStreaming: false });
+        },
         onConnectionChange: (status) => setConnectionStatus(status),
         onClearError: () => clearError(),
-        onError: (msg) => setError(msg),
+        onError: (msg) => {
+          setError(msg);
+          updateChatMessage(nextId, { isStreaming: false });
+        },
         onResetBehavior: () => {
           if (useDigitalHumanStore.getState().currentBehavior === 'thinking') {
             digitalHumanEngine.setBehavior('idle');
@@ -148,8 +162,9 @@ export default function AdvancedDigitalHumanPage() {
     } catch (err: unknown) {
       console.error('发送消息失败:', err);
       toast.error(err instanceof Error ? err.message : '发送失败，请重试');
+      updateChatMessage(nextId, { isStreaming: false });
     }
-  }, [chatInput, isChatLoading, sessionId, isMuted, addChatMessage, setConnectionStatus, clearError, setError]);
+  }, [chatInput, isChatLoading, sessionId, isMuted, addChatMessage, updateChatMessage, setConnectionStatus, clearError, setError]);
 
   const handleToggleRecording = useCallback(() => {
     if (isRecording) {
@@ -453,7 +468,7 @@ export default function AdvancedDigitalHumanPage() {
                     : 'bg-white/10 border-white/10 text-gray-100 rounded-bl-none'
                     }`}
                 >
-                  {msg.text}
+                  <span className={msg.isStreaming ? 'streaming-cursor' : ''}>{msg.text}</span>
                 </div>
               </div>
             ))

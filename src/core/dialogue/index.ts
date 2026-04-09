@@ -13,5 +13,5 @@ export type {
   StreamCallbacks,
 } from './dialogueService';
 
-export { runDialogueTurn, handleDialogueResponse } from './dialogueOrchestrator';
+export { runDialogueTurn, runDialogueTurnStream, handleDialogueResponse } from './dialogueOrchestrator';
 export type { DialogueHandleOptions, DialogueTurnOptions } from './dialogueOrchestrator';

@@ -223,6 +223,8 @@ export async function sendUserInput(
 // 流式对话（SSE）
 export interface StreamCallbacks {
   onConnected?: () => void;
+  onError?: (message: string) => void;
+  onDone?: (response: ChatResponsePayload) => void;
 }
 
 export async function* streamUserInput(
@@ -233,6 +235,7 @@ export async function* streamUserInput(
   const { timeout } = { ...DEFAULT_CONFIG, ...config };
 
   let finalResponse: ChatResponsePayload | null = null;
+  let streamError: string | null = null;
 
   try {
     const response = await fetchWithTimeout(
@@ -278,12 +281,15 @@ export async function* streamUserInput(
             const event = JSON.parse(raw);
             if (event.type === 'token' && event.content) {
               yield event.content;
+            } else if (event.type === 'error') {
+              streamError = event.message || '流式响应错误';
             } else if (event.type === 'done') {
               finalResponse = {
                 replyText: event.replyText ?? '',
                 emotion: event.emotion ?? 'neutral',
                 action: event.action ?? 'idle',
               };
+              callbacks.onDone?.(finalResponse);
             }
           } catch {
             console.warn('SSE 事件解析失败:', raw);
@@ -292,6 +298,10 @@ export async function* streamUserInput(
       }
     } finally {
       reader.releaseLock();
+    }
+
+    if (streamError) {
+      callbacks.onError?.(streamError);
     }
   } catch (error) {
     console.warn('流式请求失败，降级到普通请求:', error);

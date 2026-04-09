@@ -1,4 +1,4 @@
-import { ChatResponsePayload, sendUserInput } from './dialogueService';
+import { ChatResponsePayload, sendUserInput, streamUserInput, type StreamCallbacks } from './dialogueService';
 import { digitalHumanEngine } from '../avatar/DigitalHumanEngine';
 
 export interface DialogueHandleOptions {
@@ -12,6 +12,9 @@ export interface DialogueHandleOptions {
 export interface DialogueTurnOptions extends DialogueHandleOptions {
   sessionId?: string;
   meta?: Record<string, unknown>;
+  streaming?: boolean;
+  onStreamToken?: (text: string) => void;
+  onStreamEnd?: () => void;
   setLoading?: (loading: boolean) => void;
   onConnectionChange?: (status: 'connected' | 'error') => void;
   onClearError?: () => void;
@@ -47,7 +50,6 @@ export async function runDialogueTurn(
     onAddUserMessage,
   } = options;
 
-  // 在 pendingTurn 守卫内添加用户消息，防止 ASR 和手动聊天产生重复
   onAddUserMessage?.(content);
 
   setLoading?.(true);
@@ -83,6 +85,95 @@ export async function runDialogueTurn(
       setLoading?.(false);
       pendingTurn = null;
       onResetBehavior?.();
+    }
+  };
+
+  pendingTurn = execute();
+  return pendingTurn;
+}
+
+export async function runDialogueTurnStream(
+  userText: string,
+  options: DialogueTurnOptions = {},
+  streamCallbacks: StreamCallbacks = {},
+): Promise<ChatResponsePayload | undefined> {
+  const content = userText.trim();
+  if (!content) {
+    return undefined;
+  }
+
+  if (pendingTurn) {
+    console.warn('对话请求被忽略：上一轮对话仍在进行中');
+    return undefined;
+  }
+
+  const {
+    sessionId,
+    meta,
+    isMuted = false,
+    speakWith,
+    setLoading,
+    onConnectionChange,
+    onClearError,
+    onError,
+    onResetBehavior,
+    onAddUserMessage,
+    onAddAssistantMessage,
+    onStreamToken,
+    onStreamEnd,
+  } = options;
+
+  onAddUserMessage?.(content);
+
+  setLoading?.(true);
+  digitalHumanEngine.setBehavior('thinking');
+
+  const execute = async (): Promise<ChatResponsePayload | undefined> => {
+    let streamResponse: ChatResponsePayload | null = null;
+
+    try {
+      const enrichedCallbacks: StreamCallbacks = {
+        ...streamCallbacks,
+        onDone: (response) => { streamResponse = response; },
+      };
+
+      const generator = streamUserInput(
+        { sessionId, userText: content, meta },
+        {},
+        enrichedCallbacks,
+      );
+
+      let accumulatedText = '';
+
+      for await (const token of generator) {
+        accumulatedText += token;
+        onStreamToken?.(accumulatedText);
+      }
+
+      // 优先使用 done 事件中的结构化响应（含 emotion/action）
+      const response = streamResponse ?? { replyText: accumulatedText, emotion: 'neutral', action: 'idle' };
+
+      onConnectionChange?.('connected');
+      onClearError?.();
+
+      await handleDialogueResponse(response, {
+        isMuted,
+        speakWith,
+        onAddAssistantMessage: undefined,
+        onError,
+      });
+
+      onStreamEnd?.();
+      return response;
+    } catch (error) {
+      console.error('流式对话失败:', error);
+      onError?.(error instanceof Error ? error.message : '流式对话失败');
+      return undefined;
+    } finally {
+      setLoading?.(false);
+      pendingTurn = null;
+      onResetBehavior?.();
+      onStreamEnd?.();
     }
   };
 
