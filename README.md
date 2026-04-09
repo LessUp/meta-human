@@ -137,6 +137,34 @@ Client-side routes use hash URLs on Pages, for example:
 https://lessup.github.io/meta-human/#/advanced
 ```
 
+### Backend on Render
+
+Use the root-level `render.yaml` blueprint to deploy the FastAPI backend to Render.
+
+1. Create a new Blueprint service from this repository in Render
+2. Confirm the generated service uses:
+   - Root Directory: `server`
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   - Health Check Path: `/health`
+3. Set backend environment variables in Render
+   - Required for Pages access: `CORS_ALLOW_ORIGINS=https://lessup.github.io`
+   - Required for real model replies: `OPENAI_API_KEY`
+   - See `server/.env.example` for the full variable list
+4. After deployment, copy the Render service URL, for example:
+
+```text
+https://your-render-service.onrender.com
+```
+
+5. Set the GitHub Actions repository variable:
+
+```text
+VITE_API_BASE_URL=https://your-render-service.onrender.com
+```
+
+6. Re-run the `Deploy Pages` workflow so the frontend points to the Render backend
+
 ### Build commands
 
 ```bash
@@ -148,6 +176,8 @@ npm run build:pages
 ```
 
 > The Pages workflow reads `VITE_API_BASE_URL` from GitHub Actions repository variables. If it is missing, the deployed app will fall back to `http://localhost:8000`, which is not suitable for production.
+
+> For backend deployment variables, use `server/.env.example` as the Render reference template.
 
 ## Architecture
 

@@ -38,7 +38,8 @@ npm run preview
 
 - `VITE_API_BASE_URL`
   - 说明：后端地址
-  - 默认：`http://localhost:8000`
+  - 本地开发：`http://localhost:8000`
+  - GitHub Pages 生产环境：`https://<your-render-service>.onrender.com`
 
 ## 3. 后端（FastAPI）
 
@@ -54,7 +55,16 @@ pip install -r server/requirements.txt
 
 ### 3.2 启动服务
 
+推荐直接从项目根目录启动：
+
 ```bash
+uvicorn --app-dir server app.main:app --reload --port 8000
+```
+
+或者进入 `server` 目录后启动：
+
+```bash
+cd server
 uvicorn app.main:app --reload --port 8000
 ```
 
@@ -76,8 +86,34 @@ uvicorn app.main:app --reload --port 8000
     - `https://api.openai.com/v1/chat/completions`
     - `http://localhost:8080`（自建网关/代理）
   - 后端会自动规范化为最终的 `.../v1/chat/completions`
+- `LLM_PROVIDER`
+  - 可选；默认：`openai`
+- `TTS_PROVIDER`
+  - 可选；默认：`edge`
+- `ASR_PROVIDER`
+  - 可选；默认：`whisper`
+- `RATE_LIMIT_RPM`
+  - 可选；默认：`60`
 - `CORS_ALLOW_ORIGINS`
-  - 可选；逗号分隔的 Origin 列表（默认允许本地 `5173/3000`）
+  - 可选；逗号分隔的 Origin 列表
+  - Render + GitHub Pages 推荐值：`https://lessup.github.io`
+
+### 3.4 Render 部署清单
+
+1. 在 Render 中从仓库导入 Blueprint（仓库根目录的 `render.yaml`）
+2. 确认后端服务配置如下：
+   - Root Directory：`server`
+   - Build Command：`pip install -r requirements.txt`
+   - Start Command：`uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   - Health Check Path：`/health`
+3. 在 Render 中配置后端环境变量
+   - 至少配置 `CORS_ALLOW_ORIGINS=https://lessup.github.io`
+   - 如果需要真实 LLM 回复，再配置 `OPENAI_API_KEY`
+4. 部署成功后，拿到 Render 服务地址，例如：`https://your-render-service.onrender.com`
+5. 在 GitHub 仓库 Settings → Secrets and variables → Actions → Variables 中设置：
+   - `VITE_API_BASE_URL=https://your-render-service.onrender.com`
+6. 重新运行 GitHub Pages 的 `Deploy Pages` workflow
+7. 打开 `https://lessup.github.io/meta-human/` 验证页面与后端连通
 
 ## 4. 浏览器能力说明
 

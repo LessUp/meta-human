@@ -137,6 +137,34 @@ Pages 上的前端路由会使用 Hash URL，例如：
 https://lessup.github.io/meta-human/#/advanced
 ```
 
+### Render 后端部署
+
+使用仓库根目录的 `render.yaml` 可以把 FastAPI 后端部署到 Render。
+
+1. 在 Render 中从本仓库创建 Blueprint 服务
+2. 确认生成的服务配置为：
+   - Root Directory：`server`
+   - Build Command：`pip install -r requirements.txt`
+   - Start Command：`uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   - Health Check Path：`/health`
+3. 在 Render 中配置后端环境变量
+   - Pages 联通至少需要：`CORS_ALLOW_ORIGINS=https://lessup.github.io`
+   - 需要真实大模型回复时，再配置：`OPENAI_API_KEY`
+   - 完整变量列表见 `server/.env.example`
+4. 部署成功后，复制 Render 服务地址，例如：
+
+```text
+https://your-render-service.onrender.com
+```
+
+5. 在 GitHub Actions 的 Repository Variables 中设置：
+
+```text
+VITE_API_BASE_URL=https://your-render-service.onrender.com
+```
+
+6. 重新运行 `Deploy Pages` workflow，让前端指向 Render 后端
+
 ### 构建命令
 
 ```bash
@@ -148,6 +176,8 @@ npm run build:pages
 ```
 
 > Pages workflow 会从 GitHub Actions 的 Repository Variables 中读取 `VITE_API_BASE_URL`。如果未配置，线上构建会回退到 `http://localhost:8000`，不适合生产环境。
+
+> 后端部署变量请以 `server/.env.example` 为参考模板。
 
 ## 架构概览
 
