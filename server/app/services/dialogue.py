@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 import json
 import logging
 import os
@@ -233,6 +233,168 @@ class DialogueService:
   def get_session_history(self, session_id: str) -> List[Dict[str, str]]:
     """获取指定会话的历史记录"""
     return list(session_histories.get(session_id, []))
+
+  def list_sessions(self) -> List[Dict[str, Any]]:
+    """列出所有活跃会话的摘要信息"""
+    sessions = []
+    for sid, history in session_histories.items():
+      if not history:
+        continue
+      sessions.append({
+        "sessionId": sid,
+        "messageCount": len(history),
+        "lastActivity": history[-1].get("timestamp", ""),
+        "preview": history[-1].get("content", "")[:80],
+      })
+    sessions.sort(key=lambda s: s["lastActivity"], reverse=True)
+    return sessions
+
+  async def generate_reply_stream(
+    self,
+    user_text: str,
+    session_id: Optional[str] = None,
+    meta: Optional[Dict[str, Any]] = None,
+  ) -> AsyncGenerator[str, None]:
+    """流式生成对话回复（SSE 格式）
+
+    每个 yield 是一个 SSE data 行的 JSON 字符串。
+    类型：
+    - {"type": "token", "content": "..."}
+    - {"type": "done", "replyText": "...", "emotion": "...", "action": "..."}
+    - {"type": "error", "message": "..."}
+    """
+    session_id = (session_id or "").strip() or None
+    user_text = self._normalize_user_text(user_text)
+    if not user_text:
+      yield json.dumps(
+        {"type": "done", "replyText": "我在听，请告诉我您想聊什么。", "emotion": "neutral", "action": "idle"},
+        ensure_ascii=False,
+      )
+      return
+
+    if not self.api_key:
+      logger.info("OPENAI_API_KEY 未配置，流式模式使用智能 Mock 回复")
+      result = self._get_smart_mock_reply(user_text)
+      self._append_turn(session_id, user_text, result["replyText"])
+      for char in result["replyText"]:
+        yield json.dumps({"type": "token", "content": char}, ensure_ascii=False)
+      yield json.dumps({"type": "done", **result}, ensure_ascii=False)
+      return
+
+    system_prompt = self._build_system_prompt()
+    messages = self._build_messages(session_id, user_text, meta, system_prompt)
+
+    try:
+      collected_content = ""
+      async for chunk_text in self._call_llm_stream(messages):
+        collected_content += chunk_text
+        yield json.dumps({"type": "token", "content": chunk_text}, ensure_ascii=False)
+
+      parsed = self._parse_llm_response(collected_content, user_text)
+      self._append_turn(session_id, user_text, parsed["replyText"])
+      yield json.dumps({"type": "done", **parsed}, ensure_ascii=False)
+
+    except Exception as exc:
+      logger.exception("流式 LLM 调用失败: %s", exc)
+      result = self._get_smart_mock_reply(user_text)
+      self._append_turn(session_id, user_text, result["replyText"])
+      yield json.dumps({"type": "error", "message": str(exc)}, ensure_ascii=False)
+      yield json.dumps({"type": "done", **result}, ensure_ascii=False)
+
+  def _build_system_prompt(self) -> str:
+    return (
+      "你是一个活泼、友好的虚拟数字人对话大脑，负责驱动屏幕上的数字人。"
+      "必须使用简体中文、自然口语风格回答用户，语气偏轻松、积极。"
+      "你需要根据用户的话尽量多地使用非 neutral 的 emotion 和非 idle 的 action，"
+      "但在严肃、负面话题时要适当收敛，不要过度夸张。"
+      "请只输出一个 JSON 对象，包含三个字段："
+      "replyText（字符串，给用户的自然语言回答，要友好自然），"
+      "emotion（字符串，取值限定为: neutral, happy, surprised, sad, angry），"
+      "action（字符串，取值限定为: idle, wave, greet, think, nod, shakeHead, dance, speak）。"
+      "emotion 取值建议：正向场景多用 happy；惊喜时用 surprised；负面情绪时用 sad；严肃提醒时用 angry；普通回答用 neutral。"
+      "action 取值建议：招呼告别用 greet/wave；思考用 think/nod；否定用 shakeHead；庆祝用 dance；说话用 speak；静止用 idle。"
+      "严禁输出 JSON 以外的任何文字。"
+    )
+
+  def _build_messages(
+    self,
+    session_id: Optional[str],
+    user_text: str,
+    meta: Optional[Dict[str, Any]],
+    system_prompt: str,
+  ) -> list[dict[str, str]]:
+    history_messages: list[dict[str, str]] = []
+    if session_id:
+      history_messages = self._get_session_messages(session_id)
+
+    messages: list[dict[str, str]] = [{"role": "system", "content": system_prompt}]
+    if history_messages:
+      messages.extend(history_messages)
+    elif session_id and session_id in session_histories:
+      history = session_histories[session_id][-10:]
+      for msg in history:
+        if msg["role"] in ("user", "assistant"):
+          messages.append({"role": msg["role"], "content": msg["content"]})
+
+    messages.append({"role": "user", "content": user_text})
+
+    if meta:
+      messages.append({
+        "role": "system",
+        "content": f"附加上下文信息（可选）：{json.dumps(meta, ensure_ascii=False)}",
+      })
+    return messages
+
+  def _parse_llm_response(self, content: str, user_text: str) -> Dict[str, Any]:
+    """解析 LLM 返回的 JSON 内容，做字段校验和兜底"""
+    try:
+      parsed = json.loads(content)
+    except json.JSONDecodeError:
+      logger.warning("LLM 返回内容不是合法 JSON: %s", content[:200])
+      return {"replyText": content, "emotion": "neutral", "action": "idle"}
+
+    reply_text = str(parsed.get("replyText", "")).strip() or f"你刚才说：{user_text}"
+    emotion = str(parsed.get("emotion", "neutral")).strip() or "neutral"
+    action = str(parsed.get("action", "idle")).strip() or "idle"
+
+    if emotion not in {"neutral", "happy", "surprised", "sad", "angry"}:
+      emotion = "neutral"
+    if action not in {"idle", "wave", "greet", "think", "nod", "shakeHead", "dance", "speak"}:
+      action = "idle"
+
+    return {"replyText": reply_text, "emotion": emotion, "action": action}
+
+  async def _call_llm_stream(self, messages: list[dict[str, str]]) -> AsyncGenerator[str, None]:
+    """流式调用 LLM，逐块 yield 文本内容"""
+    url = self._get_openai_chat_completions_url()
+    headers = {
+      "Authorization": f"Bearer {self.api_key}",
+      "Content-Type": "application/json",
+    }
+    payload = {
+      "model": self.model,
+      "messages": messages,
+      "temperature": 0.7,
+      "stream": True,
+    }
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+      async with client.stream("POST", url, headers=headers, json=payload) as resp:
+        resp.raise_for_status()
+        async for line in resp.aiter_lines():
+          if not line.startswith("data: "):
+            continue
+          data_str = line[6:].strip()
+          if data_str == "[DONE]":
+            break
+          try:
+            chunk = json.loads(data_str)
+            delta = chunk.get("choices", [{}])[0].get("delta", {})
+            content = delta.get("content", "")
+            if content:
+              yield content
+          except json.JSONDecodeError:
+            continue
 
   def _get_openai_chat_completions_url(self) -> str:
     base_url = (self.base_url or "").strip()

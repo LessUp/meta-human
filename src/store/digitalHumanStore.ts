@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
 
 // 表情类型定义
 export type EmotionType = 'neutral' | 'happy' | 'surprised' | 'sad' | 'angry';
@@ -118,7 +119,7 @@ const getOrCreateSessionId = (): string => {
   return newId;
 };
 
-export const useDigitalHumanStore = create<DigitalHumanState>((set, get) => ({
+export const useDigitalHumanStore = create<DigitalHumanState>()(devtools((set, get) => ({
   // 初始状态
   isPlaying: false,
   autoRotate: false,
@@ -257,4 +258,16 @@ export const useDigitalHumanStore = create<DigitalHumanState>((set, get) => ({
     const { autoRotate } = get();
     set({ autoRotate: !autoRotate });
   }
-}));
+}), { name: 'digital-human-store', enabled: import.meta.env.DEV }));
+
+// Typed selectors for performance-sensitive components
+export const selectIsPlaying = (s: DigitalHumanState) => s.isPlaying;
+export const selectCurrentExpression = (s: DigitalHumanState) => s.currentExpression;
+export const selectCurrentBehavior = (s: DigitalHumanState) => s.currentBehavior;
+export const selectCurrentEmotion = (s: DigitalHumanState) => s.currentEmotion;
+export const selectConnectionStatus = (s: DigitalHumanState) => s.connectionStatus;
+export const selectChatHistory = (s: DigitalHumanState) => s.chatHistory;
+export const selectIsRecording = (s: DigitalHumanState) => s.isRecording;
+export const selectIsSpeaking = (s: DigitalHumanState) => s.isSpeaking;
+export const selectIsLoading = (s: DigitalHumanState) => s.isLoading;
+export const selectError = (s: DigitalHumanState) => s.error;

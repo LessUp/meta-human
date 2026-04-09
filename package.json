@@ -1,23 +1,27 @@
 {
-  "name": "digital-human-platform",
+  "name": "metahuman-engine",
   "version": "1.0.0",
-  "description": "基于Web技术的3D数字人交互平台",
+  "description": "A modular, real-time 3D digital human interaction engine for the browser.",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:pages": "tsc && vite build --mode pages",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "build:mobile": "tsc && vite build --mode mobile",
     "build:desktop": "tsc && vite build --mode desktop",
     "build:ar": "tsc && vite build --mode ar",
     "serve": "vite preview --host 0.0.0.0 --port 3000",
-    "deploy": "npm run build && npm run deploy:vercel",
-    "deploy:vercel": "vercel --prod",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "lint:fix": "eslint . --fix --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\"",
+    "typecheck": "tsc --noEmit",
+    "prepare": "husky"
   },
   "dependencies": {
     "@mediapipe/face_mesh": "^0.4.1633559619",
@@ -48,11 +52,13 @@
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "husky": "^9.0.0",
     "jsdom": "^27.2.0",
+    "lint-staged": "^15.2.0",
     "postcss": "^8.4.32",
+    "prettier": "^3.1.1",
     "tailwindcss": "^3.3.6",
     "typescript": "^5.2.2",
-    "vercel": "^32.7.2",
     "vite": "^5.0.8",
     "vitest": "^4.0.10"
   },
@@ -67,7 +73,7 @@
     "ai-avatar",
     "metaverse"
   ],
-  "author": "Digital Human Platform Team",
+  "author": "LessUp",
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0",
