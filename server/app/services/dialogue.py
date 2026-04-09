@@ -320,10 +320,14 @@ class DialogueService:
       collected_content = ""
       async for chunk_text in self._call_llm_stream(messages):
         collected_content += chunk_text
-        yield json.dumps({"type": "token", "content": chunk_text}, ensure_ascii=False)
 
       parsed = self._parse_llm_response(collected_content, user_text)
       self._append_turn(session_id, user_text, parsed["replyText"])
+
+      # 逐字流式输出 replyText（而非原始 JSON 碎片）
+      for char in parsed["replyText"]:
+        yield json.dumps({"type": "token", "content": char}, ensure_ascii=False)
+
       yield json.dumps({"type": "done", **parsed}, ensure_ascii=False)
 
     except Exception as exc:
