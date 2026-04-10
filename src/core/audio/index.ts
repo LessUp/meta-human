@@ -1,7 +1,58 @@
+import { useDigitalHumanStore } from '../../store/digitalHumanStore';
+import { TTSService, ASRService } from './audioService';
+import type { TTSCallbacks, ASRStateAdapter } from './audioService';
+
 export {
   TTSService,
   ASRService,
-  ttsService,
-  asrService,
 } from './audioService';
-export type { TTSConfig, ASRConfig, ASRCallbacks } from './audioService';
+export type {
+  TTSConfig,
+  ASRConfig,
+  ASRCallbacks,
+  TTSCallbacks,
+  ASRStateAdapter,
+} from './audioService';
+
+/** Create TTS callbacks backed by the Zustand store. */
+function createTTSCallbacks(): TTSCallbacks {
+  return {
+    onSpeakStart: () => {
+      useDigitalHumanStore.getState().setSpeaking(true);
+      useDigitalHumanStore.getState().setBehavior('speaking');
+    },
+    onSpeakEnd: () => {
+      useDigitalHumanStore.getState().setSpeaking(false);
+      useDigitalHumanStore.getState().setBehavior('idle');
+    },
+    onError: (msg) => {
+      useDigitalHumanStore.getState().setError(msg);
+    },
+  };
+}
+
+/** Create an ASRStateAdapter backed by the Zustand store. */
+function createASRStateAdapter(): ASRStateAdapter {
+  return {
+    setRecording: (r) => useDigitalHumanStore.getState().setRecording(r),
+    setBehavior: (b) => useDigitalHumanStore.getState().setBehavior(b as any),
+    setSpeaking: (s) => useDigitalHumanStore.getState().setSpeaking(s),
+    setError: (m) => useDigitalHumanStore.getState().setError(m),
+    setEmotion: (e) => useDigitalHumanStore.getState().setEmotion(e as any),
+    setExpression: (x) => useDigitalHumanStore.getState().setExpression(x as any),
+    setAnimation: (a) => useDigitalHumanStore.getState().setAnimation(a),
+    play: () => useDigitalHumanStore.getState().play(),
+    pause: () => useDigitalHumanStore.getState().pause(),
+    reset: () => useDigitalHumanStore.getState().reset(),
+    setMuted: (m) => useDigitalHumanStore.getState().setMuted(m),
+    get isMuted() { return useDigitalHumanStore.getState().isMuted; },
+    get sessionId() { return useDigitalHumanStore.getState().sessionId; },
+    get currentBehavior() { return useDigitalHumanStore.getState().currentBehavior; },
+  };
+}
+
+/** Pre-configured singleton TTS service using the default store callbacks. */
+export const ttsService = new TTSService({}, createTTSCallbacks());
+
+/** Pre-configured singleton ASR service using the default store adapter. */
+export const asrService = new ASRService({}, createASRStateAdapter(), ttsService);

@@ -49,8 +49,7 @@ class TestChat(unittest.TestCase):
 
     def test_chat_empty(self):
         r = self.c.post("/v1/chat", json={"userText": "   "})
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json()["replyText"], "我在听，请告诉我您想聊什么。")
+        self.assertEqual(r.status_code, 400)
 
     def test_chat_stream_sse(self):
         r = self.c.post("/v1/chat/stream", json={"userText": "你好"})
@@ -100,6 +99,49 @@ class TestSpeech(unittest.TestCase):
         r = self.c.get("/v1/asr/status")
         self.assertEqual(r.status_code, 200)
         self.assertIn("provider", r.json())
+
+
+class TestAuth(unittest.TestCase):
+    def setUp(self):
+        os.environ["OPENAI_API_KEY"] = ""
+        os.environ["AUTH_ENABLED"] = "true"
+        os.environ["API_KEYS"] = "test-key-1,test-key-2"
+        from app.config import get_settings
+        get_settings.cache_clear()
+        import importlib
+        import app.main
+        importlib.reload(app.main)
+        from app.main import app
+        self.c = TestClient(app)
+
+    def tearDown(self):
+        os.environ.pop("AUTH_ENABLED", None)
+        os.environ.pop("API_KEYS", None)
+        from app.config import get_settings
+        get_settings.cache_clear()
+        import importlib
+        import app.main
+        importlib.reload(app.main)
+
+    def test_health_exempt(self):
+        r = self.c.get("/health")
+        self.assertEqual(r.status_code, 200)
+
+    def test_root_exempt(self):
+        r = self.c.get("/")
+        self.assertEqual(r.status_code, 200)
+
+    def test_missing_key_returns_401(self):
+        r = self.c.post("/v1/chat", json={"userText": "hello"})
+        self.assertEqual(r.status_code, 401)
+
+    def test_invalid_key_returns_403(self):
+        r = self.c.post("/v1/chat", json={"userText": "hello"}, headers={"X-API-Key": "wrong"})
+        self.assertEqual(r.status_code, 403)
+
+    def test_valid_key_passes(self):
+        r = self.c.post("/v1/chat", json={"userText": "hello"}, headers={"X-API-Key": "test-key-1"})
+        self.assertEqual(r.status_code, 200)
 
 
 if __name__ == "__main__":

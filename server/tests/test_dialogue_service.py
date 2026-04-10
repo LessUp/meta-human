@@ -45,22 +45,22 @@ if "httpx" not in sys.modules:
   httpx_stub.AsyncClient = AsyncClient
   sys.modules["httpx"] = httpx_stub
 
-from app.services.dialogue import DialogueService, session_histories
+from app.config import get_settings
+from app.services.dialogue import DialogueService
 
 
 class DialogueServiceTestCase(unittest.IsolatedAsyncioTestCase):
   def setUp(self) -> None:
     self.original_api_key = os.environ.get("OPENAI_API_KEY")
     os.environ.pop("OPENAI_API_KEY", None)
-    session_histories.clear()
     self.service = DialogueService()
 
   def tearDown(self) -> None:
-    session_histories.clear()
     if self.original_api_key is None:
       os.environ.pop("OPENAI_API_KEY", None)
     else:
       os.environ["OPENAI_API_KEY"] = self.original_api_key
+    get_settings.cache_clear()
 
   async def test_blank_input_returns_default_reply_without_creating_history(self) -> None:
     result = await self.service.generate_reply("   ", session_id=" demo-session ")
@@ -91,11 +91,11 @@ class DialogueServiceTestCase(unittest.IsolatedAsyncioTestCase):
 
   async def test_current_user_message_is_not_duplicated_when_building_prompt(self) -> None:
     os.environ["OPENAI_API_KEY"] = "test-key"
+    get_settings.cache_clear()
     self.service = DialogueService()
-    session_histories["demo-session"] = [
-      {"role": "user", "content": "上一句", "timestamp": "1"},
-      {"role": "assistant", "content": "上一答", "timestamp": "2"},
-    ]
+    # Pre-populate history via store
+    self.service.store.append_history("demo-session", "user", "上一句", "1")
+    self.service.store.append_history("demo-session", "assistant", "上一答", "2")
     captured_messages: list[dict[str, str]] = []
 
     async def fake_call(messages: list[dict[str, str]]) -> dict:

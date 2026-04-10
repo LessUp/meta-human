@@ -40,6 +40,9 @@ npm run preview
   - 说明：后端地址
   - 本地开发：`http://localhost:8000`
   - GitHub Pages 生产环境：`https://<your-render-service>.onrender.com`
+- `VITE_CHAT_TRANSPORT`
+  - 可选；`http`、`sse`、`websocket`
+  - 默认：`auto`（当前优先走 SSE）
 
 ## 3. 后端（FastAPI）
 

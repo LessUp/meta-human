@@ -2,8 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import DigitalHumanViewer from '../components/DigitalHumanViewer';
 import ControlPanel from '../components/ControlPanel';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
-import { ttsService, asrService } from '../core/audio/audioService';
-import { digitalHumanEngine } from '../core/avatar/DigitalHumanEngine';
+import { ttsService, asrService } from '../core/audio';
+import { digitalHumanEngine } from '../core/avatar';
 import { Toaster, toast } from 'sonner';
 import { Wifi, WifiOff } from 'lucide-react';
 

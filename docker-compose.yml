@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:80"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - TTS_PROVIDER=${TTS_PROVIDER:-edge}
+      - AUTH_ENABLED=${AUTH_ENABLED:-false}
+      - API_KEYS=${API_KEYS:-}
+      - REDIS_URL=redis://redis:6379/0
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  redis_data:

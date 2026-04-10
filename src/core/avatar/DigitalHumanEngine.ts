@@ -1,4 +1,4 @@
-import { useDigitalHumanStore, type EmotionType, type ExpressionType, type BehaviorType } from '../../store/digitalHumanStore';
+import type { EmotionType, ExpressionType, BehaviorType } from '../../store/digitalHumanStore';
 import {
   EMOTION_TO_EXPRESSION,
   ANIMATION_DURATIONS,
@@ -17,9 +17,30 @@ export type EngineEventType =
 
 type EngineEventHandler = (payload: { type: string; value: string }) => void;
 
+/**
+ * Abstraction over state mutations.
+ * Decouples the engine from any specific state management library.
+ */
+export interface StateAdapter {
+  play(): void;
+  pause(): void;
+  reset(): void;
+  setExpression(expr: ExpressionType): void;
+  setExpressionIntensity(intensity: number): void;
+  setEmotion(emo: EmotionType): void;
+  setBehavior(beh: BehaviorType): void;
+  setAnimation(anim: string): void;
+  setPlaying(playing: boolean): void;
+}
+
 export class DigitalHumanEngine {
+  private readonly state: StateAdapter;
   private animationTimeout: ReturnType<typeof setTimeout> | null = null;
   private listeners = new Map<EngineEventType, Set<EngineEventHandler>>();
+
+  constructor(stateAdapter: StateAdapter) {
+    this.state = stateAdapter;
+  }
 
   on(event: EngineEventType, handler: EngineEventHandler): () => void {
     if (!this.listeners.has(event)) {
@@ -44,79 +65,74 @@ export class DigitalHumanEngine {
   }
 
   play(): void {
-    useDigitalHumanStore.getState().play();
+    this.state.play();
   }
 
   pause(): void {
-    useDigitalHumanStore.getState().pause();
+    this.state.pause();
   }
 
   reset(): void {
-    useDigitalHumanStore.getState().reset();
+    this.state.reset();
     this.clearAnimationTimeout();
   }
 
   setExpression(expression: string): void {
-    const store = useDigitalHumanStore.getState();
     if (VALID_EXPRESSIONS.includes(expression as ExpressionType)) {
-      store.setExpression(expression as ExpressionType);
+      this.state.setExpression(expression as ExpressionType);
     } else {
       console.warn(`Unknown expression: ${expression}, falling back to neutral`);
-      store.setExpression('neutral');
+      this.state.setExpression('neutral');
     }
     this.emit('expression:change', expression);
   }
 
   setExpressionIntensity(intensity: number): void {
-    useDigitalHumanStore.getState().setExpressionIntensity(intensity);
+    this.state.setExpressionIntensity(intensity);
   }
 
   setEmotion(emotion: string): void {
-    const store = useDigitalHumanStore.getState();
     if (VALID_EMOTIONS.includes(emotion as EmotionType)) {
-      store.setEmotion(emotion as EmotionType);
+      this.state.setEmotion(emotion as EmotionType);
       const mappedExpression = EMOTION_TO_EXPRESSION[emotion as EmotionType];
       if (mappedExpression) {
-        store.setExpression(mappedExpression);
+        this.state.setExpression(mappedExpression);
       }
     } else {
       console.warn(`Unknown emotion: ${emotion}, falling back to neutral`);
-      store.setEmotion('neutral');
-      store.setExpression('neutral');
+      this.state.setEmotion('neutral');
+      this.state.setExpression('neutral');
     }
     this.emit('emotion:change', emotion);
   }
 
   setBehavior(behavior: string, _params?: unknown): void {
-    const store = useDigitalHumanStore.getState();
     if (VALID_BEHAVIORS.includes(behavior as BehaviorType)) {
-      store.setBehavior(behavior as BehaviorType);
+      this.state.setBehavior(behavior as BehaviorType);
     } else {
       console.warn(`Unknown behavior: ${behavior}, falling back to idle`);
-      store.setBehavior('idle');
+      this.state.setBehavior('idle');
     }
     this.emit('behavior:change', behavior);
   }
 
   playAnimation(name: string, autoReset: boolean = true): void {
-    const store = useDigitalHumanStore.getState();
-
     this.clearAnimationTimeout();
 
-    store.setAnimation(name);
-    store.setPlaying(true);
+    this.state.setAnimation(name);
+    this.state.setPlaying(true);
     this.emit('animation:start', name);
 
     if (ANIMATION_TO_BEHAVIOR[name]) {
-      store.setBehavior(ANIMATION_TO_BEHAVIOR[name]);
+      this.state.setBehavior(ANIMATION_TO_BEHAVIOR[name]);
     }
 
     if (autoReset) {
-      const duration = ANIMATION_DURATIONS[name] || 3000;
+      const duration = ANIMATION_DURATIONS[name] ?? 3000;
       if (duration > 0) {
         this.animationTimeout = setTimeout(() => {
-          store.setAnimation('idle');
-          store.setBehavior('idle');
+          this.state.setAnimation('idle');
+          this.state.setBehavior('idle');
           this.emit('animation:end', name);
         }, duration);
       }
@@ -152,5 +168,3 @@ export class DigitalHumanEngine {
     }
   }
 }
-
-export const digitalHumanEngine = new DigitalHumanEngine();

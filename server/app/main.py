@@ -7,7 +7,8 @@ from app.config import get_settings, setup_logging
 from app.api.chat import router as chat_router
 from app.api.session import router as session_router
 from app.api.speech import router as speech_router
-from app.middleware import ErrorHandlerMiddleware, RateLimitMiddleware, RequestLoggingMiddleware
+from app.api.ws import router as ws_router
+from app.middleware import AuthMiddleware, ErrorHandlerMiddleware, RateLimitMiddleware, RequestLoggingMiddleware
 
 # 初始化日志
 setup_logging()
@@ -48,6 +49,7 @@ app.add_middleware(
 app.add_middleware(ErrorHandlerMiddleware)
 app.add_middleware(RateLimitMiddleware, rpm=settings.rate_limit_rpm)
 app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(AuthMiddleware)
 
 
 # --- 路由 ---
@@ -94,3 +96,4 @@ async def root() -> dict:
 app.include_router(chat_router, prefix="/v1", tags=["对话"])
 app.include_router(session_router, prefix="/v1", tags=["会话管理"])
 app.include_router(speech_router, prefix="/v1", tags=["语音"])
+app.include_router(ws_router, tags=["WebSocket"])

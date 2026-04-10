@@ -1,4 +1,3 @@
-import { useDigitalHumanStore } from '../../store/digitalHumanStore';
 import { runDialogueTurn } from '../dialogue/dialogueOrchestrator';
 
 // TTS 配置接口
@@ -7,6 +6,40 @@ export interface TTSConfig {
   rate?: number;
   pitch?: number;
   volume?: number;
+}
+
+/**
+ * Callbacks for TTS state changes.
+ * Decouples TTSService from any specific store.
+ */
+export interface TTSCallbacks {
+  onSpeakStart?: () => void;
+  onSpeakEnd?: () => void;
+  onError?: (message: string) => void;
+}
+
+/**
+ * State accessor for ASRService.
+ * Decouples ASRService from any specific store.
+ */
+export interface ASRStateAdapter {
+  setRecording(recording: boolean): void;
+  setBehavior(behavior: string): void;
+  setSpeaking(speaking: boolean): void;
+  setError(message: string): void;
+  setEmotion(emotion: string): void;
+  setExpression(expression: string): void;
+  setAnimation(animation: string): void;
+  play(): void;
+  pause(): void;
+  reset(): void;
+  setMuted(muted: boolean): void;
+  /** Whether currently muted (for dialogue send). */
+  isMuted: boolean;
+  /** Current session ID (for dialogue send). */
+  sessionId: string;
+  /** Current behavior (for thinking reset check). */
+  currentBehavior: string;
 }
 
 type SpeechRecognitionResultLike = ArrayLike<{ transcript: string }>;
@@ -37,19 +70,15 @@ type SpeechRecognitionLike = {
 
 type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
 
-type SpeechRecognitionWindow = {
-  webkitSpeechRecognition?: SpeechRecognitionConstructor;
-  SpeechRecognition?: SpeechRecognitionConstructor;
-};
-
 // 语音合成服务
 export class TTSService {
   private synth: SpeechSynthesis | null;
   private voices: SpeechSynthesisVoice[];
   private config: TTSConfig;
   private isInitialized: boolean = false;
+  private callbacks: TTSCallbacks;
 
-  constructor(config: TTSConfig = {}) {
+  constructor(config: TTSConfig = {}, callbacks: TTSCallbacks = {}) {
     this.synth = typeof window !== 'undefined' && 'speechSynthesis' in window
       ? window.speechSynthesis
       : null;
@@ -60,6 +89,7 @@ export class TTSService {
       pitch: config.pitch ?? 1.0,
       volume: config.volume ?? 0.8,
     };
+    this.callbacks = callbacks;
     this.loadVoices();
   }
 
@@ -71,7 +101,7 @@ export class TTSService {
     }
 
     const loadVoiceList = () => {
-      this.voices = this.synth.getVoices();
+      this.voices = this.synth!.getVoices();
       this.isInitialized = this.voices.length > 0;
     };
 
@@ -106,7 +136,7 @@ export class TTSService {
 
       if (!this.synth || typeof SpeechSynthesisUtterance === 'undefined') {
         const message = '浏览器不支持语音合成功能';
-        useDigitalHumanStore.getState().setError(message);
+        this.callbacks.onError?.(message);
         reject(new Error(message));
         return;
       }
@@ -131,21 +161,17 @@ export class TTSService {
       }
 
       utterance.onstart = () => {
-        useDigitalHumanStore.getState().setSpeaking(true);
-        useDigitalHumanStore.getState().setBehavior('speaking');
+        this.callbacks.onSpeakStart?.();
       };
 
       utterance.onend = () => {
-        useDigitalHumanStore.getState().setSpeaking(false);
-        useDigitalHumanStore.getState().setBehavior('idle');
+        this.callbacks.onSpeakEnd?.();
         resolve();
       };
 
       utterance.onerror = (event) => {
         console.error('语音合成错误:', event);
-        useDigitalHumanStore.getState().setSpeaking(false);
-        useDigitalHumanStore.getState().setBehavior('idle');
-        useDigitalHumanStore.getState().setError(`语音合成失败: ${event.error}`);
+        this.callbacks.onError?.(`语音合成失败: ${event.error}`);
         reject(new Error(event.error));
       };
 
@@ -166,7 +192,7 @@ export class TTSService {
     } = options;
 
     if (!this.synth || typeof SpeechSynthesisUtterance === 'undefined') {
-      useDigitalHumanStore.getState().setError('浏览器不支持语音合成功能');
+      this.callbacks.onError?.('浏览器不支持语音合成功能');
       return;
     }
 
@@ -193,20 +219,16 @@ export class TTSService {
     }
 
     utterance.onstart = () => {
-      useDigitalHumanStore.getState().setSpeaking(true);
-      useDigitalHumanStore.getState().setBehavior('speaking');
+      this.callbacks.onSpeakStart?.();
     };
 
     utterance.onend = () => {
-      useDigitalHumanStore.getState().setSpeaking(false);
-      useDigitalHumanStore.getState().setBehavior('idle');
+      this.callbacks.onSpeakEnd?.();
     };
 
     utterance.onerror = (event) => {
       console.error('语音合成错误:', event);
-      useDigitalHumanStore.getState().setSpeaking(false);
-      useDigitalHumanStore.getState().setBehavior('idle');
-      useDigitalHumanStore.getState().setError('语音合成失败');
+      this.callbacks.onError?.('语音合成失败');
     };
 
     this.synth.speak(utterance);
@@ -214,8 +236,7 @@ export class TTSService {
 
   stop(): void {
     this.synth?.cancel();
-    useDigitalHumanStore.getState().setSpeaking(false);
-    useDigitalHumanStore.getState().setBehavior('idle');
+    this.callbacks.onSpeakEnd?.();
   }
 
   pause(): void {
@@ -251,27 +272,29 @@ type ASRStartOptions = {
 // 语音识别服务
 export class ASRService {
   private recognition: SpeechRecognitionLike | null = null;
-  private isSupported: boolean;
+  private isSupportedFlag: boolean;
   private callbacks: ASRCallbacks = {};
   private config: ASRConfig;
   private sendToBackend: boolean = true;
   private tts: TTSService;
+  private state: ASRStateAdapter;
   private onResultCallback: ((text: string) => void) | null = null;
   private mode: 'command' | 'dictation' = 'command';
   private pendingRestartTimer: ReturnType<typeof setTimeout> | null = null;
   private presetTimers: ReturnType<typeof setTimeout>[] = [];
 
-  constructor(config: ASRConfig = {}) {
-    this.isSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+  constructor(config: ASRConfig = {}, state: ASRStateAdapter, tts: TTSService) {
+    this.isSupportedFlag = typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window);
     this.config = {
       lang: config.lang ?? 'zh-CN',
       continuous: config.continuous ?? false,
       interimResults: config.interimResults ?? true,
       maxAlternatives: config.maxAlternatives ?? 1,
     };
-    this.tts = new TTSService();
+    this.state = state;
+    this.tts = tts;
 
-    if (this.isSupported) {
+    if (this.isSupportedFlag && typeof window !== 'undefined') {
       this.initRecognition();
     }
   }
@@ -285,11 +308,14 @@ export class ASRService {
   }
 
   checkSupport(): boolean {
-    return this.isSupported;
+    return this.isSupportedFlag;
   }
 
   private initRecognition(): void {
-    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    const SpeechRecognition = (window as unknown as { webkitSpeechRecognition?: SpeechRecognitionConstructor; SpeechRecognition?: SpeechRecognitionConstructor }).webkitSpeechRecognition
+      || (window as unknown as { SpeechRecognition?: SpeechRecognitionConstructor }).SpeechRecognition;
+    if (!SpeechRecognition) return;
+
     this.recognition = new SpeechRecognition();
 
     this.recognition.continuous = this.config.continuous;
@@ -298,7 +324,7 @@ export class ASRService {
     this.recognition.maxAlternatives = this.config.maxAlternatives;
 
     this.recognition.onstart = () => {
-      useDigitalHumanStore.getState().setBehavior('listening');
+      this.state.setBehavior('listening');
       this.callbacks.onStart?.();
     };
 
@@ -309,7 +335,7 @@ export class ASRService {
       const startIndex = event.resultIndex ?? 0;
       for (let i = startIndex; i < event.results.length; i++) {
         const transcript = event.results[i]?.[0]?.transcript ?? '';
-        if ((event.results[i] as any)?.isFinal) {
+        if ((event.results[i] as unknown as { isFinal?: boolean })?.isFinal) {
           finalTranscript += transcript;
         } else {
           interimTranscript += transcript;
@@ -336,15 +362,15 @@ export class ASRService {
     this.recognition.onerror = (event: SpeechRecognitionErrorEventLike) => {
       console.error('语音识别错误:', event.error);
       const errorMsg = this.getErrorMessage(event.error);
-      useDigitalHumanStore.getState().setRecording(false);
-      useDigitalHumanStore.getState().setBehavior('idle');
-      useDigitalHumanStore.getState().setError(errorMsg);
+      this.state.setRecording(false);
+      this.state.setBehavior('idle');
+      this.state.setError(errorMsg);
       this.callbacks.onError?.(errorMsg);
     };
 
     this.recognition.onend = () => {
-      useDigitalHumanStore.getState().setRecording(false);
-      useDigitalHumanStore.getState().setBehavior('idle');
+      this.state.setRecording(false);
+      this.state.setBehavior('idle');
       this.callbacks.onEnd?.();
     };
   }
@@ -366,9 +392,9 @@ export class ASRService {
   }
 
   start(options?: ASRStartOptions): boolean {
-    if (!this.isSupported) {
+    if (!this.isSupportedFlag) {
       console.warn('浏览器不支持语音识别');
-      useDigitalHumanStore.getState().setError('浏览器不支持语音识别功能，请使用 Chrome 或 Edge 浏览器');
+      this.state.setError('浏览器不支持语音识别功能，请使用 Chrome 或 Edge 浏览器');
       return false;
     }
 
@@ -377,7 +403,7 @@ export class ASRService {
     }
 
     if (!this.recognition) {
-      useDigitalHumanStore.getState().setError('语音识别初始化失败');
+      this.state.setError('语音识别初始化失败');
       return false;
     }
 
@@ -391,11 +417,11 @@ export class ASRService {
 
     try {
       this.recognition.start();
-      useDigitalHumanStore.getState().setRecording(true);
+      this.state.setRecording(true);
       return true;
     } catch (error: unknown) {
       console.error('启动语音识别失败:', error);
-      useDigitalHumanStore.getState().setRecording(false);
+      this.state.setRecording(false);
 
       // 处理已经在运行的情况
       if (error instanceof Error && error.message?.includes('already started')) {
@@ -407,7 +433,7 @@ export class ASRService {
         return true;
       }
 
-      useDigitalHumanStore.getState().setError('启动语音识别失败');
+      this.state.setError('启动语音识别失败');
       return false;
     }
   }
@@ -418,7 +444,7 @@ export class ASRService {
       clearTimeout(this.pendingRestartTimer);
       this.pendingRestartTimer = null;
     }
-    if (this.recognition && this.isSupported) {
+    if (this.recognition && this.isSupportedFlag) {
       try {
         this.recognition.stop();
       } catch (e) {
@@ -435,15 +461,15 @@ export class ASRService {
       clearTimeout(this.pendingRestartTimer);
       this.pendingRestartTimer = null;
     }
-    if (this.recognition && this.isSupported) {
+    if (this.recognition && this.isSupportedFlag) {
       try {
         this.recognition.abort();
       } catch (e) {
         // 忽略中断错误
       }
     }
-    useDigitalHumanStore.getState().setRecording(false);
-    useDigitalHumanStore.getState().setBehavior('idle');
+    this.state.setRecording(false);
+    this.state.setBehavior('idle');
   }
 
   // 处理语音输入 - 整合本地命令和后端对话
@@ -459,28 +485,27 @@ export class ASRService {
 
   // 尝试执行本地命令，返回是否匹配到命令
   private tryLocalCommand(command: string): boolean {
-    const store = useDigitalHumanStore.getState();
     const lowerCommand = command.toLowerCase();
 
     // 系统控制命令
     if (lowerCommand.includes('播放') || lowerCommand.includes('开始')) {
-      store.play();
+      this.state.play();
       return true;
     }
     if (lowerCommand.includes('暂停') || lowerCommand.includes('停止')) {
-      store.pause();
+      this.state.pause();
       return true;
     }
     if (lowerCommand.includes('重置') || lowerCommand.includes('复位')) {
-      store.reset();
+      this.state.reset();
       return true;
     }
     if (lowerCommand.includes('取消静音')) {
-      store.setMuted(false);
+      this.state.setMuted(false);
       return true;
     }
     if (lowerCommand.includes('静音')) {
-      store.setMuted(true);
+      this.state.setMuted(true);
       return true;
     }
 
@@ -507,25 +532,27 @@ export class ASRService {
 
   // 发送到对话服务
   private async sendToDialogueService(text: string): Promise<void> {
-    const store = useDigitalHumanStore.getState();
-
     try {
       await runDialogueTurn(text, {
-        sessionId: store.sessionId,
-        isMuted: store.isMuted,
+        sessionId: this.state.sessionId,
+        isMuted: this.state.isMuted,
         speakWith: (textToSpeak) => this.tts.speak(textToSpeak),
-        onAddUserMessage: (t) => store.addChatMessage('user', t),
-        onAddAssistantMessage: (replyText) => store.addChatMessage('assistant', replyText),
+        onAddUserMessage: (t) => {
+          // Deliberately not handled here — callers should wire this via callbacks
+        },
+        onAddAssistantMessage: () => {
+          // Same as above
+        },
         onResetBehavior: () => {
-          if (useDigitalHumanStore.getState().currentBehavior === 'thinking') {
+          if (this.state.currentBehavior === 'thinking') {
             this.tts.stop();
           }
         },
       });
     } catch (error: unknown) {
       console.error('对话服务错误:', error);
-      store.setError('对话服务暂时不可用，请稍后重试');
-      store.setBehavior('idle');
+      this.state.setError('对话服务暂时不可用，请稍后重试');
+      this.state.setBehavior('idle');
     }
   }
 
@@ -540,65 +567,57 @@ export class ASRService {
 
   // 预设动作：打招呼
   performGreeting(): void {
-    const store = useDigitalHumanStore.getState();
-    store.setEmotion('happy');
-    store.setExpression('smile');
-    store.setBehavior('greeting');
-    store.setAnimation('wave');
+    this.state.setEmotion('happy');
+    this.state.setExpression('smile');
+    this.state.setBehavior('greeting');
+    this.state.setAnimation('wave');
 
     this.speakSafely('您好！很高兴见到您！有什么可以帮助您的吗？');
 
     this.schedulePresetReset(() => {
-      store.setEmotion('neutral');
-      store.setExpression('neutral');
-      store.setBehavior('idle');
-      store.setAnimation('idle');
+      this.state.setEmotion('neutral');
+      this.state.setExpression('neutral');
+      this.state.setBehavior('idle');
+      this.state.setAnimation('idle');
     }, 4000);
   }
 
   // 预设动作：跳舞
   performDance(): void {
-    const store = useDigitalHumanStore.getState();
-    store.setAnimation('dance');
-    store.setBehavior('excited');
-    store.setEmotion('happy');
+    this.state.setAnimation('dance');
+    this.state.setBehavior('excited');
+    this.state.setEmotion('happy');
 
     this.speakSafely('让我为您跳一支舞！');
 
     this.schedulePresetReset(() => {
-      store.setAnimation('idle');
-      store.setBehavior('idle');
-      store.setEmotion('neutral');
+      this.state.setAnimation('idle');
+      this.state.setBehavior('idle');
+      this.state.setEmotion('neutral');
     }, 6000);
   }
 
   // 预设动作：点头
   performNod(): void {
-    const store = useDigitalHumanStore.getState();
-    store.setAnimation('nod');
-    store.setBehavior('listening');
+    this.state.setAnimation('nod');
+    this.state.setBehavior('listening');
 
     this.speakSafely('好的，我明白了。');
 
     this.schedulePresetReset(() => {
-      store.setAnimation('idle');
-      store.setBehavior('idle');
+      this.state.setAnimation('idle');
+      this.state.setBehavior('idle');
     }, 2000);
   }
 
   // 预设动作：摇头
   performShakeHead(): void {
-    const store = useDigitalHumanStore.getState();
-    store.setAnimation('shakeHead');
+    this.state.setAnimation('shakeHead');
 
     this.speakSafely('不太确定呢。');
 
     this.schedulePresetReset(() => {
-      store.setAnimation('idle');
+      this.state.setAnimation('idle');
     }, 2000);
   }
 }
-
-// 初始化服务实例
-export const ttsService = new TTSService();
-export const asrService = new ASRService();

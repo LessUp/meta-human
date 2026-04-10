@@ -419,6 +419,7 @@ describe('TTSService', () => {
 
 describe('ASRService', () => {
   let asrService: ASRService;
+  let localTts: TTSService;
   let mockSpeechRecognition: any;
 
   beforeEach(() => {
@@ -448,27 +449,49 @@ describe('ASRService', () => {
     };
   });
 
+  let mockState: any;
+
+  beforeEach(() => {
+    mockState = {
+      setRecording: vi.fn(),
+      setBehavior: vi.fn(),
+      setSpeaking: vi.fn(),
+      setError: vi.fn(),
+      setEmotion: vi.fn(),
+      setExpression: vi.fn(),
+      setAnimation: vi.fn(),
+      play: vi.fn(),
+      pause: vi.fn(),
+      reset: vi.fn(),
+      setMuted: (m: boolean) => useDigitalHumanStore.getState().setMuted(m),
+      get isMuted() { return useDigitalHumanStore.getState().isMuted; },
+      get sessionId() { return useDigitalHumanStore.getState().sessionId; },
+      get currentBehavior() { return useDigitalHumanStore.getState().currentBehavior; },
+    };
+    localTts = new TTSService();
+  });
+
   it('initializes correctly when supported', () => {
-    asrService = new ASRService();
+    asrService = new ASRService({}, mockState, localTts);
     expect(asrService).toBeDefined();
   });
 
   it('starts recognition', () => {
-    asrService = new ASRService();
+    asrService = new ASRService({}, mockState, localTts);
     asrService.start();
     // Since we can't directly access the mock, we verify the service is created
     expect(asrService).toBeDefined();
   });
 
   it('stops recognition', () => {
-    asrService = new ASRService();
+    asrService = new ASRService({}, mockState, localTts);
     asrService.stop();
     // Verify no errors are thrown
     expect(asrService).toBeDefined();
   });
 
   it('handles cancel mute voice command correctly', () => {
-    asrService = new ASRService();
+    asrService = new ASRService({}, mockState, localTts);
     useDigitalHumanStore.getState().setMuted(true);
 
     const matched = (asrService as any).tryLocalCommand('取消静音');

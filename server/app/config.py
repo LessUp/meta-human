@@ -35,6 +35,13 @@ class Settings:
     # Rate limit
     rate_limit_rpm: int = 60
 
+    # Auth
+    auth_enabled: bool = False
+    api_keys: str = ""
+
+    # Redis
+    redis_url: str = ""
+
     # CORS
     cors_allow_origins: str = ""
 
@@ -75,6 +82,9 @@ def get_settings() -> Settings:
         session_ttl_seconds=_int("SESSION_TTL_SECONDS", 1800),
         session_cleanup_interval=_int("SESSION_CLEANUP_INTERVAL", 300),
         rate_limit_rpm=_int("RATE_LIMIT_RPM", 60),
+        auth_enabled=os.getenv("AUTH_ENABLED", "false").lower() in ("true", "1", "yes"),
+        api_keys=os.getenv("API_KEYS", ""),
+        redis_url=os.getenv("REDIS_URL", ""),
         cors_allow_origins=os.getenv("CORS_ALLOW_ORIGINS", ""),
     )
 
