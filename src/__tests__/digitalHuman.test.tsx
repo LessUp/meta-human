@@ -24,63 +24,69 @@ vi.spyOn(React, 'useRef').mockImplementation(() => {
       if (index > -1) {
         groupMock.children.splice(index, 1);
       }
-    })
+    }),
   };
 
   return {
-    current: groupMock
+    current: groupMock,
   };
 });
 
 // 模拟Three.js相关模块
 vi.mock('@react-three/fiber', () => ({
-  Canvas: ({ children }: { children: React.ReactNode }) => <div data-testid="canvas">{children}</div>,
+  Canvas: () => <div data-testid="canvas" />,
   useFrame: vi.fn((callback) => {
     // Mock the callback with a state object
     callback({
       clock: {
-        elapsedTime: 0
-      }
+        elapsedTime: 0,
+      },
     });
   }),
   useThree: vi.fn(() => ({
     scene: {
       add: vi.fn(),
-      remove: vi.fn()
+      remove: vi.fn(),
     },
     camera: {},
-    gl: {}
-  }))
+    gl: {},
+  })),
 }));
 
 vi.mock('@react-three/drei', () => ({
   OrbitControls: () => <div data-testid="orbit-controls">OrbitControls</div>,
   Environment: () => <div data-testid="environment">Environment</div>,
   Html: ({ children }: { children: React.ReactNode }) => <div data-testid="html">{children}</div>,
-  PerspectiveCamera: ({ children }: { children?: React.ReactNode }) => <div data-testid="perspective-camera">{children}</div>,
+  PerspectiveCamera: ({ children }: { children?: React.ReactNode }) => (
+    <div data-testid="perspective-camera">{children}</div>
+  ),
   Float: ({ children }: { children: React.ReactNode }) => <div data-testid="float">{children}</div>,
   Sparkles: () => <div data-testid="sparkles">Sparkles</div>,
   ContactShadows: () => <div data-testid="contact-shadows">ContactShadows</div>,
-  useGLTF: vi.fn()
+  useGLTF: vi.fn(),
 }));
 
 vi.mock('three', () => ({
-  BoxGeometry: vi.fn(function BoxGeometry() { return {}; }),
-  SphereGeometry: vi.fn(function SphereGeometry() { return {}; }),
+  BoxGeometry: vi.fn(function BoxGeometry() {
+    return {};
+  }),
+  SphereGeometry: vi.fn(function SphereGeometry() {
+    return {};
+  }),
   MeshPhysicalMaterial: vi.fn(function MeshPhysicalMaterial(props: any) {
     return {
       color: props?.color || 0xffffff,
       metalness: props?.metalness || 0,
       roughness: props?.roughness || 1,
       clearcoat: props?.clearcoat || 0,
-      clearcoatRoughness: props?.clearcoatRoughness || 0
+      clearcoatRoughness: props?.clearcoatRoughness || 0,
     };
   }),
   MeshStandardMaterial: vi.fn(function MeshStandardMaterial(props: any) {
     return {
       color: props?.color || 0xffffff,
       metalness: props?.metalness || 0,
-      roughness: props?.roughness || 1
+      roughness: props?.roughness || 1,
     };
   }),
   MeshBasicMaterial: vi.fn(function MeshBasicMaterial(props: any) {
@@ -92,7 +98,7 @@ vi.mock('three', () => ({
       opacity: props?.opacity,
       side: props?.side,
       wireframe: props?.wireframe,
-      toneMapped: props?.toneMapped
+      toneMapped: props?.toneMapped,
     };
   }),
   Mesh: vi.fn(function Mesh() {
@@ -101,7 +107,7 @@ vi.mock('three', () => ({
       rotation: { x: 0, y: 0, z: 0 },
       scale: { x: 1, y: 1, z: 1 },
       add: vi.fn(),
-      remove: vi.fn()
+      remove: vi.fn(),
     };
     return mesh;
   }),
@@ -112,16 +118,20 @@ vi.mock('three', () => ({
       rotation: { x: 0, y: 0, z: 0 },
       scale: { x: 1, y: 1, z: 1 },
       add: vi.fn(),
-      remove: vi.fn()
+      remove: vi.fn(),
     };
     return group;
   }),
-  Vector3: vi.fn(function Vector3(x = 0, y = 0, z = 0) { return { x, y, z }; }),
-  Color: vi.fn(function Color(color = 0xffffff) { return { getHex: () => color }; }),
+  Vector3: vi.fn(function Vector3(x = 0, y = 0, z = 0) {
+    return { x, y, z };
+  }),
+  Color: vi.fn(function Color(color = 0xffffff) {
+    return { getHex: () => color };
+  }),
   MathUtils: {
-    lerp: (start: number, end: number, alpha: number) => start + (end - start) * alpha
+    lerp: (start: number, end: number, alpha: number) => start + (end - start) * alpha,
   },
-  DoubleSide: 'DoubleSide'
+  DoubleSide: 'DoubleSide',
 }));
 
 describe('DigitalHumanViewer', () => {
@@ -160,8 +170,7 @@ describe('DigitalHumanViewer', () => {
   it('calls onModelLoad callback', () => {
     const onModelLoad = vi.fn();
     render(<DigitalHumanViewer onModelLoad={onModelLoad} />);
-    // 由于Three.js是模拟的，这里只是验证回调存在
-    expect(onModelLoad).toBeDefined();
+    expect(onModelLoad).toHaveBeenCalledWith({ type: 'procedural-cyber-avatar' });
   });
 });
 
@@ -176,7 +185,7 @@ describe('ControlPanel', () => {
     onToggleRecording: vi.fn(),
     onToggleMute: vi.fn(),
     onToggleAutoRotate: vi.fn(),
-    onVoiceCommand: vi.fn()
+    onVoiceCommand: vi.fn(),
   };
 
   it('renders all control sections', () => {
@@ -358,7 +367,7 @@ describe('TTSService', () => {
       cancel: vi.fn(),
       getVoices: vi.fn(() => []),
       speaking: false,
-      onvoiceschanged: null
+      onvoiceschanged: null,
     };
 
     // Create a proper constructor function for SpeechSynthesisUtterance
@@ -464,9 +473,15 @@ describe('ASRService', () => {
       pause: vi.fn(),
       reset: vi.fn(),
       setMuted: (m: boolean) => useDigitalHumanStore.getState().setMuted(m),
-      get isMuted() { return useDigitalHumanStore.getState().isMuted; },
-      get sessionId() { return useDigitalHumanStore.getState().sessionId; },
-      get currentBehavior() { return useDigitalHumanStore.getState().currentBehavior; },
+      get isMuted() {
+        return useDigitalHumanStore.getState().isMuted;
+      },
+      get sessionId() {
+        return useDigitalHumanStore.getState().sessionId;
+      },
+      get currentBehavior() {
+        return useDigitalHumanStore.getState().currentBehavior;
+      },
     };
     localTts = new TTSService();
   });
@@ -523,7 +538,7 @@ describe('Dialogue orchestration', () => {
       {
         speakWith,
         onError,
-      }
+      },
     );
 
     expect(speakWith).toHaveBeenCalledWith('你好，我仍然可以继续回答。');
@@ -645,7 +660,7 @@ describe('Integration Tests', () => {
     onToggleRecording: vi.fn(),
     onToggleMute: vi.fn(),
     onToggleAutoRotate: vi.fn(),
-    onVoiceCommand: vi.fn()
+    onVoiceCommand: vi.fn(),
   };
 
   it('integrates control panel with digital human viewer', () => {
@@ -660,12 +675,12 @@ describe('Integration Tests', () => {
             isRecording={false}
             isMuted={false}
             autoRotate={false}
-            onPlayPause={() => isPlaying ? pause() : play()}
-            onReset={() => { }}
-            onToggleRecording={() => { }}
-            onToggleMute={() => { }}
-            onToggleAutoRotate={() => { }}
-            onVoiceCommand={() => { }}
+            onPlayPause={() => (isPlaying ? pause() : play())}
+            onReset={() => {}}
+            onToggleRecording={() => {}}
+            onToggleMute={() => {}}
+            onToggleAutoRotate={() => {}}
+            onVoiceCommand={() => {}}
           />
         </div>
       );

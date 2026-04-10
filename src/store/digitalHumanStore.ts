@@ -116,6 +116,7 @@ let nextChatMessageId = 0;
 let recordingTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
 const ERROR_THROTTLE_MS = 2000;
+const ENABLE_DEVTOOLS = import.meta.env.DEV && import.meta.env.MODE !== 'test';
 
 const generateChatMessageId = (): number => {
   nextChatMessageId += 1;
@@ -310,7 +311,7 @@ export const useDigitalHumanStore = create<DigitalHumanState>()(
         set({ autoRotate: !autoRotate });
       },
     }),
-    { name: 'digital-human-store', enabled: import.meta.env.DEV },
+    { name: 'digital-human-store', enabled: ENABLE_DEVTOOLS },
   ),
 );
 
