@@ -39,8 +39,10 @@ export class DialogueApiError extends Error {
   }
 }
 
-const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/+$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(
+  /\/+$/,
+  '',
+);
 
 const DEFAULT_CONFIG: Required<DialogueServiceConfig> = {
   maxRetries: 3,
@@ -52,7 +54,7 @@ const DEFAULT_CONFIG: Required<DialogueServiceConfig> = {
 async function fetchWithTimeout(
   url: string,
   options: RequestInit,
-  timeout: number
+  timeout: number,
 ): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -95,7 +97,7 @@ function getErrorMessage(status: number, defaultMessage: string): string {
 function getFallbackResponse(userText: string): ChatResponsePayload {
   // 简单的本地响应逻辑
   const greetings = ['你好', '您好', 'hello', 'hi', '嗨'];
-  const isGreeting = greetings.some(g => userText.toLowerCase().includes(g));
+  const isGreeting = greetings.some((g) => userText.toLowerCase().includes(g));
 
   if (isGreeting) {
     return {
@@ -115,11 +117,7 @@ function getFallbackResponse(userText: string): ChatResponsePayload {
 // 检查服务器连接状态
 export async function checkServerHealth(): Promise<boolean> {
   try {
-    const response = await fetchWithTimeout(
-      `${API_BASE_URL}/health`,
-      { method: 'GET' },
-      5000
-    );
+    const response = await fetchWithTimeout(`${API_BASE_URL}/health`, { method: 'GET' }, 5000);
     return response.ok;
   } catch {
     return false;
@@ -133,7 +131,7 @@ export async function clearRemoteSession(sessionId: string): Promise<void> {
     await fetchWithTimeout(
       `${API_BASE_URL}/v1/session/${encodeURIComponent(sessionId)}`,
       { method: 'DELETE' },
-      5000
+      5000,
     );
   } catch {
     // 静默失败，不影响前端新会话的创建
@@ -143,7 +141,7 @@ export async function clearRemoteSession(sessionId: string): Promise<void> {
 // 主发送函数 - 带重试和降级
 export async function sendUserInput(
   payload: ChatRequestPayload,
-  config: DialogueServiceConfig = {}
+  config: DialogueServiceConfig = {},
 ): Promise<DialogueServiceResult> {
   const { maxRetries, retryDelay, timeout } = { ...DEFAULT_CONFIG, ...config };
 
@@ -160,7 +158,7 @@ export async function sendUserInput(
           },
           body: JSON.stringify(payload),
         },
-        timeout
+        timeout,
       );
 
       if (!response.ok) {
@@ -187,7 +185,6 @@ export async function sendUserInput(
         connectionStatus: 'connected',
         error: null,
       };
-
     } catch (error: unknown) {
       lastError = error instanceof Error ? error : new Error(String(error));
 
@@ -199,14 +196,13 @@ export async function sendUserInput(
         lastError = new DialogueApiError('网络连接失败，请检查网络', 0, true);
       }
 
-      if (attempt < maxRetries) {
-        const canRetry =
-          lastError instanceof DialogueApiError ? lastError.isRetryable : true;
-        if (canRetry) {
-          await sleep(retryDelay * (attempt + 1));
-          continue;
-        }
+      const canRetry = lastError instanceof DialogueApiError ? lastError.isRetryable : true;
+
+      if (!canRetry || attempt >= maxRetries) {
+        break;
       }
+
+      await sleep(retryDelay * (attempt + 1));
     }
   }
 
@@ -231,7 +227,7 @@ export async function* streamUserInput(
   payload: ChatRequestPayload,
   config: DialogueServiceConfig = {},
   callbacks: StreamCallbacks = {},
-): AsyncGenerator<string, ChatResponsePayload, unknown> {
+): AsyncGenerator<string, DialogueServiceResult, unknown> {
   const { timeout } = { ...DEFAULT_CONFIG, ...config };
 
   let finalResponse: ChatResponsePayload | null = null;
@@ -306,13 +302,19 @@ export async function* streamUserInput(
   } catch (error) {
     console.warn('流式请求失败，降级到普通请求:', error);
     const fallback = await sendUserInput(payload, config);
-    yield fallback.response.replyText;
-    return fallback.response;
+    if (fallback.response.replyText) {
+      yield fallback.response.replyText;
+    }
+    return fallback;
   }
 
   if (!finalResponse) {
     finalResponse = { replyText: '', emotion: 'neutral', action: 'idle' };
   }
 
-  return finalResponse;
+  return {
+    response: finalResponse,
+    connectionStatus: streamError ? 'error' : 'connected',
+    error: streamError,
+  };
 }

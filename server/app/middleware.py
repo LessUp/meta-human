@@ -83,3 +83,27 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             duration,
         )
         return response
+
+
+class AuthMiddleware(BaseHTTPMiddleware):
+    """API Key 认证中间件：验证 X-API-Key 请求头"""
+
+    EXEMPT_PATHS = {"/health", "/"}
+
+    def __init__(self, app) -> None:
+        super().__init__(app)
+        settings = get_settings()
+        self.enabled = settings.auth_enabled
+        self.valid_keys = set(k.strip() for k in settings.api_keys.split(",") if k.strip()) if settings.api_keys else set()
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        if not self.enabled:
+            return await call_next(request)
+        if request.url.path in self.EXEMPT_PATHS:
+            return await call_next(request)
+        api_key = request.headers.get("X-API-Key")
+        if not api_key:
+            return JSONResponse(status_code=401, content={"error": "Missing X-API-Key header"})
+        if api_key not in self.valid_keys:
+            return JSONResponse(status_code=403, content={"error": "Invalid API key"})
+        return await call_next(request)

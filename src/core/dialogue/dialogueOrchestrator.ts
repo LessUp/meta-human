@@ -1,5 +1,10 @@
-import { ChatResponsePayload, sendUserInput, streamUserInput, type StreamCallbacks } from './dialogueService';
-import { digitalHumanEngine } from '../avatar/DigitalHumanEngine';
+import {
+  ChatResponsePayload,
+  type DialogueServiceResult,
+  type StreamCallbacks,
+} from './dialogueService';
+import { getDefaultChatTransport } from './chatTransport';
+import { digitalHumanEngine } from '../avatar';
 
 export interface DialogueHandleOptions {
   isMuted?: boolean;
@@ -25,7 +30,7 @@ let pendingTurn: Promise<ChatResponsePayload | undefined> | null = null;
 
 export async function runDialogueTurn(
   userText: string,
-  options: DialogueTurnOptions = {}
+  options: DialogueTurnOptions = {},
 ): Promise<ChatResponsePayload | undefined> {
   const content = userText.trim();
   if (!content) {
@@ -56,8 +61,10 @@ export async function runDialogueTurn(
   digitalHumanEngine.setBehavior('thinking');
 
   const execute = async (): Promise<ChatResponsePayload | undefined> => {
+    const chatTransport = getDefaultChatTransport();
+
     try {
-      const result = await sendUserInput({
+      const result = await chatTransport.send({
         sessionId,
         userText: content,
         meta,
@@ -128,43 +135,71 @@ export async function runDialogueTurnStream(
   setLoading?.(true);
   digitalHumanEngine.setBehavior('thinking');
 
+  let didFinishStream = false;
+
+  const finishStream = () => {
+    if (didFinishStream) {
+      return;
+    }
+
+    didFinishStream = true;
+    onStreamEnd?.();
+  };
+
   const execute = async (): Promise<ChatResponsePayload | undefined> => {
-    let streamResponse: ChatResponsePayload | null = null;
+    let streamResult: DialogueServiceResult | null = null;
+    const chatTransport = getDefaultChatTransport();
 
     try {
-      const enrichedCallbacks: StreamCallbacks = {
-        ...streamCallbacks,
-        onDone: (response) => { streamResponse = response; },
-      };
-
-      const generator = streamUserInput(
+      const generator = chatTransport.stream(
         { sessionId, userText: content, meta },
         {},
-        enrichedCallbacks,
+        streamCallbacks,
       );
 
       let accumulatedText = '';
 
-      for await (const token of generator) {
-        accumulatedText += token;
+      while (true) {
+        const step = await generator.next();
+
+        if (step.done) {
+          streamResult = step.value;
+          break;
+        }
+
+        accumulatedText += step.value;
         onStreamToken?.(accumulatedText);
       }
 
-      // 优先使用 done 事件中的结构化响应（含 emotion/action）
-      const response = streamResponse ?? { replyText: accumulatedText, emotion: 'neutral', action: 'idle' };
+      const result = streamResult ?? {
+        response: {
+          replyText: accumulatedText,
+          emotion: 'neutral',
+          action: 'idle',
+        },
+        connectionStatus: 'connected',
+        error: null,
+      };
 
-      onConnectionChange?.('connected');
-      onClearError?.();
+      if (result.connectionStatus === 'connected') {
+        onConnectionChange?.('connected');
+        onClearError?.();
+      } else {
+        onConnectionChange?.('error');
+        if (result.error) {
+          onError?.(result.error);
+        }
+      }
 
-      await handleDialogueResponse(response, {
+      await handleDialogueResponse(result.response, {
         isMuted,
         speakWith,
         onAddAssistantMessage: undefined,
         onError,
       });
 
-      onStreamEnd?.();
-      return response;
+      finishStream();
+      return result.response;
     } catch (error) {
       console.error('流式对话失败:', error);
       onError?.(error instanceof Error ? error.message : '流式对话失败');
@@ -173,7 +208,7 @@ export async function runDialogueTurnStream(
       setLoading?.(false);
       pendingTurn = null;
       onResetBehavior?.();
-      onStreamEnd?.();
+      finishStream();
     }
   };
 
@@ -183,14 +218,9 @@ export async function runDialogueTurnStream(
 
 export async function handleDialogueResponse(
   res: ChatResponsePayload,
-  options: DialogueHandleOptions = {}
+  options: DialogueHandleOptions = {},
 ): Promise<void> {
-  const {
-    isMuted = false,
-    speakWith,
-    onAddAssistantMessage,
-    onError,
-  } = options;
+  const { isMuted = false, speakWith, onAddAssistantMessage, onError } = options;
 
   if (res.replyText) {
     onAddAssistantMessage?.(res.replyText);

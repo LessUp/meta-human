@@ -89,3 +89,51 @@ UI 层尽量“只读 store + 调用高层 action”，避免直接操作底层 
 1. `visionService` 获取视频帧并运行推理
 2. `visionMapper` 输出简化状态（emotion、nod/shake 等）
 3. 页面/引擎应用到数字人表现（表情与动作）
+
+## 5. 当前架构评估
+
+- 优点
+  - 已经形成 `page -> hooks -> orchestrator/service -> store` 的基本分层，`AdvancedDigitalHumanPage` 比早期版本更薄。
+  - 前端对后端断连有 fallback，适合 Demo/SDK 场景。
+  - 3D、语音、视觉、对话四条主能力链路已经能独立演进。
+- 当前主要问题
+  - 聊天消息生命周期分散在 hook、orchestrator、store 三处，容易出现占位消息、流式结束、错误清理不同步。
+  - 传输层当前同时存在普通 HTTP、SSE、预研 WebSocket，但还没有统一的 transport 抽象。
+  - UI store 同时承载渲染态、会话态、系统态，后续复杂度继续上升时会增加无关重渲染和状态耦合。
+  - 视觉、语音、3D 渲染都偏浏览器能力驱动，缺少统一的健康状态和性能观测面板。
+
+## 6. 后续技术路线图
+
+### Phase 1: 稳定交互主链路
+
+- 收敛消息生命周期：用户消息、助手占位、流式 token、结束态、错误态由同一条消息状态流管理。
+- 补齐流式聊天测试：重点覆盖并发请求、占位消息清理、fallback、TTS 失败。
+- 清理高频路径上的无效订阅，优先优化聊天区、HUD、控制面板的 store 订阅方式。
+
+### Phase 2: 统一实时传输层
+
+- 抽象 `chat transport` 接口，屏蔽 `POST /v1/chat`、`SSE /v1/chat/stream`、`WebSocket /ws` 的差异。
+- 默认保留 SSE，WebSocket 作为增强模式接入，不把页面逻辑和具体传输协议绑定。
+- 给 transport 增加连接态、重连策略、超时和 server capability 探测。
+- 支持通过 `VITE_CHAT_TRANSPORT=http|sse|websocket` 切换策略，便于灰度验证。
+
+### Phase 3: 拆分状态域
+
+- 将当前 store 按 `session/chat`、`avatar/runtime`、`system/connection` 三个域拆分。
+- 减少 3D 渲染状态和聊天 UI 状态的相互影响，降低页面级组件重渲染。
+- 将可序列化状态和不可序列化运行时对象彻底分开。
+
+### Phase 4: 体验与性能优化
+
+- Viewer 根据设备能力动态调节粒子数、阴影、DPR 和后处理开关。
+- 为聊天区、设置面板、模型加载过程补充 skeleton/placeholder，减少跳变感。
+- 增加前端性能埋点：首屏加载、模型加载耗时、首 token 时间、完整回复时间。
+
+## 7. 本轮已落地优化
+
+- 修复流式聊天占位消息 `id` 不一致导致的消息不更新问题。
+- 修复流式结束回调重复触发问题，避免 UI 状态重复收尾。
+- 聊天气泡在流式开始但尚未收到 token 时，展示明确的生成态文案。
+- 聊天 hook 改为 selector 订阅，减少因 store 全量订阅带来的额外重渲染。
+- 新增统一 `chat transport` 抽象，并让 orchestrator 改为依赖 transport 而不是直接依赖具体协议实现。
+- 修复流式降级到 fallback 时丢失 `connectionStatus/error` 的问题。

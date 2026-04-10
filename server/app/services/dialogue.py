@@ -1,24 +1,16 @@
 from typing import Any, AsyncGenerator, Dict, List, Optional
 import json
 import logging
-import time
 import random
 from datetime import datetime
-from collections import defaultdict
 from urllib.parse import urlparse, urlunparse
 
 import httpx
 
 from app.config import get_settings
+from app.stores.session_store import SessionStore, create_session_store
 
 logger = logging.getLogger(__name__)
-
-
-# 会话历史存储（生产环境应使用 Redis 等持久化存储）
-session_histories: Dict[str, List[Dict[str, str]]] = defaultdict(list)
-session_last_active: Dict[str, float] = {}
-MAX_HISTORY_LENGTH = 20  # 最大保留的历史对话轮数
-_last_cleanup_time: float = 0.0
 
 
 class DialogueService:
@@ -31,55 +23,23 @@ class DialogueService:
     self.max_session_messages = settings.max_session_messages
     self.session_ttl = settings.session_ttl_seconds
     self.cleanup_interval = settings.session_cleanup_interval
-    self._session_messages: dict[str, list[dict[str, str]]] = {}
+    self.store: SessionStore = create_session_store(settings.redis_url)
 
   def _normalize_user_text(self, user_text: str) -> str:
     return (user_text or "").strip()
 
-  def _maybe_cleanup_sessions(self) -> None:
-    """定期清理过期会话，防止内存无限增长"""
-    global _last_cleanup_time
-    now = time.monotonic()
-    if now - _last_cleanup_time < self.cleanup_interval:
-      return
-    _last_cleanup_time = now
-
-    cutoff = time.monotonic() - self.session_ttl
-    expired = [sid for sid, ts in session_last_active.items() if ts < cutoff]
-    for sid in expired:
-      session_histories.pop(sid, None)
-      session_last_active.pop(sid, None)
-      self._session_messages.pop(sid, None)
-    if expired:
-      logger.info("清理了 %d 个过期会话", len(expired))
-
-  def _touch_session(self, session_id: str) -> None:
-    """更新会话最后活跃时间"""
-    session_last_active[session_id] = time.monotonic()
-
-  def _append_session_history(self, session_id: str, role: str, content: str) -> None:
-    if not session_id or not content:
-      return
-    self._touch_session(session_id)
-    session_histories[session_id].append({
-      "role": role,
-      "content": content,
-      "timestamp": datetime.now().isoformat(),
-    })
-    if len(session_histories[session_id]) > MAX_HISTORY_LENGTH * 2:
-      session_histories[session_id] = session_histories[session_id][-MAX_HISTORY_LENGTH * 2:]
-
   def _append_turn(self, session_id: Optional[str], user_text: str, reply_text: str) -> None:
     if not session_id:
       return
-    self._append_session_history(session_id, "user", user_text)
-    self._append_session_history(session_id, "assistant", reply_text)
-    self._append_session_messages(
+    self.store.append_history(session_id, "user", user_text, datetime.now().isoformat())
+    self.store.append_history(session_id, "assistant", reply_text, datetime.now().isoformat())
+    self.store.append_messages(
       session_id,
       [
         {"role": "user", "content": user_text},
         {"role": "assistant", "content": reply_text},
       ],
+      max_length=self.max_session_messages,
     )
 
   def _get_smart_mock_reply(self, user_text: str) -> Dict[str, Any]:
@@ -130,7 +90,7 @@ class DialogueService:
         "action": "idle",
       }
 
-    self._maybe_cleanup_sessions()
+    self.store.cleanup_expired(self.session_ttl)
 
     if not self.api_key:
       logger.info("OPENAI_API_KEY 未配置，使用智能 Mock 回复")
@@ -163,8 +123,8 @@ class DialogueService:
     # 添加会话历史
     if history_messages:
       messages.extend(history_messages)
-    elif session_id and session_id in session_histories:
-      history = session_histories[session_id][-10:]
+    elif session_id:
+      history = self.store.get_history(session_id)[-10:]
       for msg in history:
         if msg["role"] in ("user", "assistant"):
           messages.append({"role": msg["role"], "content": msg["content"]})
@@ -248,36 +208,16 @@ class DialogueService:
 
   def clear_session(self, session_id: str) -> bool:
     """清除指定会话的历史记录"""
-    removed = False
-    if session_id in session_histories:
-      del session_histories[session_id]
-      removed = True
-    if session_id in self._session_messages:
-      del self._session_messages[session_id]
-      removed = True
-    if session_id in session_last_active:
-      del session_last_active[session_id]
-    return removed
+    return self.store.clear(session_id)
 
   def get_session_history(self, session_id: str) -> List[Dict[str, str]]:
     """获取指定会话的历史记录"""
-    return list(session_histories.get(session_id, []))
+    return self.store.get_history(session_id)
 
   def list_sessions(self) -> List[Dict[str, Any]]:
     """列出所有活跃会话的摘要信息"""
-    self._maybe_cleanup_sessions()
-    sessions = []
-    for sid, history in session_histories.items():
-      if not history:
-        continue
-      sessions.append({
-        "sessionId": sid,
-        "messageCount": len(history),
-        "lastActivity": history[-1].get("timestamp", ""),
-        "preview": history[-1].get("content", "")[:80],
-      })
-    sessions.sort(key=lambda s: s["lastActivity"], reverse=True)
-    return sessions
+    self.store.cleanup_expired(self.session_ttl)
+    return self.store.list_sessions()
 
   async def generate_reply_stream(
     self,
@@ -302,7 +242,7 @@ class DialogueService:
       )
       return
 
-    self._maybe_cleanup_sessions()
+    self.store.cleanup_expired(self.session_ttl)
 
     if not self.api_key:
       logger.info("OPENAI_API_KEY 未配置，流式模式使用智能 Mock 回复")
@@ -366,8 +306,8 @@ class DialogueService:
     messages: list[dict[str, str]] = [{"role": "system", "content": system_prompt}]
     if history_messages:
       messages.extend(history_messages)
-    elif session_id and session_id in session_histories:
-      history = session_histories[session_id][-10:]
+    elif session_id:
+      history = self.store.get_history(session_id)[-10:]
       for msg in history:
         if msg["role"] in ("user", "assistant"):
           messages.append({"role": msg["role"], "content": msg["content"]})
@@ -486,28 +426,7 @@ class DialogueService:
     return resp.json()
 
   def _get_session_messages(self, session_id: str) -> list[dict[str, str]]:
-    return list(self._session_messages.get(session_id, []))
-
-  def _append_session_messages(
-    self,
-    session_id: str,
-    new_messages: list[dict[str, str]],
-  ) -> None:
-    if not session_id:
-      return
-    history = self._session_messages.get(session_id, [])
-    history.extend(new_messages)
-    truncated = False
-    if len(history) > self.max_session_messages:
-      history = history[-self.max_session_messages :]
-      truncated = True
-    self._session_messages[session_id] = history
-    logger.debug(
-      "Session %s history size=%d%s",
-      session_id,
-      len(history),
-      " (truncated)" if truncated else "",
-    )
+    return self.store.get_messages(session_id)
 
 
 dialogue_service = DialogueService()
