@@ -1,11 +1,10 @@
 import { useDigitalHumanStore } from '../../store/digitalHumanStore';
+import { useChatSessionStore } from '../../store/chatSessionStore';
+import { useSystemStore } from '../../store/systemStore';
 import { TTSService, ASRService } from './audioService';
 import type { TTSCallbacks, ASRStateAdapter } from './audioService';
 
-export {
-  TTSService,
-  ASRService,
-} from './audioService';
+export { TTSService, ASRService } from './audioService';
 export type {
   TTSConfig,
   ASRConfig,
@@ -26,7 +25,7 @@ function createTTSCallbacks(): TTSCallbacks {
       useDigitalHumanStore.getState().setBehavior('idle');
     },
     onError: (msg) => {
-      useDigitalHumanStore.getState().setError(msg);
+      useSystemStore.getState().setError(msg);
     },
   };
 }
@@ -37,7 +36,7 @@ function createASRStateAdapter(): ASRStateAdapter {
     setRecording: (r) => useDigitalHumanStore.getState().setRecording(r),
     setBehavior: (b) => useDigitalHumanStore.getState().setBehavior(b as any),
     setSpeaking: (s) => useDigitalHumanStore.getState().setSpeaking(s),
-    setError: (m) => useDigitalHumanStore.getState().setError(m),
+    setError: (m) => useSystemStore.getState().setError(m),
     setEmotion: (e) => useDigitalHumanStore.getState().setEmotion(e as any),
     setExpression: (x) => useDigitalHumanStore.getState().setExpression(x as any),
     setAnimation: (a) => useDigitalHumanStore.getState().setAnimation(a),
@@ -45,9 +44,15 @@ function createASRStateAdapter(): ASRStateAdapter {
     pause: () => useDigitalHumanStore.getState().pause(),
     reset: () => useDigitalHumanStore.getState().reset(),
     setMuted: (m) => useDigitalHumanStore.getState().setMuted(m),
-    get isMuted() { return useDigitalHumanStore.getState().isMuted; },
-    get sessionId() { return useDigitalHumanStore.getState().sessionId; },
-    get currentBehavior() { return useDigitalHumanStore.getState().currentBehavior; },
+    get isMuted() {
+      return useDigitalHumanStore.getState().isMuted;
+    },
+    get sessionId() {
+      return useChatSessionStore.getState().sessionId;
+    },
+    get currentBehavior() {
+      return useDigitalHumanStore.getState().currentBehavior;
+    },
   };
 }
 

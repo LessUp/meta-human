@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import DigitalHumanViewer from '../components/DigitalHumanViewer';
 import ControlPanel from '../components/ControlPanel';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
+import { useSystemStore } from '../store/systemStore';
 import { ttsService, asrService } from '../core/audio';
 import { digitalHumanEngine } from '../core/avatar';
 import { Toaster, toast } from 'sonner';
@@ -14,12 +15,12 @@ export default function DigitalHumanPage() {
     isMuted,
     autoRotate,
     isSpeaking,
-    connectionStatus,
     currentBehavior,
     setRecording,
     toggleMute,
-    toggleAutoRotate
+    toggleAutoRotate,
   } = useDigitalHumanStore();
+  const connectionStatus = useSystemStore((s) => s.connectionStatus);
 
   const [modelLoaded, setModelLoaded] = useState(false);
 
@@ -131,7 +132,9 @@ export default function DigitalHumanPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
-                      <div className={`w-2 h-2 rounded-full ${modelLoaded ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                      <div
+                        className={`w-2 h-2 rounded-full ${modelLoaded ? 'bg-green-500' : 'bg-red-500'}`}
+                      ></div>
                       <span className="text-sm text-gray-600">
                         {modelLoaded ? '模型已加载' : '模型加载中...'}
                       </span>
@@ -152,9 +155,7 @@ export default function DigitalHumanPage() {
                     )}
                   </div>
 
-                  <div className="text-xs text-gray-500">
-                    Three.js 渲染引擎 | WebGL
-                  </div>
+                  <div className="text-xs text-gray-500">Three.js 渲染引擎 | WebGL</div>
 
                   {/* 连接状态 */}
                   <div className="flex items-center space-x-1">

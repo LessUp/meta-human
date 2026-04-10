@@ -1,11 +1,21 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { useDigitalHumanStore } from '../store/digitalHumanStore';
+import { useSystemStore } from '../store/systemStore';
 import { checkServerHealth } from '../core/dialogue/dialogueService';
+import { resolveChatTransportMode } from '../core/dialogue/chatTransport';
 import { toast } from 'sonner';
 
 export function useConnectionHealth() {
-  const setConnectionStatus = useDigitalHumanStore((s) => s.setConnectionStatus);
+  const setConnectionStatus = useSystemStore((s) => s.setConnectionStatus);
+  const setChatTransportMode = useSystemStore((s) => s.setChatTransportMode);
   const lastStatusRef = useRef<string | null>(null);
+
+  const syncTransportMode = useCallback(
+    async (forceProbe = false) => {
+      const mode = await resolveChatTransportMode(undefined, { forceProbe });
+      setChatTransportMode(mode);
+    },
+    [setChatTransportMode],
+  );
 
   const checkConnection = useCallback(async () => {
     const isHealthy = await checkServerHealth();
@@ -22,8 +32,12 @@ export function useConnectionHealth() {
       toast.success('服务器连接已恢复');
     }
 
+    if (isHealthy) {
+      void syncTransportMode();
+    }
+
     lastStatusRef.current = nextStatus;
-  }, [setConnectionStatus]);
+  }, [setConnectionStatus, syncTransportMode]);
 
   const reconnect = useCallback(async () => {
     setConnectionStatus('connecting');
@@ -35,11 +49,12 @@ export function useConnectionHealth() {
     lastStatusRef.current = nextStatus;
 
     if (isHealthy) {
+      await syncTransportMode(true);
       toast.success('连接成功', { id: toastId });
     } else {
       toast.error('连接失败，请稍后重试', { id: toastId });
     }
-  }, [setConnectionStatus]);
+  }, [setConnectionStatus, syncTransportMode]);
 
   useEffect(() => {
     checkConnection();

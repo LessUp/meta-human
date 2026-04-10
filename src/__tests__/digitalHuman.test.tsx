@@ -3,6 +3,8 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import DigitalHumanViewer from '../components/DigitalHumanViewer';
 import ControlPanel from '../components/ControlPanel';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
+import { useChatSessionStore } from '../store/chatSessionStore';
+import { useSystemStore } from '../store/systemStore';
 import { TTSService, ASRService } from '../core/audio/audioService';
 import { handleDialogueResponse } from '../core/dialogue/dialogueOrchestrator';
 import React from 'react';
@@ -246,9 +248,17 @@ describe('DigitalHumanStore', () => {
       currentExpression: 'neutral',
       expressionIntensity: 0.8,
       currentBehavior: 'idle',
+    });
+    useChatSessionStore.setState({
+      sessionId: 'test-session',
       chatHistory: [],
+    });
+    useSystemStore.setState({
       error: null,
       lastErrorTime: null,
+      connectionStatus: 'connected',
+      isConnected: true,
+      isLoading: false,
     });
   });
 
@@ -291,20 +301,20 @@ describe('DigitalHumanStore', () => {
   });
 
   it('does not add empty chat messages', () => {
-    const { addChatMessage } = useDigitalHumanStore.getState();
+    const { addChatMessage } = useChatSessionStore.getState();
     addChatMessage('user', '   ');
-    expect(useDigitalHumanStore.getState().chatHistory).toHaveLength(0);
+    expect(useChatSessionStore.getState().chatHistory).toHaveLength(0);
   });
 
   it('generates unique chat message ids under the same timestamp', () => {
     const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(1000);
 
     try {
-      const { addChatMessage } = useDigitalHumanStore.getState();
+      const { addChatMessage } = useChatSessionStore.getState();
       addChatMessage('user', '第一条消息');
       addChatMessage('assistant', '第二条消息');
 
-      const [firstMessage, secondMessage] = useDigitalHumanStore.getState().chatHistory;
+      const [firstMessage, secondMessage] = useChatSessionStore.getState().chatHistory;
 
       expect(firstMessage.id).not.toBe(secondMessage.id);
       expect(firstMessage.timestamp).toBe(1000);
@@ -477,7 +487,7 @@ describe('ASRService', () => {
         return useDigitalHumanStore.getState().isMuted;
       },
       get sessionId() {
-        return useDigitalHumanStore.getState().sessionId;
+        return useChatSessionStore.getState().sessionId;
       },
       get currentBehavior() {
         return useDigitalHumanStore.getState().currentBehavior;
@@ -518,8 +528,8 @@ describe('ASRService', () => {
 
 describe('Dialogue orchestration', () => {
   beforeEach(() => {
-    useDigitalHumanStore.getState().clearChatHistory();
-    useDigitalHumanStore.getState().clearError();
+    useChatSessionStore.getState().clearChatHistory();
+    useSystemStore.getState().clearError();
     useDigitalHumanStore.getState().setMuted(false);
     useDigitalHumanStore.getState().setBehavior('idle');
     useDigitalHumanStore.getState().setSpeaking(false);
@@ -548,14 +558,16 @@ describe('Dialogue orchestration', () => {
 
 describe('Error throttle and session lifecycle', () => {
   beforeEach(() => {
-    useDigitalHumanStore.setState({
+    useSystemStore.setState({
       error: null,
       lastErrorTime: null,
-      sessionId: 'test-session',
-      chatHistory: [],
       connectionStatus: 'connected',
       isConnected: true,
       isLoading: false,
+    });
+    useChatSessionStore.setState({
+      sessionId: 'test-session',
+      chatHistory: [],
     });
   });
 
@@ -564,16 +576,16 @@ describe('Error throttle and session lifecycle', () => {
 
     try {
       nowSpy.mockReturnValue(1000);
-      useDigitalHumanStore.getState().setError('网络错误');
-      expect(useDigitalHumanStore.getState().error).toBe('网络错误');
+      useSystemStore.getState().setError('网络错误');
+      expect(useSystemStore.getState().error).toBe('网络错误');
 
       nowSpy.mockReturnValue(2000);
-      useDigitalHumanStore.getState().setError('网络错误');
-      expect(useDigitalHumanStore.getState().lastErrorTime).toBe(1000);
+      useSystemStore.getState().setError('网络错误');
+      expect(useSystemStore.getState().lastErrorTime).toBe(1000);
 
       nowSpy.mockReturnValue(3500);
-      useDigitalHumanStore.getState().setError('网络错误');
-      expect(useDigitalHumanStore.getState().lastErrorTime).toBe(3500);
+      useSystemStore.getState().setError('网络错误');
+      expect(useSystemStore.getState().lastErrorTime).toBe(3500);
     } finally {
       nowSpy.mockRestore();
     }
@@ -584,20 +596,20 @@ describe('Error throttle and session lifecycle', () => {
 
     try {
       nowSpy.mockReturnValue(1000);
-      useDigitalHumanStore.getState().setError('错误A');
-      expect(useDigitalHumanStore.getState().error).toBe('错误A');
+      useSystemStore.getState().setError('错误A');
+      expect(useSystemStore.getState().error).toBe('错误A');
 
       nowSpy.mockReturnValue(1500);
-      useDigitalHumanStore.getState().setError('错误B');
-      expect(useDigitalHumanStore.getState().error).toBe('错误B');
-      expect(useDigitalHumanStore.getState().lastErrorTime).toBe(1500);
+      useSystemStore.getState().setError('错误B');
+      expect(useSystemStore.getState().error).toBe('错误B');
+      expect(useSystemStore.getState().lastErrorTime).toBe(1500);
     } finally {
       nowSpy.mockRestore();
     }
   });
 
   it('initSession resets error, loading and connection status', () => {
-    useDigitalHumanStore.setState({
+    useSystemStore.setState({
       error: '旧错误',
       lastErrorTime: 999,
       isLoading: true,
@@ -605,14 +617,15 @@ describe('Error throttle and session lifecycle', () => {
       isConnected: false,
     });
 
-    const oldSessionId = useDigitalHumanStore.getState().sessionId;
+    const oldSessionId = useChatSessionStore.getState().sessionId;
 
     useDigitalHumanStore.getState().initSession();
 
-    const state = useDigitalHumanStore.getState();
+    const state = useSystemStore.getState();
+    const sessionState = useChatSessionStore.getState();
 
-    expect(state.sessionId).not.toBe(oldSessionId);
-    expect(state.chatHistory).toHaveLength(0);
+    expect(sessionState.sessionId).not.toBe(oldSessionId);
+    expect(sessionState.chatHistory).toHaveLength(0);
     expect(state.error).toBeNull();
     expect(state.lastErrorTime).toBeNull();
     expect(state.isLoading).toBe(false);

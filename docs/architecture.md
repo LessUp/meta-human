@@ -116,18 +116,22 @@ UI 层尽量“只读 store + 调用高层 action”，避免直接操作底层 
 - 默认保留 SSE，WebSocket 作为增强模式接入，不把页面逻辑和具体传输协议绑定。
 - 给 transport 增加连接态、重连策略、超时和 server capability 探测。
 - 支持通过 `VITE_CHAT_TRANSPORT=http|sse|websocket` 切换策略，便于灰度验证。
+- `auto` 模式下新增运行时 probe：优先尝试 WebSocket 握手，失败则回落到 SSE，再退化到 HTTP；当前结果同步到 `systemStore.chatTransportMode`。
 
 ### Phase 3: 拆分状态域
 
 - 将当前 store 按 `session/chat`、`avatar/runtime`、`system/connection` 三个域拆分。
 - 减少 3D 渲染状态和聊天 UI 状态的相互影响，降低页面级组件重渲染。
 - 将可序列化状态和不可序列化运行时对象彻底分开。
+- 当前已完成第一步：`sessionId/chatHistory` 与消息增删改逻辑已迁移到独立 `chatSessionStore`，`digitalHumanStore` 保留跨域协调动作 `initSession`。
+- 当前已完成第二步：`error/isLoading/connectionStatus/isConnected` 已迁移到独立 `systemStore`，连接健康检查、聊天错误反馈、HUD 与输入区状态展示均已接入新域。
 
 ### Phase 4: 体验与性能优化
 
 - Viewer 根据设备能力动态调节粒子数、阴影、DPR 和后处理开关。
 - 为聊天区、设置面板、模型加载过程补充 skeleton/placeholder，减少跳变感。
 - 增加前端性能埋点：首屏加载、模型加载耗时、首 token 时间、完整回复时间。
+- 当前已完成首轮聊天指标采集：最近一次对话的 `firstTokenMs` 与 `responseCompleteMs` 已记录到 `systemStore.chatPerformance`，并在 `TopHUD` 中展示。
 
 ## 7. 本轮已落地优化
 
@@ -137,3 +141,8 @@ UI 层尽量“只读 store + 调用高层 action”，避免直接操作底层 
 - 聊天 hook 改为 selector 订阅，减少因 store 全量订阅带来的额外重渲染。
 - 新增统一 `chat transport` 抽象，并让 orchestrator 改为依赖 transport 而不是直接依赖具体协议实现。
 - 修复流式降级到 fallback 时丢失 `connectionStatus/error` 的问题。
+- 抽离独立 `chatSessionStore`，将聊天消息与会话 ID 从 `digitalHumanStore` 中分域，降低聊天 UI 对主运行时 store 的耦合。
+- 抽离独立 `systemStore`，将连接状态、加载态和错误态从 `digitalHumanStore` 中分域，进一步收窄主 store 职责边界。
+- 新增 chat transport capability probe，并在健康检查时刷新自动选择结果，为后续 WebSocket 灰度与能力探测打基础。
+- 抽离 `useAdvancedDigitalHumanController`，将高级页面的业务控制逻辑从布局组件中移出，降低页面组件复杂度并为后续 controller 测试留出边界。
+- 增加聊天性能快照采集与 HUD 可视化，可直接观察最近一次请求的首 token 时间和完整响应时间。
