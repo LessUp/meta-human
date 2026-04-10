@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
+import { useChatSessionStore } from '../store/chatSessionStore';
+import { useSystemStore } from '../store/systemStore';
 import { Mic, MessageSquare, Radio, AlertCircle, X } from 'lucide-react';
 import { usePrefersReducedMotion } from '../hooks';
 
@@ -18,12 +20,12 @@ export default function ChatDock({
   onToggleRecording,
   isChatLoading,
 }: ChatDockProps) {
-  const chatHistory = useDigitalHumanStore((s) => s.chatHistory);
-  const isLoading = useDigitalHumanStore((s) => s.isLoading);
+  const chatHistory = useChatSessionStore((s) => s.chatHistory);
+  const isLoading = useSystemStore((s) => s.isLoading);
   const isRecording = useDigitalHumanStore((s) => s.isRecording);
   const isSpeaking = useDigitalHumanStore((s) => s.isSpeaking);
-  const error = useDigitalHumanStore((s) => s.error);
-  const clearError = useDigitalHumanStore((s) => s.clearError);
+  const error = useSystemStore((s) => s.error);
+  const clearError = useSystemStore((s) => s.clearError);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
 

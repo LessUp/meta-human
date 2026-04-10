@@ -6,6 +6,7 @@ const streamUserInputMock = vi.fn();
 const wsConnectMock = vi.fn();
 const wsSendMock = vi.fn();
 const wsDisconnectMock = vi.fn();
+const probeWebSocketEndpointMock = vi.fn();
 
 vi.mock('../core/dialogue/dialogueService', () => ({
   sendUserInput: (...args: unknown[]) => sendUserInputMock(...args),
@@ -13,6 +14,7 @@ vi.mock('../core/dialogue/dialogueService', () => ({
 }));
 
 vi.mock('../core/dialogue/wsClient', () => ({
+  probeWebSocketEndpoint: (...args: unknown[]) => probeWebSocketEndpointMock(...args),
   MetaHumanWSClient: class {
     connect = (...args: unknown[]) => wsConnectMock(...args);
     send = (...args: unknown[]) => wsSendMock(...args);
@@ -27,6 +29,8 @@ describe('chatTransport', () => {
     wsConnectMock.mockReset();
     wsSendMock.mockReset();
     wsDisconnectMock.mockReset();
+    probeWebSocketEndpointMock.mockReset();
+    probeWebSocketEndpointMock.mockResolvedValue(false);
     vi.resetModules();
   });
 
@@ -119,5 +123,29 @@ describe('chatTransport', () => {
         value: originalWebSocket,
       });
     }
+  });
+
+  it('resolves auto mode to websocket after a successful probe', async () => {
+    probeWebSocketEndpointMock.mockResolvedValue(true);
+
+    const { getDefaultChatTransport, resetChatTransportProbeCache, resolveChatTransportMode } =
+      await import('../core/dialogue/chatTransport');
+
+    resetChatTransportProbeCache();
+
+    await expect(resolveChatTransportMode()).resolves.toBe('websocket');
+    expect(getDefaultChatTransport().mode).toBe('websocket');
+  });
+
+  it('keeps auto mode on sse when websocket probe fails', async () => {
+    probeWebSocketEndpointMock.mockResolvedValue(false);
+
+    const { getDefaultChatTransport, resetChatTransportProbeCache, resolveChatTransportMode } =
+      await import('../core/dialogue/chatTransport');
+
+    resetChatTransportProbeCache();
+
+    await expect(resolveChatTransportMode()).resolves.toBe('sse');
+    expect(getDefaultChatTransport().mode).toBe('sse');
   });
 });

@@ -7,7 +7,7 @@ import {
   type DialogueServiceResult,
   type StreamCallbacks,
 } from './dialogueService';
-import { MetaHumanWSClient, type WSServerEvent } from './wsClient';
+import { MetaHumanWSClient, probeWebSocketEndpoint, type WSServerEvent } from './wsClient';
 
 export type ChatTransportMode = 'auto' | 'http' | 'sse' | 'websocket';
 
@@ -25,6 +25,13 @@ export interface ChatTransport {
 }
 
 type ConcreteChatTransportMode = Exclude<ChatTransportMode, 'auto'>;
+
+export interface ChatTransportCapabilities {
+  websocket: boolean;
+  streaming: boolean;
+  recommendedMode: ConcreteChatTransportMode;
+  probedAt: number;
+}
 
 const DEFAULT_TIMEOUT_MS = 15000;
 
@@ -240,6 +247,27 @@ const transportRegistry: Record<ConcreteChatTransportMode, ChatTransport> = {
 };
 
 let transportOverride: ChatTransport | null = null;
+let autoTransportMode: ConcreteChatTransportMode = getStreamingFallbackMode();
+let cachedCapabilities: ChatTransportCapabilities | null = null;
+let pendingCapabilitiesProbe: Promise<ChatTransportCapabilities> | null = null;
+
+function canUseStreamingTransport(): boolean {
+  return (
+    typeof fetch === 'function' &&
+    typeof ReadableStream !== 'undefined' &&
+    typeof TextDecoder !== 'undefined'
+  );
+}
+
+function getStreamingFallbackMode(): ConcreteChatTransportMode {
+  return canUseStreamingTransport() ? 'sse' : 'http';
+}
+
+function cacheCapabilities(capabilities: ChatTransportCapabilities): ChatTransportCapabilities {
+  cachedCapabilities = capabilities;
+  autoTransportMode = capabilities.recommendedMode;
+  return capabilities;
+}
 
 export function getPreferredChatTransportMode(): ChatTransportMode {
   const rawMode = import.meta.env.VITE_CHAT_TRANSPORT;
@@ -259,11 +287,80 @@ export function setChatTransportOverride(transport: ChatTransport | null): void 
   transportOverride = transport;
 }
 
+export function getCachedChatTransportCapabilities(): ChatTransportCapabilities | null {
+  return cachedCapabilities;
+}
+
+export function resetChatTransportProbeCache(): void {
+  cachedCapabilities = null;
+  pendingCapabilitiesProbe = null;
+  autoTransportMode = getStreamingFallbackMode();
+}
+
+export async function probeChatTransportCapabilities(
+  options: {
+    force?: boolean;
+    timeoutMs?: number;
+  } = {},
+): Promise<ChatTransportCapabilities> {
+  const { force = false, timeoutMs = 1200 } = options;
+
+  if (!force && cachedCapabilities) {
+    return cachedCapabilities;
+  }
+
+  if (!force && pendingCapabilitiesProbe) {
+    return pendingCapabilitiesProbe;
+  }
+
+  pendingCapabilitiesProbe = (async () => {
+    const streaming = canUseStreamingTransport();
+    const websocket = await probeWebSocketEndpoint(timeoutMs).catch(() => false);
+
+    return cacheCapabilities({
+      websocket,
+      streaming,
+      recommendedMode: websocket ? 'websocket' : streaming ? 'sse' : 'http',
+      probedAt: Date.now(),
+    });
+  })();
+
+  try {
+    return await pendingCapabilitiesProbe;
+  } finally {
+    pendingCapabilitiesProbe = null;
+  }
+}
+
+export async function resolveChatTransportMode(
+  mode: ChatTransportMode = getPreferredChatTransportMode(),
+  options?: { forceProbe?: boolean; timeoutMs?: number },
+): Promise<ConcreteChatTransportMode> {
+  if (transportOverride) {
+    return transportOverride.mode;
+  }
+
+  if (mode !== 'auto') {
+    return getChatTransport(mode).mode;
+  }
+
+  const capabilities = await probeChatTransportCapabilities({
+    force: options?.forceProbe,
+    timeoutMs: options?.timeoutMs,
+  });
+
+  return capabilities.recommendedMode;
+}
+
 export function getChatTransport(
   mode: ChatTransportMode = getPreferredChatTransportMode(),
 ): ChatTransport {
   if (transportOverride) {
     return transportOverride;
+  }
+
+  if (mode === 'auto') {
+    return transportRegistry[autoTransportMode];
   }
 
   if (mode === 'http') {

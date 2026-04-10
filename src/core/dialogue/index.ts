@@ -6,10 +6,14 @@ export {
   DialogueApiError,
 } from './dialogueService';
 export {
+  getCachedChatTransportCapabilities,
   getChatTransport,
   getDefaultChatTransport,
   getPreferredChatTransportMode,
   httpChatTransport,
+  probeChatTransportCapabilities,
+  resetChatTransportProbeCache,
+  resolveChatTransportMode,
   setChatTransportOverride,
   sseChatTransport,
   webSocketChatTransport,
@@ -21,7 +25,7 @@ export type {
   DialogueServiceConfig,
   StreamCallbacks,
 } from './dialogueService';
-export type { ChatTransport, ChatTransportMode } from './chatTransport';
+export type { ChatTransport, ChatTransportCapabilities, ChatTransportMode } from './chatTransport';
 
 export {
   runDialogueTurn,

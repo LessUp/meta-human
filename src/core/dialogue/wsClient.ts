@@ -4,8 +4,49 @@
  * Provides infrastructure for future WebSocket migration.
  */
 
-const WS_BASE_URL =
-  (import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:8000').replace(/\/+$/, '');
+const WS_BASE_URL = (import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:8000').replace(/\/+$/, '');
+
+export function getWebSocketUrl(sessionId: string): string {
+  return `${WS_BASE_URL}/ws?session_id=${encodeURIComponent(sessionId)}`;
+}
+
+export function probeWebSocketEndpoint(timeoutMs = 1200): Promise<boolean> {
+  if (typeof WebSocket === 'undefined') {
+    return Promise.resolve(false);
+  }
+
+  return new Promise((resolve) => {
+    const probeSessionId = `probe_${Date.now()}`;
+    const ws = new WebSocket(getWebSocketUrl(probeSessionId));
+    let settled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const finish = (result: boolean) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
+      try {
+        ws.close();
+      } catch {
+        // ignore close errors during probe cleanup
+      }
+
+      resolve(result);
+    };
+
+    timeoutId = setTimeout(() => finish(false), timeoutMs);
+
+    ws.onopen = () => finish(true);
+    ws.onerror = () => finish(false);
+    ws.onclose = () => finish(false);
+  });
+}
 
 export interface WSChatMessage {
   type: 'chat';
@@ -34,7 +75,7 @@ export class MetaHumanWSClient {
   connect(onMessage: WSMessageHandler): Promise<void> {
     return new Promise((resolve, reject) => {
       this.messageHandler = onMessage;
-      const url = `${WS_BASE_URL}/ws?session_id=${encodeURIComponent(this.sessionId)}`;
+      const url = getWebSocketUrl(this.sessionId);
       this.ws = new WebSocket(url);
 
       this.ws.onopen = () => {
@@ -46,7 +87,9 @@ export class MetaHumanWSClient {
         try {
           const data = JSON.parse(event.data) as WSServerEvent;
           this.messageHandler?.(data);
-        } catch { /* ignore parse errors */ }
+        } catch {
+          /* ignore parse errors */
+        }
       };
 
       this.ws.onerror = (event) => reject(event);

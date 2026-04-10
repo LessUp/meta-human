@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import { useChatSessionStore } from './chatSessionStore';
+import { useSystemStore } from './systemStore';
 
 // 表情类型定义
 export type EmotionType = 'neutral' | 'happy' | 'surprised' | 'sad' | 'angry';
@@ -31,17 +33,6 @@ export type BehaviorType =
   | 'speak'
   | 'waveHand'
   | 'raiseHand';
-export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'error';
-export type ChatRole = 'user' | 'assistant';
-
-export interface ChatMessage {
-  id: number;
-  role: ChatRole;
-  text: string;
-  timestamp: number;
-  isStreaming?: boolean;
-}
-
 interface DigitalHumanState {
   // 模型状态
   isPlaying: boolean;
@@ -59,17 +50,6 @@ interface DigitalHumanState {
   expressionIntensity: number;
   currentBehavior: BehaviorType;
 
-  // 会话状态
-  sessionId: string;
-  chatHistory: ChatMessage[];
-
-  // 系统状态
-  isConnected: boolean;
-  connectionStatus: ConnectionStatus;
-  isLoading: boolean;
-  error: string | null;
-  lastErrorTime: number | null;
-
   // 动作
   setPlaying: (playing: boolean) => void;
   setAutoRotate: (rotate: boolean) => void;
@@ -81,21 +61,9 @@ interface DigitalHumanState {
   setExpression: (expression: ExpressionType) => void;
   setExpressionIntensity: (intensity: number) => void;
   setBehavior: (behavior: BehaviorType) => void;
-  setConnected: (connected: boolean) => void;
-  setConnectionStatus: (status: ConnectionStatus) => void;
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
-  clearError: () => void;
 
   // 会话管理
   initSession: () => void;
-  addChatMessage: (role: ChatRole, text: string, isStreaming?: boolean) => number | null;
-  updateChatMessage: (
-    id: number,
-    updates: Partial<Pick<ChatMessage, 'text' | 'isStreaming'>>,
-  ) => void;
-  removeChatMessage: (id: number) => void;
-  clearChatHistory: () => void;
 
   // 控制方法
   play: () => void;
@@ -107,49 +75,15 @@ interface DigitalHumanState {
   toggleAutoRotate: () => void;
 }
 
-// 生成唯一会话ID
-const generateSessionId = (): string => {
-  return `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-};
-
-let nextChatMessageId = 0;
 let recordingTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
-const ERROR_THROTTLE_MS = 2000;
 const ENABLE_DEVTOOLS = import.meta.env.DEV && import.meta.env.MODE !== 'test';
-
-const generateChatMessageId = (): number => {
-  nextChatMessageId += 1;
-  return Date.now() + nextChatMessageId;
-};
 
 const clearRecordingTimeout = (): void => {
   if (recordingTimeoutId) {
     clearTimeout(recordingTimeoutId);
     recordingTimeoutId = null;
   }
-};
-
-const getSafeLocalStorage = (): Storage | null => {
-  if (typeof window === 'undefined') return null;
-  try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
-};
-
-// 从 localStorage 获取或创建会话ID
-const getOrCreateSessionId = (): string => {
-  const storage = getSafeLocalStorage();
-  if (!storage) {
-    return generateSessionId();
-  }
-  const stored = storage.getItem('metahuman_session_id');
-  if (stored) return stored;
-  const newId = generateSessionId();
-  storage.setItem('metahuman_session_id', newId);
-  return newId;
 };
 
 export const useDigitalHumanStore = create<DigitalHumanState>()(
@@ -166,13 +100,6 @@ export const useDigitalHumanStore = create<DigitalHumanState>()(
       currentExpression: 'neutral',
       expressionIntensity: 0.8,
       currentBehavior: 'idle',
-      sessionId: getOrCreateSessionId(),
-      chatHistory: [],
-      isConnected: true,
-      connectionStatus: 'connected',
-      isLoading: false,
-      error: null,
-      lastErrorTime: null,
 
       // 状态设置方法
       setPlaying: (playing) => set({ isPlaying: playing }),
@@ -191,77 +118,12 @@ export const useDigitalHumanStore = create<DigitalHumanState>()(
       setExpressionIntensity: (intensity) =>
         set({ expressionIntensity: Math.max(0, Math.min(1, intensity)) }),
       setBehavior: (behavior) => set({ currentBehavior: behavior }),
-      setConnected: (connected) => set({ isConnected: connected }),
-      setConnectionStatus: (status) =>
-        set({
-          connectionStatus: status,
-          isConnected: status === 'connected',
-        }),
-      setLoading: (loading) => set({ isLoading: loading }),
-      setError: (error) => {
-        if (!error) {
-          set({ error: null, lastErrorTime: null });
-          return;
-        }
-        const { error: prevError, lastErrorTime } = get();
-        const now = Date.now();
-        if (prevError === error && lastErrorTime && now - lastErrorTime < ERROR_THROTTLE_MS) {
-          return;
-        }
-        set({ error, lastErrorTime: now });
-      },
-      clearError: () => set({ error: null, lastErrorTime: null }),
 
       // 会话管理
       initSession: () => {
-        const newId = generateSessionId();
-        const storage = getSafeLocalStorage();
-        if (storage) {
-          storage.setItem('metahuman_session_id', newId);
-        }
-        set({
-          sessionId: newId,
-          chatHistory: [],
-          error: null,
-          lastErrorTime: null,
-          connectionStatus: 'connected',
-          isConnected: true,
-          isLoading: false,
-        });
+        useChatSessionStore.getState().initSession();
+        useSystemStore.getState().resetSystemState();
       },
-
-      addChatMessage: (role, text, isStreaming = false) => {
-        const normalizedText = text.trim();
-        if (!normalizedText && !isStreaming) {
-          return null;
-        }
-
-        const timestamp = Date.now();
-        const id = generateChatMessageId();
-
-        set((state) => ({
-          chatHistory: [
-            ...state.chatHistory,
-            { id, role, text: normalizedText, timestamp, isStreaming },
-          ],
-        }));
-
-        return id;
-      },
-
-      updateChatMessage: (id, updates) =>
-        set((state) => ({
-          chatHistory: state.chatHistory.map((msg) =>
-            msg.id === id ? { ...msg, ...updates } : msg,
-          ),
-        })),
-
-      removeChatMessage: (id) =>
-        set((state) => ({
-          chatHistory: state.chatHistory.filter((msg) => msg.id !== id),
-        })),
-
-      clearChatHistory: () => set({ chatHistory: [] }),
 
       // 控制方法
       play: () => {
@@ -280,8 +142,6 @@ export const useDigitalHumanStore = create<DigitalHumanState>()(
           currentExpression: 'neutral',
           expressionIntensity: 0.8,
           currentBehavior: 'idle',
-          error: null,
-          lastErrorTime: null,
         });
       },
 
@@ -320,9 +180,5 @@ export const selectIsPlaying = (s: DigitalHumanState) => s.isPlaying;
 export const selectCurrentExpression = (s: DigitalHumanState) => s.currentExpression;
 export const selectCurrentBehavior = (s: DigitalHumanState) => s.currentBehavior;
 export const selectCurrentEmotion = (s: DigitalHumanState) => s.currentEmotion;
-export const selectConnectionStatus = (s: DigitalHumanState) => s.connectionStatus;
-export const selectChatHistory = (s: DigitalHumanState) => s.chatHistory;
 export const selectIsRecording = (s: DigitalHumanState) => s.isRecording;
 export const selectIsSpeaking = (s: DigitalHumanState) => s.isSpeaking;
-export const selectIsLoading = (s: DigitalHumanState) => s.isLoading;
-export const selectError = (s: DigitalHumanState) => s.error;

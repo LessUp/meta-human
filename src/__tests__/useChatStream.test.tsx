@@ -2,6 +2,8 @@ import { renderHook, act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useChatStream } from '../hooks/useChatStream';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
+import { useChatSessionStore } from '../store/chatSessionStore';
+import { useSystemStore } from '../store/systemStore';
 
 const runDialogueTurnStreamMock = vi.fn();
 
@@ -25,11 +27,18 @@ describe('useChatStream', () => {
   beforeEach(() => {
     runDialogueTurnStreamMock.mockReset();
     useDigitalHumanStore.setState({
-      chatHistory: [],
       currentBehavior: 'idle',
+    });
+    useChatSessionStore.setState({
+      sessionId: 'session_test',
+      chatHistory: [],
+    });
+    useSystemStore.setState({
       isLoading: false,
       error: null,
       lastErrorTime: null,
+      connectionStatus: 'connected',
+      isConnected: true,
     });
   });
 
@@ -59,7 +68,7 @@ describe('useChatStream', () => {
       await result.current.handleChatSend('你好');
     });
 
-    const messages = useDigitalHumanStore.getState().chatHistory;
+    const messages = useChatSessionStore.getState().chatHistory;
 
     expect(messages).toHaveLength(2);
     expect(messages[0]).toMatchObject({ role: 'user', text: '你好' });
@@ -68,6 +77,12 @@ describe('useChatStream', () => {
       text: '你好',
       isStreaming: false,
     });
+    expect(useSystemStore.getState().chatPerformance.status).toBe('completed');
+    expect(useSystemStore.getState().chatPerformance.firstTokenMs).not.toBeNull();
+    expect(useSystemStore.getState().chatPerformance.responseCompleteMs).not.toBeNull();
+    expect(useSystemStore.getState().chatPerformance.responseCompleteMs).toBeGreaterThanOrEqual(
+      useSystemStore.getState().chatPerformance.firstTokenMs ?? 0,
+    );
   });
 
   it('removes an empty assistant placeholder when the stream fails before any token arrives', async () => {
@@ -93,9 +108,12 @@ describe('useChatStream', () => {
       await result.current.handleChatSend('测试');
     });
 
-    const messages = useDigitalHumanStore.getState().chatHistory;
+    const messages = useChatSessionStore.getState().chatHistory;
 
     expect(messages).toHaveLength(1);
     expect(messages[0]).toMatchObject({ role: 'user', text: '测试' });
+    expect(useSystemStore.getState().chatPerformance.status).toBe('failed');
+    expect(useSystemStore.getState().chatPerformance.firstTokenMs).toBeNull();
+    expect(useSystemStore.getState().chatPerformance.responseCompleteMs).not.toBeNull();
   });
 });
