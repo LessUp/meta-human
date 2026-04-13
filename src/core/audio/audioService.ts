@@ -40,6 +40,10 @@ export interface ASRStateAdapter {
   sessionId: string;
   /** Current behavior (for thinking reset check). */
   currentBehavior: string;
+  /** Add a message to chat history (for voice-initiated dialogue turns). */
+  addChatMessage?: (role: 'user' | 'assistant', text: string, isStreaming?: boolean) => number | null;
+  /** Update an existing chat message (for voice-initiated dialogue turns). */
+  updateChatMessage?: (id: number, updates: Partial<{ text: string; isStreaming: boolean }>) => void;
 }
 
 type SpeechRecognitionResultLike = ArrayLike<{ transcript: string }>;
@@ -77,6 +81,7 @@ export class TTSService {
   private config: TTSConfig;
   private isInitialized: boolean = false;
   private callbacks: TTSCallbacks;
+  private currentUtterance: SpeechSynthesisUtterance | null = null;
 
   constructor(config: TTSConfig = {}, callbacks: TTSCallbacks = {}) {
     this.synth = typeof window !== 'undefined' && 'speechSynthesis' in window
@@ -142,6 +147,7 @@ export class TTSService {
       }
 
       if (this.synth.speaking) {
+        this.cancelCurrentUtterance();
         this.synth.cancel();
       }
 
@@ -165,16 +171,19 @@ export class TTSService {
       };
 
       utterance.onend = () => {
+        this.currentUtterance = null;
         this.callbacks.onSpeakEnd?.();
         resolve();
       };
 
       utterance.onerror = (event) => {
+        this.currentUtterance = null;
         console.error('语音合成错误:', event);
         this.callbacks.onError?.(`语音合成失败: ${event.error}`);
         reject(new Error(event.error));
       };
 
+      this.currentUtterance = utterance;
       this.synth.speak(utterance);
     });
   }
@@ -197,6 +206,7 @@ export class TTSService {
     }
 
     if (this.synth.speaking) {
+      this.cancelCurrentUtterance();
       this.synth.cancel();
     }
 
@@ -223,18 +233,32 @@ export class TTSService {
     };
 
     utterance.onend = () => {
+      this.currentUtterance = null;
       this.callbacks.onSpeakEnd?.();
     };
 
     utterance.onerror = (event) => {
+      this.currentUtterance = null;
       console.error('语音合成错误:', event);
       this.callbacks.onError?.('语音合成失败');
     };
 
+    this.currentUtterance = utterance;
     this.synth.speak(utterance);
   }
 
+  /** Nullify handlers on the current utterance so cancel() won't fire onerror. */
+  private cancelCurrentUtterance(): void {
+    if (this.currentUtterance) {
+      this.currentUtterance.onstart = null;
+      this.currentUtterance.onend = null;
+      this.currentUtterance.onerror = null;
+      this.currentUtterance = null;
+    }
+  }
+
   stop(): void {
+    this.cancelCurrentUtterance();
     this.synth?.cancel();
     this.callbacks.onSpeakEnd?.();
   }
@@ -538,10 +562,10 @@ export class ASRService {
         isMuted: this.state.isMuted,
         speakWith: (textToSpeak) => this.tts.speak(textToSpeak),
         onAddUserMessage: (t) => {
-          // Deliberately not handled here — callers should wire this via callbacks
+          this.state.addChatMessage?.('user', t);
         },
-        onAddAssistantMessage: () => {
-          // Same as above
+        onAddAssistantMessage: (replyText) => {
+          this.state.addChatMessage?.('assistant', replyText);
         },
         onResetBehavior: () => {
           if (this.state.currentBehavior === 'thinking') {
