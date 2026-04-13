@@ -509,44 +509,44 @@ export class ASRService {
 
   // 尝试执行本地命令，返回是否匹配到命令
   private tryLocalCommand(command: string): boolean {
-    const lowerCommand = command.toLowerCase();
+    const trimmed = command.trim().toLowerCase();
 
-    // 系统控制命令
-    if (lowerCommand.includes('播放') || lowerCommand.includes('开始')) {
+    // System control commands — exact match only
+    if (trimmed === '播放' || trimmed === '开始') {
       this.state.play();
       return true;
     }
-    if (lowerCommand.includes('暂停') || lowerCommand.includes('停止')) {
+    if (trimmed === '暂停' || trimmed === '停止') {
       this.state.pause();
       return true;
     }
-    if (lowerCommand.includes('重置') || lowerCommand.includes('复位')) {
+    if (trimmed === '重置' || trimmed === '复位') {
       this.state.reset();
       return true;
     }
-    if (lowerCommand.includes('取消静音')) {
+    if (trimmed === '取消静音') {
       this.state.setMuted(false);
       return true;
     }
-    if (lowerCommand.includes('静音')) {
+    if (trimmed === '静音') {
       this.state.setMuted(true);
       return true;
     }
 
-    // 快捷动作命令
-    if (lowerCommand.includes('打招呼') || lowerCommand.includes('问好') || lowerCommand.includes('你好')) {
+    // Quick action commands — exact match only
+    if (trimmed === '打招呼' || trimmed === '问好') {
       this.performGreeting();
       return true;
     }
-    if (lowerCommand.includes('跳舞')) {
+    if (trimmed === '跳舞') {
       this.performDance();
       return true;
     }
-    if (lowerCommand.includes('点头')) {
+    if (trimmed === '点头') {
       this.performNod();
       return true;
     }
-    if (lowerCommand.includes('摇头')) {
+    if (trimmed === '摇头') {
       this.performShakeHead();
       return true;
     }

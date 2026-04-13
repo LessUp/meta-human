@@ -51,7 +51,7 @@ export default function SettingsDrawer({
   const currentExpression = useDigitalHumanStore((s) => s.currentExpression);
   const currentBehavior = useDigitalHumanStore((s) => s.currentBehavior);
 
-  const drawerRef = useFocusTrap<HTMLDivElement>(show);
+  const drawerRef = useFocusTrap<HTMLDivElement>(show, activeTab);
   const { toggleTheme, isDark } = useTheme();
 
   return (

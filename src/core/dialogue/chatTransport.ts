@@ -162,6 +162,40 @@ async function* streamOverWebSocket(
         pendingResolver = resolve;
       });
     }
+
+    // Build return value from terminal event or accumulated text
+    if (terminalEvent?.type === 'done') {
+      return {
+        response: {
+          replyText: terminalEvent.replyText,
+          emotion: terminalEvent.emotion as ChatResponsePayload['emotion'],
+          action: terminalEvent.action,
+        },
+        connectionStatus: 'connected',
+        error: null,
+      };
+    }
+
+    if (accumulatedText) {
+      return {
+        response: {
+          replyText: accumulatedText,
+          emotion: 'neutral',
+          action: 'idle',
+        },
+        connectionStatus: 'error',
+        error: terminalEvent?.type === 'error' ? terminalEvent.message : 'WebSocket 流中断',
+      };
+    }
+
+    // No tokens received and no terminal event — HTTP fallback
+    const fallback = await sendUserInput(payload, config);
+
+    if (fallback.response.replyText) {
+      yield fallback.response.replyText;
+    }
+
+    return fallback;
   } catch (error) {
     console.warn('WebSocket 请求失败，降级到 HTTP:', error);
     const fallback = await sendUserInput(payload, config);
@@ -177,38 +211,6 @@ async function* streamOverWebSocket(
     }
     client.disconnect();
   }
-
-  if (terminalEvent?.type === 'done') {
-    return {
-      response: {
-        replyText: terminalEvent.replyText,
-        emotion: terminalEvent.emotion as ChatResponsePayload['emotion'],
-        action: terminalEvent.action,
-      },
-      connectionStatus: 'connected',
-      error: null,
-    };
-  }
-
-  if (accumulatedText) {
-    return {
-      response: {
-        replyText: accumulatedText,
-        emotion: 'neutral',
-        action: 'idle',
-      },
-      connectionStatus: 'error',
-      error: terminalEvent?.type === 'error' ? terminalEvent.message : 'WebSocket 流中断',
-    };
-  }
-
-  const fallback = await sendUserInput(payload, config);
-
-  if (fallback.response.replyText) {
-    yield fallback.response.replyText;
-  }
-
-  return fallback;
 }
 
 export const webSocketChatTransport: ChatTransport = {

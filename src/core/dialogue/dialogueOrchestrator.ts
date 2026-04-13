@@ -190,7 +190,7 @@ export async function runDialogueTurnStream(
       await handleDialogueResponse(result.response, {
         isMuted,
         speakWith,
-        onAddAssistantMessage: undefined,
+        onAddAssistantMessage: options.onAddAssistantMessage,
         onError,
       });
 

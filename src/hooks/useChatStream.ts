@@ -22,14 +22,16 @@ export function useChatStream(options: UseChatStreamOptions) {
   const startChatPerformanceTrace = useSystemStore((s) => s.startChatPerformanceTrace);
   const markChatFirstToken = useSystemStore((s) => s.markChatFirstToken);
   const finalizeChatPerformanceTrace = useSystemStore((s) => s.finalizeChatPerformanceTrace);
+  const setLoading = useSystemStore((s) => s.setLoading);
+  const isLoading = useSystemStore((s) => s.isLoading);
   const [chatInput, setChatInput] = useState('');
-  const [isChatLoading, setIsChatLoading] = useState(false);
   const { sessionId, isMuted, onConnectionChange, onClearError, onError } = options;
 
   const handleChatSend = useCallback(
     async (text?: string) => {
       const content = (text ?? chatInput).trim();
-      if (!content || isChatLoading) return;
+      if (!content) return;
+      if (useSystemStore.getState().isLoading) return;
 
       if (!text) setChatInput('');
 
@@ -73,7 +75,8 @@ export function useChatStream(options: UseChatStreamOptions) {
           meta: { timestamp: Date.now() },
           isMuted,
           speakWith: (textToSpeak) => ttsService.speak(textToSpeak),
-          setLoading: setIsChatLoading,
+          setLoading,
+          onAddAssistantMessage: undefined,
           onAddUserMessage: (t) => {
             addChatMessage('user', t);
             assistantMessageId = addChatMessage('assistant', '', true);
@@ -116,13 +119,13 @@ export function useChatStream(options: UseChatStreamOptions) {
     },
     [
       chatInput,
-      isChatLoading,
       addChatMessage,
       updateChatMessage,
       removeChatMessage,
       startChatPerformanceTrace,
       markChatFirstToken,
       finalizeChatPerformanceTrace,
+      setLoading,
       sessionId,
       isMuted,
       onConnectionChange,
@@ -131,5 +134,5 @@ export function useChatStream(options: UseChatStreamOptions) {
     ],
   );
 
-  return { chatInput, setChatInput, isChatLoading, handleChatSend };
+  return { chatInput, setChatInput, isChatLoading: isLoading, handleChatSend };
 }
