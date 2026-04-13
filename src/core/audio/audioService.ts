@@ -180,6 +180,7 @@ export class ASRService {
   private tts: TTSService;
   private onResultCallback: ((text: string) => void) | null = null;
   private mode: 'command' | 'dictation' = 'command';
+  private pendingRetry: ReturnType<typeof setTimeout> | null = null;
 
   constructor(config: ASRConfig = {}, tts?: TTSService) {
     this.isSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
@@ -302,7 +303,10 @@ export class ASRService {
       // 处理已经在运行的情况
       if (error.message?.includes('already started')) {
         this.recognition.stop();
-        setTimeout(() => this.start(), 100);
+        this.pendingRetry = setTimeout(() => {
+          this.pendingRetry = null;
+          this.start(options);
+        }, 100);
         return true;
       }
 
@@ -312,6 +316,10 @@ export class ASRService {
   }
 
   stop(): void {
+    if (this.pendingRetry) {
+      clearTimeout(this.pendingRetry);
+      this.pendingRetry = null;
+    }
     if (this.recognition && this.isSupported) {
       try {
         this.recognition.stop();

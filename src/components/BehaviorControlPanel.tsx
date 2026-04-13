@@ -88,12 +88,13 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
     let newParameters: BehaviorParameters = {};
     let newConfidence = 0.7;
 
-    if (Math.random() > 0.7) {
-      newBehavior = 'greeting';
-      newConfidence = 0.8;
-    } else if (Math.random() > 0.9) {
+    const roll = Math.random();
+    if (roll > 0.9) {
       newBehavior = 'excited';
       newConfidence = 0.6;
+    } else if (roll > 0.7) {
+      newBehavior = 'greeting';
+      newConfidence = 0.8;
     }
 
     const selectedBehavior = behaviors.find(b => b.name === newBehavior);

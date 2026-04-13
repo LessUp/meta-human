@@ -43,13 +43,25 @@ function CyberAvatar() {
     if (group.current) {
       if (anim === 'nod') {
         group.current.rotation.x = Math.sin(t * 5) * 0.2;
+        group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, 0, 0.1);
+        group.current.rotation.z = THREE.MathUtils.lerp(group.current.rotation.z, 0, 0.1);
       } else if (anim === 'shakeHead') {
         group.current.rotation.y = Math.sin(t * 5) * 0.3;
+        group.current.rotation.x = THREE.MathUtils.lerp(group.current.rotation.x, 0, 0.1);
+        group.current.rotation.z = THREE.MathUtils.lerp(group.current.rotation.z, 0, 0.1);
       } else if (anim === 'think') {
         group.current.rotation.z = Math.sin(t * 1.5) * 0.15;
         group.current.rotation.x = Math.sin(t * 0.8) * 0.1;
+        group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, 0, 0.1);
       } else if (anim === 'speak') {
         group.current.rotation.x = Math.sin(t * 3) * 0.03;
+        group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, 0, 0.1);
+        group.current.rotation.z = THREE.MathUtils.lerp(group.current.rotation.z, 0, 0.1);
+      } else {
+        // idle — smoothly return to neutral rotation
+        group.current.rotation.x = THREE.MathUtils.lerp(group.current.rotation.x, 0, 0.1);
+        group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, 0, 0.1);
+        group.current.rotation.z = THREE.MathUtils.lerp(group.current.rotation.z, 0, 0.1);
       }
     }
 
@@ -250,11 +262,15 @@ export default function DigitalHumanViewer({
   const [loadStatus, setLoadStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>(modelUrl ? 'idle' : 'ready');
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // Use ref for callback to avoid re-triggering the load effect
+  const onModelLoadRef = useRef(onModelLoad);
+  onModelLoadRef.current = onModelLoad;
+
   useEffect(() => {
     if (!modelUrl) {
       setModelScene(null);
       setLoadStatus('ready');
-      onModelLoad?.({ type: 'procedural-cyber-avatar' });
+      onModelLoadRef.current?.({ type: 'procedural-cyber-avatar' });
       return;
     }
 
@@ -270,7 +286,7 @@ export default function DigitalHumanViewer({
         if (cancelled) return;
         setModelScene(gltf.scene);
         setLoadStatus('ready');
-        onModelLoad?.(gltf.scene);
+        onModelLoadRef.current?.(gltf.scene);
       },
       undefined,
       (error) => {
@@ -285,14 +301,14 @@ export default function DigitalHumanViewer({
         setModelScene(null);
         setLoadStatus('error');
         setLoadError(message);
-        onModelLoad?.({ type: 'procedural-fallback', error: message });
+        onModelLoadRef.current?.({ type: 'procedural-fallback', error: message });
       }
     );
 
     return () => {
       cancelled = true;
     };
-  }, [modelUrl, onModelLoad]);
+  }, [modelUrl]);
 
   return (
     <div className="w-full h-full bg-transparent space-y-4">

@@ -30,10 +30,17 @@ MetaHuman 是一个**可运行、可展示、可二开**的数字人交互样例
 
 | 能力 | 技术方案 | 说明 |
 |:---|:---|:---|
-| **3D 数字人渲染** | Three.js + React Three Fiber | 支持 GLB/GLTF 模型加载，表情/情绪/动作驱动，模型缺失时回退内置头像 |
-| **语音交互** | Web Speech API | ASR 语音识别 + TTS 语音播报，支持录音/静音状态同步 |
-| **对话编排** | FastAPI + OpenAI 兼容接口 | `/v1/chat` 返回结构化结果（文本/情绪/动作），无 Key 时自动 Mock 回退 |
+| **3D 数字人渲染** | Three.js + React Three Fiber | 支持 GLB/GLTF 模型加载，表情/情绪/动作驱动，模型缺失时回退内置赛博风头像 |
+| **语音交互** | Web Speech API | ASR 语音识别 + TTS 语音播报，支持录音/静音状态同步，语音命令快捷控制 |
+| **对话编排** | FastAPI + OpenAI 兼容接口 | `/v1/chat` 返回结构化结果（文本/情绪/动作），无 Key 时自动 Mock 回退，带会话历史管理 |
 | **视觉镜像** | MediaPipe Face Mesh / Pose | 摄像头画面 + 推理结果映射为情绪/动作信号，驱动数字人表现 |
+
+### 架构亮点
+
+- **优雅降级** — LLM 不可用时智能 Mock 回复，模型缺失时回退程序化头像，前后端均可独立运行
+- **会话管理** — 后端自动维护会话历史，支持 TTL 过期清理和存储上限，防止内存泄漏
+- **统一状态** — Zustand 集中管理数字人状态（情绪/表情/动作/连接），类型安全的常量约束
+- **键盘快捷键** — `Space` 播放/暂停、`M` 静音、`V` 录音、`S` 设置面板、`1-4` 快速命令
 
 ---
 
@@ -93,17 +100,16 @@ src/
 ├── components/        # UI 组件（Viewer、语音面板、视觉面板、控制面板等）
 ├── core/              # 核心能力层
 │   ├── avatar/        #   数字人引擎驱动
-│   ├── audio/         #   TTS / ASR 服务
+│   ├── audio/         #   TTS / ASR 服务（共享单例）
 │   ├── dialogue/      #   对话服务 + 结果编排
 │   └── vision/        #   摄像头服务 + 视觉映射
 ├── pages/             # 页面入口
-├── store/             # Zustand 全局状态
-└── hooks/             # 自定义 Hooks
+├── store/             # Zustand 全局状态（含类型常量导出）
 
 server/
 └── app/
-    ├── api/           # HTTP 路由
-    ├── services/      # 对话服务实现
+    ├── api/           # HTTP 路由（含输入校验）
+    ├── services/      # 对话服务（会话管理 + TTL 清理）
     └── main.py        # FastAPI 入口
 ```
 

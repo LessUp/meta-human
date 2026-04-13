@@ -135,15 +135,16 @@ export default function AdvancedDigitalHumanPage() {
   const handleToggleRecording = useCallback(() => {
     if (isRecording) {
       asrService.stop();
-      setRecording(false);
       toast.info('录音已停止');
     } else {
       const started = asrService.start();
       if (started) {
         toast.success('正在聆听...');
+      } else {
+        toast.error('语音识别不可用');
       }
     }
-  }, [isRecording, setRecording]);
+  }, [isRecording]);
 
   const handleExpressionChange = useCallback((expression: string, intensity: number) => {
     digitalHumanEngine.setExpression(expression);
@@ -503,10 +504,10 @@ export default function AdvancedDigitalHumanPage() {
       
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { bg: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
-        .mask-gradient-bottom { -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%); }
+        .mask-gradient-bottom { -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent); mask-image: linear-gradient(to bottom, black 80%, transparent); }
       `}</style>
     </div>
   );

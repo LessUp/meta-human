@@ -92,17 +92,19 @@ export class DigitalHumanEngine {
     const behaviorMap: Record<string, BehaviorType> = {
       'wave': 'greeting',
       'greet': 'greeting',
+      'waveHand': 'greeting',
+      'raiseHand': 'excited',
       'nod': 'listening',
       'shakeHead': 'idle',
       'dance': 'excited',
       'think': 'thinking',
       'speak': 'speaking',
     };
-    
+
     if (behaviorMap[name]) {
       store.setBehavior(behaviorMap[name]);
     }
-    
+
     // 自动恢复到 idle 状态
     if (autoReset) {
       const duration = ANIMATION_DURATIONS[name] || 3000;
@@ -110,6 +112,7 @@ export class DigitalHumanEngine {
         this.animationTimeout = setTimeout(() => {
           store.setAnimation('idle');
           store.setBehavior('idle');
+          store.setPlaying(false);
         }, duration);
       }
     }

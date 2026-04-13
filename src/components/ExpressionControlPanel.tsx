@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Palette, Eye, Smile, Frown, Meh, Laugh, Angry } from 'lucide-react';
+import { Palette, Eye, Smile, Frown, Meh, Laugh, Angry, Zap } from 'lucide-react';
 
 interface ExpressionControl {
   name: string;
@@ -21,7 +21,7 @@ export default function ExpressionControlPanel({ currentExpression, onExpression
     { name: 'neutral', label: 'Neutral', icon: <Meh size={20} />, color: 'text-gray-400', intensity: 0.5 },
     { name: 'smile', label: 'Smile', icon: <Smile size={20} />, color: 'text-green-400', intensity: 0.7 },
     { name: 'laugh', label: 'Laugh', icon: <Laugh size={20} />, color: 'text-yellow-400', intensity: 1.0 },
-    { name: 'surprise', label: 'Surprise', icon: <Smile size={20} />, color: 'text-orange-400', intensity: 0.8 },
+    { name: 'surprise', label: 'Surprise', icon: <Zap size={20} />, color: 'text-orange-400', intensity: 0.8 },
     { name: 'sad', label: 'Sad', icon: <Frown size={20} />, color: 'text-blue-400', intensity: 0.6 },
     { name: 'angry', label: 'Angry', icon: <Angry size={20} />, color: 'text-red-400', intensity: 0.9 },
     { name: 'blink', label: 'Blink', icon: <Eye size={20} />, color: 'text-purple-400', intensity: 0.4 },
