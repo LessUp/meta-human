@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useSystemStore } from '../store/systemStore';
+import type { ConnectionStatus } from '../store/systemStore';
 import { checkServerHealth } from '../core/dialogue/dialogueService';
 import { resolveChatTransportMode } from '../core/dialogue/chatTransport';
 import { toast } from 'sonner';
@@ -22,7 +23,7 @@ export function useConnectionHealth() {
     const nextStatus = isHealthy ? 'connected' : 'disconnected';
     const previousStatus = lastStatusRef.current;
 
-    setConnectionStatus(nextStatus as any);
+    setConnectionStatus(nextStatus as ConnectionStatus);
 
     if (!isHealthy && previousStatus !== 'disconnected') {
       toast.warning('服务器连接不稳定，部分功能可能受限');
@@ -45,7 +46,7 @@ export function useConnectionHealth() {
     const isHealthy = await checkServerHealth();
     const nextStatus = isHealthy ? 'connected' : 'error';
 
-    setConnectionStatus(nextStatus as any);
+    setConnectionStatus(nextStatus as ConnectionStatus);
     lastStatusRef.current = nextStatus;
 
     if (isHealthy) {
