@@ -7,8 +7,10 @@ export default defineConfig(({ mode }) => {
   const isMobile = mode === 'mobile'
   const isDesktop = mode === 'desktop'
   const isAR = mode === 'ar'
-  
+  const isPages = mode === 'pages'
+
   return {
+    base: isPages ? '/meta-human/' : '/',
     plugins: [react()],
     resolve: {
       alias: {

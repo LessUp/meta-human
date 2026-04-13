@@ -55,6 +55,7 @@ export default function ExpressionControlPanel({ currentExpression, onExpression
           <button
             key={expression.name}
             onClick={() => handleExpressionClick(expression.name, expression.intensity)}
+            aria-pressed={currentExpression === expression.name}
             className={`flex items-center space-x-3 p-3 rounded-xl border transition-all duration-200 group text-left ${
               currentExpression === expression.name
                 ? 'border-blue-500/50 bg-blue-500/10 shadow-[0_0_10px_rgba(59,130,246,0.2)]'
@@ -87,6 +88,7 @@ export default function ExpressionControlPanel({ currentExpression, onExpression
           step="0.1"
           value={intensity}
           onChange={(e) => handleIntensityChange(parseFloat(e.target.value))}
+          aria-label="表情强度"
           className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500"
         />
       </div>
@@ -101,6 +103,7 @@ export default function ExpressionControlPanel({ currentExpression, onExpression
               <button
                 key={action}
                 onClick={() => onExpressionChange(keys[i], intensity)}
+                aria-label={action}
                 className="px-3 py-2 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/5 rounded-lg text-xs transition-colors"
               >
                 {action}

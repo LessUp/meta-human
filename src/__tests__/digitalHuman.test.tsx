@@ -3,7 +3,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import DigitalHumanViewer from '../components/DigitalHumanViewer';
 import ControlPanel from '../components/ControlPanel';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
+import { useChatSessionStore } from '../store/chatSessionStore';
+import { useSystemStore } from '../store/systemStore';
 import { TTSService, ASRService } from '../core/audio/audioService';
+import { handleDialogueResponse } from '../core/dialogue/dialogueOrchestrator';
 import React from 'react';
 
 // Mock React's useRef before Three.js mocks
@@ -23,63 +26,69 @@ vi.spyOn(React, 'useRef').mockImplementation(() => {
       if (index > -1) {
         groupMock.children.splice(index, 1);
       }
-    })
+    }),
   };
-  
+
   return {
-    current: groupMock
+    current: groupMock,
   };
 });
 
 // 模拟Three.js相关模块
 vi.mock('@react-three/fiber', () => ({
-  Canvas: ({ children }: { children: React.ReactNode }) => <div data-testid="canvas">{children}</div>,
+  Canvas: () => <div data-testid="canvas" />,
   useFrame: vi.fn((callback) => {
     // Mock the callback with a state object
     callback({
       clock: {
-        elapsedTime: 0
-      }
+        elapsedTime: 0,
+      },
     });
   }),
-  useThree: vi.fn(() => ({ 
+  useThree: vi.fn(() => ({
     scene: {
       add: vi.fn(),
-      remove: vi.fn()
+      remove: vi.fn(),
     },
     camera: {},
-    gl: {}
-  }))
+    gl: {},
+  })),
 }));
 
 vi.mock('@react-three/drei', () => ({
   OrbitControls: () => <div data-testid="orbit-controls">OrbitControls</div>,
   Environment: () => <div data-testid="environment">Environment</div>,
   Html: ({ children }: { children: React.ReactNode }) => <div data-testid="html">{children}</div>,
-  PerspectiveCamera: ({ children }: { children?: React.ReactNode }) => <div data-testid="perspective-camera">{children}</div>,
+  PerspectiveCamera: ({ children }: { children?: React.ReactNode }) => (
+    <div data-testid="perspective-camera">{children}</div>
+  ),
   Float: ({ children }: { children: React.ReactNode }) => <div data-testid="float">{children}</div>,
   Sparkles: () => <div data-testid="sparkles">Sparkles</div>,
   ContactShadows: () => <div data-testid="contact-shadows">ContactShadows</div>,
-  useGLTF: vi.fn()
+  useGLTF: vi.fn(),
 }));
 
 vi.mock('three', () => ({
-  BoxGeometry: vi.fn(function BoxGeometry() { return {}; }),
-  SphereGeometry: vi.fn(function SphereGeometry() { return {}; }),
+  BoxGeometry: vi.fn(function BoxGeometry() {
+    return {};
+  }),
+  SphereGeometry: vi.fn(function SphereGeometry() {
+    return {};
+  }),
   MeshPhysicalMaterial: vi.fn(function MeshPhysicalMaterial(props: any) {
     return {
       color: props?.color || 0xffffff,
       metalness: props?.metalness || 0,
       roughness: props?.roughness || 1,
       clearcoat: props?.clearcoat || 0,
-      clearcoatRoughness: props?.clearcoatRoughness || 0
+      clearcoatRoughness: props?.clearcoatRoughness || 0,
     };
   }),
   MeshStandardMaterial: vi.fn(function MeshStandardMaterial(props: any) {
     return {
       color: props?.color || 0xffffff,
       metalness: props?.metalness || 0,
-      roughness: props?.roughness || 1
+      roughness: props?.roughness || 1,
     };
   }),
   MeshBasicMaterial: vi.fn(function MeshBasicMaterial(props: any) {
@@ -91,7 +100,7 @@ vi.mock('three', () => ({
       opacity: props?.opacity,
       side: props?.side,
       wireframe: props?.wireframe,
-      toneMapped: props?.toneMapped
+      toneMapped: props?.toneMapped,
     };
   }),
   Mesh: vi.fn(function Mesh() {
@@ -100,7 +109,7 @@ vi.mock('three', () => ({
       rotation: { x: 0, y: 0, z: 0 },
       scale: { x: 1, y: 1, z: 1 },
       add: vi.fn(),
-      remove: vi.fn()
+      remove: vi.fn(),
     };
     return mesh;
   }),
@@ -111,16 +120,20 @@ vi.mock('three', () => ({
       rotation: { x: 0, y: 0, z: 0 },
       scale: { x: 1, y: 1, z: 1 },
       add: vi.fn(),
-      remove: vi.fn()
+      remove: vi.fn(),
     };
     return group;
   }),
-  Vector3: vi.fn(function Vector3(x = 0, y = 0, z = 0) { return { x, y, z }; }),
-  Color: vi.fn(function Color(color = 0xffffff) { return { getHex: () => color }; }),
+  Vector3: vi.fn(function Vector3(x = 0, y = 0, z = 0) {
+    return { x, y, z };
+  }),
+  Color: vi.fn(function Color(color = 0xffffff) {
+    return { getHex: () => color };
+  }),
   MathUtils: {
-    lerp: (start: number, end: number, alpha: number) => start + (end - start) * alpha
+    lerp: (start: number, end: number, alpha: number) => start + (end - start) * alpha,
   },
-  DoubleSide: 'DoubleSide'
+  DoubleSide: 'DoubleSide',
 }));
 
 describe('DigitalHumanViewer', () => {
@@ -150,7 +163,7 @@ describe('DigitalHumanViewer', () => {
     const { rerender } = render(<DigitalHumanViewer autoRotate={false} />);
     expect(screen.getByText('自动旋转:')).toBeInTheDocument();
     expect(screen.getByText('关闭')).toBeInTheDocument();
-    
+
     rerender(<DigitalHumanViewer autoRotate={true} />);
     expect(screen.getByText('自动旋转:')).toBeInTheDocument();
     expect(screen.getByText('开启')).toBeInTheDocument();
@@ -159,8 +172,7 @@ describe('DigitalHumanViewer', () => {
   it('calls onModelLoad callback', () => {
     const onModelLoad = vi.fn();
     render(<DigitalHumanViewer onModelLoad={onModelLoad} />);
-    // 由于Three.js是模拟的，这里只是验证回调存在
-    expect(onModelLoad).toBeDefined();
+    expect(onModelLoad).toHaveBeenCalledWith({ type: 'procedural-cyber-avatar' });
   });
 });
 
@@ -175,7 +187,7 @@ describe('ControlPanel', () => {
     onToggleRecording: vi.fn(),
     onToggleMute: vi.fn(),
     onToggleAutoRotate: vi.fn(),
-    onVoiceCommand: vi.fn()
+    onVoiceCommand: vi.fn(),
   };
 
   it('renders all control sections', () => {
@@ -224,6 +236,32 @@ describe('ControlPanel', () => {
 });
 
 describe('DigitalHumanStore', () => {
+  beforeEach(() => {
+    useDigitalHumanStore.setState({
+      isPlaying: false,
+      autoRotate: false,
+      currentAnimation: 'idle',
+      isRecording: false,
+      isMuted: false,
+      isSpeaking: false,
+      currentEmotion: 'neutral',
+      currentExpression: 'neutral',
+      expressionIntensity: 0.8,
+      currentBehavior: 'idle',
+    });
+    useChatSessionStore.setState({
+      sessionId: 'test-session',
+      chatHistory: [],
+    });
+    useSystemStore.setState({
+      error: null,
+      lastErrorTime: null,
+      connectionStatus: 'connected',
+      isConnected: true,
+      isLoading: false,
+    });
+  });
+
   it('initializes with correct default state', () => {
     const { isPlaying, isRecording, isMuted, autoRotate } = useDigitalHumanStore.getState();
     expect(isPlaying).toBe(false);
@@ -262,6 +300,56 @@ describe('DigitalHumanStore', () => {
     expect(useDigitalHumanStore.getState().isRecording).toBe(true);
   });
 
+  it('does not add empty chat messages', () => {
+    const { addChatMessage } = useChatSessionStore.getState();
+    addChatMessage('user', '   ');
+    expect(useChatSessionStore.getState().chatHistory).toHaveLength(0);
+  });
+
+  it('generates unique chat message ids under the same timestamp', () => {
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(1000);
+
+    try {
+      const { addChatMessage } = useChatSessionStore.getState();
+      addChatMessage('user', '第一条消息');
+      addChatMessage('assistant', '第二条消息');
+
+      const [firstMessage, secondMessage] = useChatSessionStore.getState().chatHistory;
+
+      expect(firstMessage.id).not.toBe(secondMessage.id);
+      expect(firstMessage.timestamp).toBe(1000);
+      expect(secondMessage.timestamp).toBe(1000);
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  it('clears stale recording timers when recording restarts', () => {
+    vi.useFakeTimers();
+
+    try {
+      const { startRecording, stopRecording } = useDigitalHumanStore.getState();
+
+      startRecording();
+      vi.advanceTimersByTime(10000);
+
+      stopRecording();
+      vi.advanceTimersByTime(5000);
+
+      startRecording();
+      vi.advanceTimersByTime(20000);
+
+      expect(useDigitalHumanStore.getState().isRecording).toBe(true);
+
+      vi.advanceTimersByTime(10000);
+
+      expect(useDigitalHumanStore.getState().isRecording).toBe(false);
+    } finally {
+      useDigitalHumanStore.getState().stopRecording();
+      vi.useRealTimers();
+    }
+  });
+
   it('handles mute toggle', () => {
     const { toggleMute, isMuted } = useDigitalHumanStore.getState();
     const initialMute = isMuted;
@@ -289,7 +377,7 @@ describe('TTSService', () => {
       cancel: vi.fn(),
       getVoices: vi.fn(() => []),
       speaking: false,
-      onvoiceschanged: null
+      onvoiceschanged: null,
     };
 
     // Create a proper constructor function for SpeechSynthesisUtterance
@@ -350,6 +438,7 @@ describe('TTSService', () => {
 
 describe('ASRService', () => {
   let asrService: ASRService;
+  let localTts: TTSService;
   let mockSpeechRecognition: any;
 
   beforeEach(() => {
@@ -379,23 +468,169 @@ describe('ASRService', () => {
     };
   });
 
+  let mockState: any;
+
+  beforeEach(() => {
+    mockState = {
+      setRecording: vi.fn(),
+      setBehavior: vi.fn(),
+      setSpeaking: vi.fn(),
+      setError: vi.fn(),
+      setEmotion: vi.fn(),
+      setExpression: vi.fn(),
+      setAnimation: vi.fn(),
+      play: vi.fn(),
+      pause: vi.fn(),
+      reset: vi.fn(),
+      setMuted: (m: boolean) => useDigitalHumanStore.getState().setMuted(m),
+      get isMuted() {
+        return useDigitalHumanStore.getState().isMuted;
+      },
+      get sessionId() {
+        return useChatSessionStore.getState().sessionId;
+      },
+      get currentBehavior() {
+        return useDigitalHumanStore.getState().currentBehavior;
+      },
+    };
+    localTts = new TTSService();
+  });
+
   it('initializes correctly when supported', () => {
-    asrService = new ASRService();
+    asrService = new ASRService({}, mockState, localTts);
     expect(asrService).toBeDefined();
   });
 
   it('starts recognition', () => {
-    asrService = new ASRService();
+    asrService = new ASRService({}, mockState, localTts);
     asrService.start();
     // Since we can't directly access the mock, we verify the service is created
     expect(asrService).toBeDefined();
   });
 
   it('stops recognition', () => {
-    asrService = new ASRService();
+    asrService = new ASRService({}, mockState, localTts);
     asrService.stop();
     // Verify no errors are thrown
     expect(asrService).toBeDefined();
+  });
+
+  it('handles cancel mute voice command correctly', () => {
+    asrService = new ASRService({}, mockState, localTts);
+    useDigitalHumanStore.getState().setMuted(true);
+
+    const matched = (asrService as any).tryLocalCommand('取消静音');
+
+    expect(matched).toBe(true);
+    expect(useDigitalHumanStore.getState().isMuted).toBe(false);
+  });
+});
+
+describe('Dialogue orchestration', () => {
+  beforeEach(() => {
+    useChatSessionStore.getState().clearChatHistory();
+    useSystemStore.getState().clearError();
+    useDigitalHumanStore.getState().setMuted(false);
+    useDigitalHumanStore.getState().setBehavior('idle');
+    useDigitalHumanStore.getState().setSpeaking(false);
+  });
+
+  it('keeps dialogue successful when speech playback fails', async () => {
+    const speakWith = vi.fn().mockRejectedValue(new Error('tts failed'));
+    const onError = vi.fn();
+
+    await handleDialogueResponse(
+      {
+        replyText: '你好，我仍然可以继续回答。',
+        emotion: 'happy',
+        action: 'idle',
+      },
+      {
+        speakWith,
+        onError,
+      },
+    );
+
+    expect(speakWith).toHaveBeenCalledWith('你好，我仍然可以继续回答。');
+    expect(onError).toHaveBeenCalledWith('tts failed');
+  });
+});
+
+describe('Error throttle and session lifecycle', () => {
+  beforeEach(() => {
+    useSystemStore.setState({
+      error: null,
+      lastErrorTime: null,
+      connectionStatus: 'connected',
+      isConnected: true,
+      isLoading: false,
+    });
+    useChatSessionStore.setState({
+      sessionId: 'test-session',
+      chatHistory: [],
+    });
+  });
+
+  it('throttles identical error messages within 2 seconds', () => {
+    const nowSpy = vi.spyOn(Date, 'now');
+
+    try {
+      nowSpy.mockReturnValue(1000);
+      useSystemStore.getState().setError('网络错误');
+      expect(useSystemStore.getState().error).toBe('网络错误');
+
+      nowSpy.mockReturnValue(2000);
+      useSystemStore.getState().setError('网络错误');
+      expect(useSystemStore.getState().lastErrorTime).toBe(1000);
+
+      nowSpy.mockReturnValue(3500);
+      useSystemStore.getState().setError('网络错误');
+      expect(useSystemStore.getState().lastErrorTime).toBe(3500);
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  it('allows different error messages without throttling', () => {
+    const nowSpy = vi.spyOn(Date, 'now');
+
+    try {
+      nowSpy.mockReturnValue(1000);
+      useSystemStore.getState().setError('错误A');
+      expect(useSystemStore.getState().error).toBe('错误A');
+
+      nowSpy.mockReturnValue(1500);
+      useSystemStore.getState().setError('错误B');
+      expect(useSystemStore.getState().error).toBe('错误B');
+      expect(useSystemStore.getState().lastErrorTime).toBe(1500);
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  it('initSession resets error, loading and connection status', () => {
+    useSystemStore.setState({
+      error: '旧错误',
+      lastErrorTime: 999,
+      isLoading: true,
+      connectionStatus: 'error',
+      isConnected: false,
+    });
+
+    const oldSessionId = useChatSessionStore.getState().sessionId;
+
+    useDigitalHumanStore.getState().initSession();
+
+    const state = useSystemStore.getState();
+    const sessionState = useChatSessionStore.getState();
+
+    expect(sessionState.sessionId).not.toBe(oldSessionId);
+    expect(sessionState.chatHistory).toHaveLength(0);
+    expect(state.error).toBeNull();
+    expect(state.lastErrorTime).toBeNull();
+    expect(state.isLoading).toBe(false);
+    expect(state.connectionStatus).toBe('connected');
+    expect(state.isConnected).toBe(true);
   });
 });
 
@@ -404,14 +639,14 @@ describe('Performance Tests', () => {
     const startTime = performance.now();
     render(<DigitalHumanViewer />);
     const endTime = performance.now();
-    
+
     // Should render in less than 100ms
     expect(endTime - startTime).toBeLessThan(100);
   });
 
   it('handles rapid state changes efficiently', () => {
     const { play, pause } = useDigitalHumanStore.getState();
-    
+
     const startTime = performance.now();
     for (let i = 0; i < 100; i++) {
       if (i % 2 === 0) {
@@ -421,7 +656,7 @@ describe('Performance Tests', () => {
       }
     }
     const endTime = performance.now();
-    
+
     // 100 state changes should complete in less than 50ms
     expect(endTime - startTime).toBeLessThan(50);
   });
@@ -438,13 +673,13 @@ describe('Integration Tests', () => {
     onToggleRecording: vi.fn(),
     onToggleMute: vi.fn(),
     onToggleAutoRotate: vi.fn(),
-    onVoiceCommand: vi.fn()
+    onVoiceCommand: vi.fn(),
   };
 
   it('integrates control panel with digital human viewer', () => {
     const TestComponent = () => {
       const { isPlaying, play, pause } = useDigitalHumanStore();
-      
+
       return (
         <div>
           <DigitalHumanViewer />
@@ -453,7 +688,7 @@ describe('Integration Tests', () => {
             isRecording={false}
             isMuted={false}
             autoRotate={false}
-            onPlayPause={() => isPlaying ? pause() : play()}
+            onPlayPause={() => (isPlaying ? pause() : play())}
             onReset={() => {}}
             onToggleRecording={() => {}}
             onToggleMute={() => {}}
@@ -465,7 +700,7 @@ describe('Integration Tests', () => {
     };
 
     render(<TestComponent />);
-    
+
     // Both components should render without conflicts
     expect(screen.getByText('数字人控制')).toBeInTheDocument();
     expect(screen.getByText('播放控制')).toBeInTheDocument();
@@ -475,10 +710,10 @@ describe('Integration Tests', () => {
     const onVoiceCommand = vi.fn();
     const props = { ...defaultProps, onVoiceCommand };
     render(<ControlPanel {...props} />);
-    
+
     const greetButton = screen.getByText('打招呼');
     fireEvent.click(greetButton);
-    
+
     await waitFor(() => {
       expect(onVoiceCommand).toHaveBeenCalledWith('打招呼');
     });

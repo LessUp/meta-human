@@ -4,6 +4,7 @@ import { OrbitControls, PerspectiveCamera, Environment, Float, Sparkles, Contact
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
+import { usePrefersReducedMotion } from '../hooks';
 
 interface DigitalHumanViewerProps {
   modelUrl?: string;
@@ -13,7 +14,7 @@ interface DigitalHumanViewerProps {
 }
 
 // --- Procedural Cyber Avatar Component ---
-function CyberAvatar() {
+function CyberAvatar({ prefersReducedMotion }: { prefersReducedMotion: boolean }) {
   const group = useRef<THREE.Group>(null);
   const headRef = useRef<THREE.Mesh>(null);
   const leftEyeRef = useRef<THREE.Mesh>(null);
@@ -66,7 +67,7 @@ function CyberAvatar() {
     }
 
     // Speaking Animation (Jaw/Head Bob)
-    if (isSpeaking && headRef.current) {
+    if (!prefersReducedMotion && isSpeaking && headRef.current) {
       headRef.current.rotation.x = Math.sin(t * 15) * 0.05;
     }
 
@@ -93,7 +94,7 @@ function CyberAvatar() {
     }
 
     // Rings Animation (Enhanced for Motion)
-    if (ringsRef.current?.rotation) {
+    if (!prefersReducedMotion && ringsRef.current?.rotation) {
       let ringSpeed = 0.2;
       let ringTilt = 0;
       let ringWobble = 0;
@@ -121,7 +122,7 @@ function CyberAvatar() {
   return (
     <group ref={group}>
       {/* Floating Container */}
-      <Float speed={2} rotationIntensity={0.2} floatIntensity={0.5}>
+      <Float speed={prefersReducedMotion ? 0 : 2} rotationIntensity={0.2} floatIntensity={prefersReducedMotion ? 0 : 0.5}>
         
         {/* --- HEAD --- */}
         <mesh ref={headRef} position={[0, 0, 0]} castShadow receiveShadow>
@@ -213,27 +214,29 @@ function CyberAvatar() {
 }
 
 function Scene({ autoRotate, modelScene }: { autoRotate?: boolean; modelScene?: THREE.Group | null }) {
+  const prefersReducedMotion = usePrefersReducedMotion();
+
   return (
     <>
       <PerspectiveCamera makeDefault position={[0, 0, 6]} fov={45} />
-      
+
       {/* Lighting */}
       <ambientLight intensity={0.5} color="#ffffff" />
       <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={2} castShadow />
       <pointLight position={[-10, -10, -10]} intensity={1} color="#3b82f6" />
-      
+
       {/* Environment Reflections */}
       <Environment preset="city" />
-      
+
       {/* The Avatar */}
       {modelScene ? (
         <primitive object={modelScene} position={[0, -1.2, 0]} />
       ) : (
-        <CyberAvatar />
+        <CyberAvatar prefersReducedMotion={prefersReducedMotion} />
       )}
       
       {/* Particles */}
-      <Sparkles count={100} scale={8} size={2} speed={0.4} opacity={0.5} color="#bae6fd" />
+      <Sparkles count={prefersReducedMotion ? 0 : 100} scale={8} size={2} speed={0.4} opacity={0.5} color="#bae6fd" />
       
       {/* Shadows */}
       <ContactShadows resolution={1024} scale={10} blur={2} opacity={0.5} far={10} color="#000000" />
@@ -311,7 +314,7 @@ export default function DigitalHumanViewer({
   }, [modelUrl]);
 
   return (
-    <div className="w-full h-full bg-transparent space-y-4">
+    <div className="w-full h-full bg-transparent space-y-4" role="img" aria-label="3D数字人模型">
       <Canvas shadows dpr={[1, 2]}>
         {(loadStatus === 'loading' || loadStatus === 'error') && (
           <Html center>
