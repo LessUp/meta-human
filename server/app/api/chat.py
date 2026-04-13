@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.services.dialogue import dialogue_service
 
@@ -10,7 +10,7 @@ router = APIRouter()
 
 class ChatRequest(BaseModel):
   sessionId: Optional[str] = None
-  userText: str
+  userText: str = Field(..., min_length=1, max_length=2000)
   meta: Optional[Dict[str, Any]] = None
 
 

@@ -6,6 +6,11 @@ export type ExpressionType = 'neutral' | 'smile' | 'laugh' | 'surprise' | 'sad' 
 export type BehaviorType = 'idle' | 'greeting' | 'listening' | 'thinking' | 'speaking' | 'excited' | 'wave' | 'greet' | 'think' | 'nod' | 'shakeHead' | 'dance' | 'speak' | 'waveHand' | 'raiseHand';
 export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'error';
 
+// 类型常量数组（供验证使用）
+export const EMOTION_VALUES: readonly EmotionType[] = ['neutral', 'happy', 'surprised', 'sad', 'angry'];
+export const EXPRESSION_VALUES: readonly ExpressionType[] = ['neutral', 'smile', 'laugh', 'surprise', 'sad', 'angry', 'blink', 'eyebrow_raise', 'eye_blink', 'mouth_open', 'head_nod'];
+export const BEHAVIOR_VALUES: readonly BehaviorType[] = ['idle', 'greeting', 'listening', 'thinking', 'speaking', 'excited', 'wave', 'greet', 'think', 'nod', 'shakeHead', 'dance', 'speak', 'waveHand', 'raiseHand'];
+
 interface DigitalHumanState {
   // 模型状态
   isPlaying: boolean;
@@ -60,8 +65,6 @@ interface DigitalHumanState {
   play: () => void;
   pause: () => void;
   reset: () => void;
-  startRecording: () => void;
-  stopRecording: () => void;
   toggleMute: () => void;
   toggleAutoRotate: () => void;
 }
@@ -162,7 +165,7 @@ export const useDigitalHumanStore = create<DigitalHumanState>((set, get) => ({
   },
   
   reset: () => {
-    set({ 
+    set({
       isPlaying: false,
       currentAnimation: 'idle',
       currentEmotion: 'neutral',
@@ -173,21 +176,7 @@ export const useDigitalHumanStore = create<DigitalHumanState>((set, get) => ({
       lastErrorTime: null
     });
   },
-  
-  startRecording: () => {
-    set({ isRecording: true });
-    // 录音超时保护
-    setTimeout(() => {
-      if (get().isRecording) {
-        get().stopRecording();
-      }
-    }, 30000); // 30秒后自动停止
-  },
-  
-  stopRecording: () => {
-    set({ isRecording: false });
-  },
-  
+
   toggleMute: () => {
     const { isMuted } = get();
     set({ isMuted: !isMuted });

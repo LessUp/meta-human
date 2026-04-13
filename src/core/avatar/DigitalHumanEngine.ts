@@ -1,4 +1,4 @@
-import { useDigitalHumanStore, type EmotionType, type ExpressionType, type BehaviorType } from '../../store/digitalHumanStore';
+import { useDigitalHumanStore, type EmotionType, type ExpressionType, type BehaviorType, EMOTION_VALUES, EXPRESSION_VALUES, BEHAVIOR_VALUES } from '../../store/digitalHumanStore';
 
 // 表情与情感的映射
 const EMOTION_TO_EXPRESSION: Record<EmotionType, ExpressionType> = {
@@ -42,9 +42,7 @@ export class DigitalHumanEngine {
 
   setExpression(expression: string): void {
     const store = useDigitalHumanStore.getState();
-    // 验证表情类型
-    const validExpressions: ExpressionType[] = ['neutral', 'smile', 'laugh', 'surprise', 'sad', 'angry', 'blink', 'eyebrow_raise', 'eye_blink', 'mouth_open', 'head_nod'];
-    if (validExpressions.includes(expression as ExpressionType)) {
+    if ((EXPRESSION_VALUES as readonly string[]).includes(expression)) {
       store.setExpression(expression as ExpressionType);
     } else {
       console.warn(`未知表情类型: ${expression}, 使用默认 neutral`);
@@ -59,11 +57,8 @@ export class DigitalHumanEngine {
 
   setEmotion(emotion: string): void {
     const store = useDigitalHumanStore.getState();
-    // 验证情感类型
-    const validEmotions: EmotionType[] = ['neutral', 'happy', 'surprised', 'sad', 'angry'];
-    if (validEmotions.includes(emotion as EmotionType)) {
+    if ((EMOTION_VALUES as readonly string[]).includes(emotion)) {
       store.setEmotion(emotion as EmotionType);
-      // 自动设置对应的表情
       const mappedExpression = EMOTION_TO_EXPRESSION[emotion as EmotionType];
       if (mappedExpression) {
         store.setExpression(mappedExpression);
@@ -77,8 +72,7 @@ export class DigitalHumanEngine {
 
   setBehavior(behavior: string, _params?: unknown): void {
     const store = useDigitalHumanStore.getState();
-    const validBehaviors: BehaviorType[] = ['idle', 'greeting', 'listening', 'thinking', 'speaking', 'excited', 'wave', 'greet', 'think', 'nod', 'shakeHead', 'dance', 'speak', 'waveHand', 'raiseHand'];
-    if (validBehaviors.includes(behavior as BehaviorType)) {
+    if ((BEHAVIOR_VALUES as readonly string[]).includes(behavior)) {
       store.setBehavior(behavior as BehaviorType);
     } else {
       console.warn(`未知行为类型: ${behavior}, 使用默认 idle`);

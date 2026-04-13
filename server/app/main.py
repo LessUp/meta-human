@@ -3,6 +3,7 @@ import time
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.chat import router as chat_router
+from app.services.dialogue import dialogue_service
 
 # 记录服务启动时间
 START_TIME = time.time()
@@ -64,3 +65,9 @@ async def root() -> dict:
 
 
 app.include_router(chat_router, prefix="/v1")
+
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    """启动时初始化会话清理任务"""
+    dialogue_service.start_cleanup_task()
