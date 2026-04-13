@@ -2,10 +2,13 @@ import { useEffect, useRef } from 'react';
 
 /**
  * Traps keyboard focus within a container element when active.
- * Tab/Shift+Tab cycle through focusable elements. On activation,
- * focuses the first focusable element.
+ * Tab/Shift+Tab cycle through focusable elements. On activation
+ * or when focusKey changes, focuses the first focusable element.
  */
-export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(isActive: boolean) {
+export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
+  isActive: boolean,
+  focusKey?: unknown,
+) {
   const containerRef = useRef<T>(null);
 
   useEffect(() => {
@@ -17,7 +20,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(isActive: b
     const getFocusable = () =>
       Array.from(container.querySelectorAll<HTMLElement>(selector));
 
-    // Focus first element on activation
+    // Focus first element on activation or focusKey change
     const focusable = getFocusable();
     if (focusable.length > 0) {
       focusable[0].focus();
@@ -43,7 +46,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(isActive: b
 
     container.addEventListener('keydown', handleKeyDown);
     return () => container.removeEventListener('keydown', handleKeyDown);
-  }, [isActive]);
+  }, [isActive, focusKey]);
 
   return containerRef;
 }

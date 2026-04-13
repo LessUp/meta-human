@@ -313,6 +313,24 @@ export default function DigitalHumanViewer({
     };
   }, [modelUrl]);
 
+  // Dispose old GLTF scene resources when modelScene is replaced
+  useEffect(() => {
+    return () => {
+      modelScene?.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const mesh = child as THREE.Mesh;
+          mesh.geometry.dispose();
+          const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          materials.forEach((mat) => {
+            if (mat instanceof THREE.Material) {
+              mat.dispose();
+            }
+          });
+        }
+      });
+    };
+  }, [modelScene]);
+
   return (
     <div className="w-full h-full bg-transparent space-y-4" role="img" aria-label="3D数字人模型">
       <Canvas shadows dpr={[1, 2]}>

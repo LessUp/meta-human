@@ -67,6 +67,8 @@ export class MetaHumanWSClient {
   private messageHandler: WSMessageHandler | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
+  private resolveConnect: (() => void) | null = null;
+  private rejectConnect: ((reason?: unknown) => void) | null = null;
 
   constructor(sessionId: string) {
     this.sessionId = sessionId;
@@ -75,11 +77,15 @@ export class MetaHumanWSClient {
   connect(onMessage: WSMessageHandler): Promise<void> {
     return new Promise((resolve, reject) => {
       this.messageHandler = onMessage;
+      this.resolveConnect = resolve;
+      this.rejectConnect = reject;
       const url = getWebSocketUrl(this.sessionId);
       this.ws = new WebSocket(url);
 
       this.ws.onopen = () => {
         this.reconnectAttempts = 0;
+        this.resolveConnect = null;
+        this.rejectConnect = null;
         resolve();
       };
 
@@ -92,7 +98,11 @@ export class MetaHumanWSClient {
         }
       };
 
-      this.ws.onerror = (event) => reject(event);
+      this.ws.onerror = (event) => {
+        this.resolveConnect = null;
+        this.rejectConnect = null;
+        reject(event);
+      };
 
       this.ws.onclose = () => this.attemptReconnect();
     });
@@ -106,6 +116,11 @@ export class MetaHumanWSClient {
 
   disconnect(): void {
     this.reconnectAttempts = this.maxReconnectAttempts;
+    if (this.rejectConnect) {
+      this.rejectConnect(new Error('WebSocket disconnected'));
+      this.rejectConnect = null;
+      this.resolveConnect = null;
+    }
     this.ws?.close();
     this.ws = null;
   }
