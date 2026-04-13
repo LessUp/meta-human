@@ -40,16 +40,11 @@ app.add_middleware(
 async def health() -> dict:
     """健康检查接口，用于确认后端服务是否正常运行。"""
     uptime = time.time() - START_TIME
-    has_openai_key = bool(os.getenv("OPENAI_API_KEY"))
-    
+
     return {
         "status": "ok",
         "uptime_seconds": round(uptime, 2),
         "version": "1.0.0",
-        "services": {
-            "chat": "available",
-            "llm": "available" if has_openai_key else "mock_mode",
-        }
     }
 
 

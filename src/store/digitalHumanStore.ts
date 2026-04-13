@@ -149,7 +149,7 @@ export const useDigitalHumanStore = create<DigitalHumanState>((set, get) => ({
   addChatMessage: (role, text) => set((state) => ({
     chatHistory: [
       ...state.chatHistory,
-      { id: Date.now(), role, text, timestamp: Date.now() }
+      { id: `${Date.now()}_${Math.random().toString(36).slice(2)}`, role, text, timestamp: Date.now() }
     ]
   })),
   
