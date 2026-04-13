@@ -125,7 +125,6 @@ export async function runDialogueTurnStream(
     onError,
     onResetBehavior,
     onAddUserMessage,
-    onAddAssistantMessage,
     onStreamToken,
     onStreamEnd,
   } = options;
@@ -158,18 +157,15 @@ export async function runDialogueTurnStream(
       );
 
       let accumulatedText = '';
+      let step = await generator.next();
 
-      while (true) {
-        const step = await generator.next();
-
-        if (step.done) {
-          streamResult = step.value;
-          break;
-        }
-
+      while (!step.done) {
         accumulatedText += step.value;
         onStreamToken?.(accumulatedText);
+        step = await generator.next();
       }
+
+      streamResult = step.value;
 
       const result = streamResult ?? {
         response: {

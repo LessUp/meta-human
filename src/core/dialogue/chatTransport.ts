@@ -217,14 +217,13 @@ export const webSocketChatTransport: ChatTransport = {
   async send(payload, config) {
     const iterator = this.stream(payload, config);
     let finalResult: DialogueServiceResult | undefined;
+    let step = await iterator.next();
 
-    while (true) {
-      const step = await iterator.next();
-      if (step.done) {
-        finalResult = step.value;
-        break;
-      }
+    while (!step.done) {
+      step = await iterator.next();
     }
+
+    finalResult = step.value;
 
     return (
       finalResult ?? {

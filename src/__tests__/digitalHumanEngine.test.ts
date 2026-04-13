@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DigitalHumanEngine } from '../core/avatar/DigitalHumanEngine';
 import type { StateAdapter } from '../core/avatar/DigitalHumanEngine';
-import type { ExpressionType, EmotionType, BehaviorType } from '../store/digitalHumanStore';
 
 function createMockState(): StateAdapter & Record<string, ReturnType<typeof vi.fn>> {
   return {

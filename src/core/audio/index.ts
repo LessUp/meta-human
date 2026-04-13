@@ -1,4 +1,5 @@
 import { useDigitalHumanStore } from '../../store/digitalHumanStore';
+import type { BehaviorType, EmotionType, ExpressionType } from '../../store/digitalHumanStore';
 import { useChatSessionStore } from '../../store/chatSessionStore';
 import { useSystemStore } from '../../store/systemStore';
 import { TTSService, ASRService } from './audioService';
@@ -34,11 +35,11 @@ function createTTSCallbacks(): TTSCallbacks {
 function createASRStateAdapter(): ASRStateAdapter {
   return {
     setRecording: (r) => useDigitalHumanStore.getState().setRecording(r),
-    setBehavior: (b) => useDigitalHumanStore.getState().setBehavior(b as any),
+    setBehavior: (b) => useDigitalHumanStore.getState().setBehavior(b as BehaviorType),
     setSpeaking: (s) => useDigitalHumanStore.getState().setSpeaking(s),
     setError: (m) => useSystemStore.getState().setError(m),
-    setEmotion: (e) => useDigitalHumanStore.getState().setEmotion(e as any),
-    setExpression: (x) => useDigitalHumanStore.getState().setExpression(x as any),
+    setEmotion: (e) => useDigitalHumanStore.getState().setEmotion(e as EmotionType),
+    setExpression: (x) => useDigitalHumanStore.getState().setExpression(x as ExpressionType),
     setAnimation: (a) => useDigitalHumanStore.getState().setAnimation(a),
     play: () => useDigitalHumanStore.getState().play(),
     pause: () => useDigitalHumanStore.getState().pause(),
