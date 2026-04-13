@@ -1,6 +1,19 @@
 import React from 'react';
-import { Play, Pause, RotateCcw, Settings, Mic, MicOff, Volume2, VolumeX, Wifi, WifiOff, Loader2 } from 'lucide-react';
-import { useDigitalHumanStore, type ConnectionStatus } from '../store/digitalHumanStore';
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  Settings,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
+  Wifi,
+  WifiOff,
+  Loader2,
+} from 'lucide-react';
+import { useDigitalHumanStore } from '../store/digitalHumanStore';
+import { useSystemStore, type ConnectionStatus } from '../store/systemStore';
 
 interface ControlPanelProps {
   isPlaying: boolean;
@@ -16,9 +29,16 @@ interface ControlPanelProps {
 }
 
 // 连接状态显示配置
-const connectionStatusConfig: Record<ConnectionStatus, { label: string; color: string; icon: React.ReactNode }> = {
+const connectionStatusConfig: Record<
+  ConnectionStatus,
+  { label: string; color: string; icon: React.ReactNode }
+> = {
   connected: { label: '在线', color: 'text-green-400', icon: <Wifi className="w-3 h-3" /> },
-  connecting: { label: '连接中', color: 'text-yellow-400', icon: <Loader2 className="w-3 h-3 animate-spin" /> },
+  connecting: {
+    label: '连接中',
+    color: 'text-yellow-400',
+    icon: <Loader2 className="w-3 h-3 animate-spin" />,
+  },
   disconnected: { label: '离线', color: 'text-gray-400', icon: <WifiOff className="w-3 h-3" /> },
   error: { label: '错误', color: 'text-red-400', icon: <WifiOff className="w-3 h-3" /> },
 };
@@ -33,17 +53,18 @@ export default function ControlPanel({
   onToggleRecording,
   onToggleMute,
   onToggleAutoRotate,
-  onVoiceCommand
+  onVoiceCommand,
 }: ControlPanelProps) {
   // 从 store 获取状态
-  const { connectionStatus, isSpeaking, currentBehavior } = useDigitalHumanStore();
+  const connectionStatus = useSystemStore((s) => s.connectionStatus);
+  const { isSpeaking, currentBehavior } = useDigitalHumanStore();
   const statusConfig = connectionStatusConfig[connectionStatus];
-  
+
   const voiceCommands = [
     { command: '打招呼', label: '👋 Say Hello' },
     { command: '跳舞', label: '💃 Dance' },
     { command: '说话', label: '🗣️ Speak' },
-    { command: '表情', label: '😊 Emote' }
+    { command: '表情', label: '😊 Emote' },
   ];
 
   return (
@@ -53,7 +74,9 @@ export default function ControlPanel({
         <div className="flex items-center space-x-2">
           <div
             className={`w-2 h-2 rounded-full ${
-              isRecording ? 'bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-white/20'
+              isRecording
+                ? 'bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]'
+                : 'bg-white/20'
             }`}
           ></div>
           <span className="text-xs text-white/60">{isRecording ? '录音进行中' : '空闲'}</span>
@@ -66,6 +89,7 @@ export default function ControlPanel({
         <div className="flex gap-2">
           <button
             onClick={onPlayPause}
+            aria-label={isPlaying ? '暂停' : '播放'}
             className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-xl transition-all ${
               isPlaying
                 ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/50'
@@ -78,30 +102,34 @@ export default function ControlPanel({
 
           <button
             onClick={onReset}
+            aria-label="重置"
             className="px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all border border-white/10"
           >
             <RotateCcw size={16} />
           </button>
         </div>
-         <button
-            onClick={onToggleAutoRotate}
-            className={`w-full flex items-center justify-center space-x-2 px-4 py-2 rounded-xl transition-all text-sm border ${
-              autoRotate
-                ? 'bg-blue-500/20 text-blue-400 border-blue-500/50'
-                : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'
-            }`}
-          >
-            <Settings size={14} />
-            <span>自动旋转摄像机</span>
-          </button>
+        <button
+          onClick={onToggleAutoRotate}
+          aria-label="自动旋转摄像机"
+          aria-pressed={autoRotate}
+          className={`w-full flex items-center justify-center space-x-2 px-4 py-2 rounded-xl transition-all text-sm border ${
+            autoRotate
+              ? 'bg-blue-500/20 text-blue-400 border-blue-500/50'
+              : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'
+          }`}
+        >
+          <Settings size={14} />
+          <span>自动旋转摄像机</span>
+        </button>
       </div>
 
       {/* Audio Control */}
       <div className="space-y-3">
         <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider">语音交互</h3>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <button
             onClick={onToggleRecording}
+            aria-label={isRecording ? '停止录音' : '开始录音'}
             className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-xl transition-all ${
               isRecording
                 ? 'bg-red-500 text-white shadow-lg shadow-red-900/50'
@@ -114,6 +142,7 @@ export default function ControlPanel({
 
           <button
             onClick={onToggleMute}
+            aria-label={isMuted ? '取消静音' : '静音'}
             className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-xl transition-all border ${
               isMuted
                 ? 'bg-white/10 text-white/60 border-white/5'
@@ -134,6 +163,7 @@ export default function ControlPanel({
             <button
               key={cmd.command}
               onClick={() => onVoiceCommand(cmd.command)}
+              aria-label={`快速命令: ${cmd.label}`}
               className="px-3 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 rounded-lg text-xs transition-colors text-left truncate"
             >
               {cmd.command}

@@ -1,5 +1,4 @@
 import { mapFaceToEmotion, UserEmotion } from './visionMapper';
-import { useDigitalHumanStore } from '../../store/digitalHumanStore';
 
 type EmotionCallback = (emotion: UserEmotion) => void;
 type MotionCallback = (motion: 'nod' | 'shakeHead' | 'raiseHand' | 'waveHand') => void;
@@ -69,11 +68,10 @@ class VisionService {
     this.callbacks.onStatusChange?.(status);
   }
 
-  private handleError(message: string, error?: any): void {
+  private handleError(message: string, error?: unknown): void {
     console.error(message, error);
     this.setStatus('error');
     this.callbacks.onError?.(message);
-    useDigitalHumanStore.getState().setError(message);
   }
 
   // 检查摄像头权限
@@ -116,9 +114,9 @@ class VisionService {
     // 获取摄像头权限
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'user', 
-          width: { ideal: 640 }, 
+        video: {
+          facingMode: 'user',
+          width: { ideal: 640 },
           height: { ideal: 480 },
           frameRate: { ideal: 30 }
         },
@@ -127,7 +125,7 @@ class VisionService {
       this.stream = stream;
       videoElement.srcObject = stream;
       await videoElement.play();
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage = this.getCameraErrorMessage(error);
       this.handleError(errorMessage, error);
       this.setStatus('no_camera');
@@ -202,8 +200,8 @@ class VisionService {
   }
 
   // 获取摄像头错误的友好消息
-  private getCameraErrorMessage(error: any): string {
-    const errorName = error.name || '';
+  private getCameraErrorMessage(error: unknown): string {
+    const errorName = error instanceof DOMException ? error.name : '';
     const errorMessages: Record<string, string> = {
       'NotAllowedError': '摄像头权限被拒绝，请在浏览器设置中允许访问摄像头',
       'NotFoundError': '未检测到摄像头设备，请确保摄像头已连接',
@@ -212,14 +210,15 @@ class VisionService {
       'SecurityError': '安全限制：请通过 HTTPS 访问或在本地运行',
       'AbortError': '摄像头访问被中断',
     };
-    return errorMessages[errorName] || `摄像头访问失败: ${error.message || errorName}`;
+    const msg = error instanceof Error ? error.message : String(error);
+    return errorMessages[errorName] || `摄像头访问失败: ${msg || errorName}`;
   }
 
   private async loop(): Promise<void> {
     if (!this.running || !this.video || (!this.faceMesh && !this.pose)) {
       return;
     }
-    
+
     // FPS 计算
     this.frameCount++;
     const now = performance.now();
@@ -228,7 +227,7 @@ class VisionService {
       this.frameCount = 0;
       this.lastFpsTime = now;
     }
-    
+
     try {
       if (this.faceMesh) {
         await this.faceMesh.send({ image: this.video });
@@ -239,7 +238,7 @@ class VisionService {
     } catch (error) {
       // 单帧错误不影响继续运行
     }
-    
+
     if (this.running) {
       requestAnimationFrame(() => {
         void this.loop();
@@ -250,7 +249,7 @@ class VisionService {
   stop(): void {
     this.running = false;
     this.setStatus('idle');
-    
+
     if (this.stream) {
       this.stream.getTracks().forEach((track) => track.stop());
       this.stream = null;
@@ -259,7 +258,7 @@ class VisionService {
       this.video.srcObject = null;
       this.video = null;
     }
-    
+
     this.faceMesh = null;
     this.pose = null;
     this.callbacks = {};

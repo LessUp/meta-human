@@ -175,6 +175,7 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
           <button
             key={behavior.name}
             onClick={() => handleBehaviorClick(behavior.name, behavior.parameters)}
+            aria-pressed={currentBehavior === behavior.name}
             className={`flex items-center space-x-3 p-3 rounded-xl border transition-all text-left ${
               currentBehavior === behavior.name
                 ? 'border-blue-500/50 bg-blue-500/10'
@@ -196,6 +197,8 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
       <div className="pt-4 border-t border-white/10">
          <button
             onClick={toggleAutoMode}
+            aria-label="自动模式"
+            aria-pressed={isAutoMode}
             className={`w-full px-4 py-3 rounded-xl text-sm font-medium transition-all border ${
               isAutoMode
                 ? 'bg-green-500/20 text-green-400 border-green-500/50'

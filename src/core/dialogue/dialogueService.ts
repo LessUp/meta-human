@@ -1,4 +1,5 @@
-import { useDigitalHumanStore } from '../../store/digitalHumanStore';
+import { sleep } from '../../lib/utils';
+import type { EmotionType } from '../../store/digitalHumanStore';
 
 export interface ChatRequestPayload {
   sessionId?: string;
@@ -8,8 +9,14 @@ export interface ChatRequestPayload {
 
 export interface ChatResponsePayload {
   replyText: string;
-  emotion: string;
+  emotion: EmotionType;
   action: string;
+}
+
+export interface DialogueServiceResult {
+  response: ChatResponsePayload;
+  connectionStatus: 'connected' | 'error';
+  error: string | null;
 }
 
 // 对话服务配置
@@ -32,8 +39,10 @@ export class DialogueApiError extends Error {
   }
 }
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(
+  /\/+$/,
+  '',
+);
 
 const DEFAULT_CONFIG: Required<DialogueServiceConfig> = {
   maxRetries: 3,
@@ -41,14 +50,11 @@ const DEFAULT_CONFIG: Required<DialogueServiceConfig> = {
   timeout: 15000,
 };
 
-// 延迟函数
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 // 带超时的 fetch
 async function fetchWithTimeout(
   url: string,
   options: RequestInit,
-  timeout: number
+  timeout: number,
 ): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -91,7 +97,7 @@ function getErrorMessage(status: number, defaultMessage: string): string {
 function getFallbackResponse(userText: string): ChatResponsePayload {
   // 简单的本地响应逻辑
   const greetings = ['你好', '您好', 'hello', 'hi', '嗨'];
-  const isGreeting = greetings.some(g => userText.toLowerCase().includes(g));
+  const isGreeting = greetings.some((g) => userText.toLowerCase().includes(g));
 
   if (isGreeting) {
     return {
@@ -111,34 +117,38 @@ function getFallbackResponse(userText: string): ChatResponsePayload {
 // 检查服务器连接状态
 export async function checkServerHealth(): Promise<boolean> {
   try {
-    const response = await fetchWithTimeout(
-      `${API_BASE_URL}/health`,
-      { method: 'GET' },
-      5000
-    );
+    const response = await fetchWithTimeout(`${API_BASE_URL}/health`, { method: 'GET' }, 5000);
     return response.ok;
   } catch {
     return false;
   }
 }
 
+// 清理远程会话历史（best-effort，不影响前端流程）
+export async function clearRemoteSession(sessionId: string): Promise<void> {
+  if (!sessionId) return;
+  try {
+    await fetchWithTimeout(
+      `${API_BASE_URL}/v1/session/${encodeURIComponent(sessionId)}`,
+      { method: 'DELETE' },
+      5000,
+    );
+  } catch {
+    // 静默失败，不影响前端新会话的创建
+  }
+}
+
 // 主发送函数 - 带重试和降级
 export async function sendUserInput(
   payload: ChatRequestPayload,
-  config: DialogueServiceConfig = {}
-): Promise<ChatResponsePayload> {
+  config: DialogueServiceConfig = {},
+): Promise<DialogueServiceResult> {
   const { maxRetries, retryDelay, timeout } = { ...DEFAULT_CONFIG, ...config };
-  const store = useDigitalHumanStore.getState();
 
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      // 更新连接状态
-      if (attempt > 0) {
-        store.setConnectionStatus('connecting');
-      }
-
       const response = await fetchWithTimeout(
         `${API_BASE_URL}/v1/chat`,
         {
@@ -148,7 +158,7 @@ export async function sendUserInput(
           },
           body: JSON.stringify(payload),
         },
-        timeout
+        timeout,
       );
 
       if (!response.ok) {
@@ -157,7 +167,7 @@ export async function sendUserInput(
 
         if (isRetryable && attempt < maxRetries) {
           lastError = new DialogueApiError(errorMsg, response.status, true);
-          await delay(retryDelay * (attempt + 1)); // 指数退避
+          await sleep(retryDelay * (attempt + 1));
           continue;
         }
 
@@ -166,45 +176,145 @@ export async function sendUserInput(
 
       const data = await response.json();
 
-      // 成功 - 更新连接状态
-      store.setConnectionStatus('connected');
-      store.clearError();
-
       return {
-        replyText: data.replyText ?? '',
-        emotion: data.emotion ?? 'neutral',
-        action: data.action ?? 'idle',
+        response: {
+          replyText: data.replyText ?? '',
+          emotion: data.emotion ?? 'neutral',
+          action: data.action ?? 'idle',
+        },
+        connectionStatus: 'connected',
+        error: null,
       };
+    } catch (error: unknown) {
+      lastError = error instanceof Error ? error : new Error(String(error));
 
-    } catch (error: any) {
-      lastError = error;
-
-      // 处理中断错误（超时）
-      if (error.name === 'AbortError') {
+      if (lastError.name === 'AbortError') {
         lastError = new DialogueApiError('请求超时，请重试', 408, true);
       }
 
-      // 处理网络错误
-      if (error instanceof TypeError && error.message.includes('fetch')) {
+      if (lastError instanceof TypeError && lastError.message.includes('fetch')) {
         lastError = new DialogueApiError('网络连接失败，请检查网络', 0, true);
       }
 
-      // 如果还有重试次数且错误可重试，继续
-      if (attempt < maxRetries) {
-        const isRetryable =
-          error instanceof DialogueApiError ? error.isRetryable : true;
-        if (isRetryable) {
-          await delay(retryDelay * (attempt + 1));
-          continue;
-        }
+      const canRetry = lastError instanceof DialogueApiError ? lastError.isRetryable : true;
+
+      if (!canRetry || attempt >= maxRetries) {
+        break;
       }
+
+      await sleep(retryDelay * (attempt + 1));
     }
   }
 
-  // 所有重试都失败了，返回降级响应
   console.error('对话服务所有重试都失败:', lastError);
-  store.setConnectionStatus('error');
-  store.setError(lastError?.message || '对话服务不可用');
+  const errorMsg = lastError?.message || '对话服务不可用';
 
-  return getFallbackResponse(payload.userText);
+  return {
+    response: getFallbackResponse(payload.userText),
+    connectionStatus: 'error',
+    error: errorMsg,
+  };
+}
+
+// 流式对话（SSE）
+export interface StreamCallbacks {
+  onConnected?: () => void;
+  onError?: (message: string) => void;
+  onDone?: (response: ChatResponsePayload) => void;
+}
+
+export async function* streamUserInput(
+  payload: ChatRequestPayload,
+  config: DialogueServiceConfig = {},
+  callbacks: StreamCallbacks = {},
+): AsyncGenerator<string, DialogueServiceResult, unknown> {
+  const { timeout } = { ...DEFAULT_CONFIG, ...config };
+
+  let finalResponse: ChatResponsePayload | null = null;
+  let streamError: string | null = null;
+
+  try {
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}/v1/chat/stream`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      },
+      timeout,
+    );
+
+    if (!response.ok || !response.body) {
+      throw new DialogueApiError(
+        getErrorMessage(response.status, `流式服务错误: ${response.status}`),
+        response.status,
+        false,
+      );
+    }
+
+    callbacks.onConnected?.();
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const raw = line.slice(6).trim();
+          if (!raw) continue;
+
+          try {
+            const event = JSON.parse(raw);
+            if (event.type === 'token' && event.content) {
+              yield event.content;
+            } else if (event.type === 'error') {
+              streamError = event.message || '流式响应错误';
+            } else if (event.type === 'done') {
+              finalResponse = {
+                replyText: event.replyText ?? '',
+                emotion: event.emotion ?? 'neutral',
+                action: event.action ?? 'idle',
+              };
+              callbacks.onDone?.(finalResponse);
+            }
+          } catch {
+            console.warn('SSE 事件解析失败:', raw);
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    if (streamError) {
+      callbacks.onError?.(streamError);
+    }
+  } catch (error) {
+    console.warn('流式请求失败，降级到普通请求:', error);
+    const fallback = await sendUserInput(payload, config);
+    if (fallback.response.replyText) {
+      yield fallback.response.replyText;
+    }
+    return fallback;
+  }
+
+  if (!finalResponse) {
+    finalResponse = { replyText: '', emotion: 'neutral', action: 'idle' };
+  }
+
+  return {
+    response: finalResponse,
+    connectionStatus: streamError ? 'error' : 'connected',
+    error: streamError,
+  };
 }
