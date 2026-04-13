@@ -208,13 +208,3 @@ export async function sendUserInput(
 
   return getFallbackResponse(payload.userText);
 }
-
-// 流式对话（预留接口）
-export async function* streamUserInput(
-  payload: ChatRequestPayload
-): AsyncGenerator<string, ChatResponsePayload, unknown> {
-  // TODO: 实现流式响应
-  const response = await sendUserInput(payload);
-  yield response.replyText;
-  return response;
-}

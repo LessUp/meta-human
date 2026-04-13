@@ -38,11 +38,18 @@ function CyberAvatar() {
     }
 
     // Head movement based on animation state
+    // Map engine animation names to visual animations
+    const anim = currentAnimation;
     if (group.current) {
-      if (currentAnimation === 'nod') {
+      if (anim === 'nod') {
         group.current.rotation.x = Math.sin(t * 5) * 0.2;
-      } else if (currentAnimation === 'shakeHead') {
+      } else if (anim === 'shakeHead') {
         group.current.rotation.y = Math.sin(t * 5) * 0.3;
+      } else if (anim === 'think') {
+        group.current.rotation.z = Math.sin(t * 1.5) * 0.15;
+        group.current.rotation.x = Math.sin(t * 0.8) * 0.1;
+      } else if (anim === 'speak') {
+        group.current.rotation.x = Math.sin(t * 3) * 0.03;
       }
     }
 
@@ -79,14 +86,18 @@ function CyberAvatar() {
       let ringTilt = 0;
       let ringWobble = 0;
 
-      if (currentAnimation === 'waveHand') {
+      if (anim === 'waveHand' || anim === 'wave' || anim === 'greet') {
         ringSpeed = 2.0;
         ringWobble = 0.5;
-      } else if (currentAnimation === 'raiseHand') {
+      } else if (anim === 'raiseHand') {
         ringTilt = Math.PI / 6;
         ringSpeed = 0.5;
-      } else if (currentAnimation === 'excited') {
+      } else if (anim === 'excited' || anim === 'dance') {
         ringSpeed = 3.0;
+        ringWobble = 0.3;
+      } else if (anim === 'think') {
+        ringSpeed = 0.5;
+        ringTilt = Math.PI / 12;
       }
 
       ringsRef.current.rotation.y += ringSpeed * 0.05; // Accumulate rotation
@@ -123,7 +134,6 @@ function CyberAvatar() {
               emissiveIntensity={2}
               toneMapped={false}
             />
-            <meshBasicMaterial color="#000" /> {/* Black backing */}
           </mesh>
           <mesh ref={rightEyeRef} position={[0.25, 0, 0]}>
             <capsuleGeometry args={[0.08, 0.2, 4, 8]} />

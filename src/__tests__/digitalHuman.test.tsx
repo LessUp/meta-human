@@ -257,8 +257,8 @@ describe('DigitalHumanStore', () => {
   });
 
   it('handles recording toggle', () => {
-    const { startRecording } = useDigitalHumanStore.getState();
-    startRecording();
+    const { setRecording } = useDigitalHumanStore.getState();
+    setRecording(true);
     expect(useDigitalHumanStore.getState().isRecording).toBe(true);
   });
 
