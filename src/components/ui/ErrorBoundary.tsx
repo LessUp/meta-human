@@ -16,10 +16,10 @@ interface State {
 export default class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { 
-      hasError: false, 
+    this.state = {
+      hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
     };
   }
 
@@ -29,19 +29,19 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({ errorInfo });
-    
+
     // 调用外部错误处理函数
     this.props.onError?.(error, errorInfo);
-    
+
     // 记录错误到控制台（生产环境可发送到监控服务）
     console.error('ErrorBoundary 捕获错误:', error, errorInfo);
   }
 
   handleReset = () => {
-    this.setState({ 
-      hasError: false, 
-      error: null, 
-      errorInfo: null 
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null,
     });
   };
 
@@ -60,13 +60,11 @@ export default class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="min-h-[200px] flex flex-col items-center justify-center p-8 bg-red-900/10 border border-red-500/20 rounded-xl">
           <AlertTriangle className="w-12 h-12 text-red-400 mb-4" />
-          <h2 className="text-lg font-semibold text-white mb-2">
-            出现了一些问题
-          </h2>
+          <h2 className="text-lg font-semibold text-white mb-2">出现了一些问题</h2>
           <p className="text-sm text-white/60 text-center mb-4 max-w-md">
             {this.state.error?.message || '应用程序遇到了意外错误'}
           </p>
-          
+
           <div className="flex gap-3">
             <button
               onClick={this.handleReset}

@@ -16,13 +16,16 @@ interface BehaviorControlPanelProps {
   onBehaviorChange: (behavior: string, parameters: BehaviorParameters) => void;
 }
 
-export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange }: BehaviorControlPanelProps) {
+export default function BehaviorControlPanel({
+  currentBehavior,
+  onBehaviorChange,
+}: BehaviorControlPanelProps) {
   const [behaviorState, setBehaviorState] = useState<BehaviorState>({
     state: 'idle',
     confidence: 0.8,
     lastUpdate: new Date(),
     activity: 'Standby',
-    goal: 'Waiting for input'
+    goal: 'Waiting for input',
   });
 
   const [isAutoMode, setIsAutoMode] = useState(false);
@@ -79,7 +82,7 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
         parameters: { energy: 0.9, movement: true, animation: 'bounce' },
       },
     ],
-    []
+    [],
   );
 
   const makeAutoDecision = useCallback(() => {
@@ -97,15 +100,15 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
       newConfidence = 0.8;
     }
 
-    const selectedBehavior = behaviors.find(b => b.name === newBehavior);
+    const selectedBehavior = behaviors.find((b) => b.name === newBehavior);
     if (selectedBehavior) newParameters = selectedBehavior.parameters;
 
     setBehaviorState({
       state: newBehavior,
       confidence: newConfidence,
       lastUpdate: now,
-      activity: behaviors.find(b => b.name === newBehavior)?.label || 'Unknown',
-      goal: `Auto-switch to ${behaviors.find(b => b.name === newBehavior)?.label}`
+      activity: behaviors.find((b) => b.name === newBehavior)?.label || 'Unknown',
+      goal: `Auto-switch to ${behaviors.find((b) => b.name === newBehavior)?.label}`,
     });
 
     onBehaviorChange(newBehavior, newParameters);
@@ -121,7 +124,7 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
   }, [decisionInterval, isAutoMode, makeAutoDecision]);
 
   const handleBehaviorClick = (behaviorName: string, parameters: BehaviorParameters) => {
-    const behavior = behaviors.find(b => b.name === behaviorName);
+    const behavior = behaviors.find((b) => b.name === behaviorName);
     if (!behavior) return;
 
     setBehaviorState({
@@ -129,7 +132,7 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
       confidence: 0.9,
       lastUpdate: new Date(),
       activity: behavior.label,
-      goal: `Manual override: ${behavior.label}`
+      goal: `Manual override: ${behavior.label}`,
     });
 
     onBehaviorChange(behaviorName, parameters);
@@ -137,9 +140,9 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
 
   const toggleAutoMode = () => {
     setIsAutoMode(!isAutoMode);
-    setBehaviorState(prev => ({
+    setBehaviorState((prev) => ({
       ...prev,
-      goal: !isAutoMode ? 'Auto-Pilot Engaged' : 'Manual Control'
+      goal: !isAutoMode ? 'Auto-Pilot Engaged' : 'Manual Control',
     }));
   };
 
@@ -148,7 +151,9 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
       <div className="flex items-center justify-between border-b border-white/10 pb-4">
         <h3 className="text-lg font-medium text-white">Behavior Engine</h3>
         <div className="flex items-center space-x-2">
-          <div className={`w-1.5 h-1.5 rounded-full ${isAutoMode ? 'bg-green-500 animate-pulse' : 'bg-white/20'}`}></div>
+          <div
+            className={`w-1.5 h-1.5 rounded-full ${isAutoMode ? 'bg-green-500 animate-pulse' : 'bg-white/20'}`}
+          ></div>
           <span className="text-xs text-white/60">{isAutoMode ? 'AUTO' : 'MANUAL'}</span>
         </div>
       </div>
@@ -165,7 +170,9 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
         </div>
         <div className="flex justify-between">
           <span className="text-white/40">GOAL</span>
-          <span className="text-white/60 truncate max-w-[150px] text-right">{behaviorState.goal}</span>
+          <span className="text-white/60 truncate max-w-[150px] text-right">
+            {behaviorState.goal}
+          </span>
         </div>
       </div>
 
@@ -182,9 +189,7 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
                 : 'border-white/5 bg-white/5 hover:bg-white/10'
             }`}
           >
-            <div className={`p-2 rounded-lg bg-black/20 ${behavior.color}`}>
-              {behavior.icon}
-            </div>
+            <div className={`p-2 rounded-lg bg-black/20 ${behavior.color}`}>{behavior.icon}</div>
             <div>
               <div className="font-medium text-gray-200 text-sm">{behavior.label}</div>
               <div className="text-[10px] text-white/40">{behavior.description}</div>
@@ -195,18 +200,18 @@ export default function BehaviorControlPanel({ currentBehavior, onBehaviorChange
 
       {/* Auto Switch */}
       <div className="pt-4 border-t border-white/10">
-         <button
-            onClick={toggleAutoMode}
-            aria-label="自动模式"
-            aria-pressed={isAutoMode}
-            className={`w-full px-4 py-3 rounded-xl text-sm font-medium transition-all border ${
-              isAutoMode
-                ? 'bg-green-500/20 text-green-400 border-green-500/50'
-                : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'
-            }`}
-          >
-            {isAutoMode ? 'Disengage Auto-Pilot' : 'Engage Auto-Pilot'}
-          </button>
+        <button
+          onClick={toggleAutoMode}
+          aria-label="自动模式"
+          aria-pressed={isAutoMode}
+          className={`w-full px-4 py-3 rounded-xl text-sm font-medium transition-all border ${
+            isAutoMode
+              ? 'bg-green-500/20 text-green-400 border-green-500/50'
+              : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'
+          }`}
+        >
+          {isAutoMode ? 'Disengage Auto-Pilot' : 'Engage Auto-Pilot'}
+        </button>
       </div>
     </div>
   );

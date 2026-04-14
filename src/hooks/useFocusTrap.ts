@@ -15,10 +15,10 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
     if (!isActive || !containerRef.current) return;
 
     const container = containerRef.current;
-    const selector = 'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
+    const selector =
+      'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
 
-    const getFocusable = () =>
-      Array.from(container.querySelectorAll<HTMLElement>(selector));
+    const getFocusable = () => Array.from(container.querySelectorAll<HTMLElement>(selector));
 
     // Focus first element on activation or focusKey change
     const focusable = getFocusable();

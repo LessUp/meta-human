@@ -55,9 +55,25 @@ async function fetchWithTimeout(
   url: string,
   options: RequestInit,
   timeout: number,
+  externalSignal?: AbortSignal,
 ): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  // If external signal is already aborted, return early
+  if (externalSignal?.aborted) {
+    clearTimeout(timeoutId);
+    throw new DOMException('The operation was aborted.', 'AbortError');
+  }
+
+  // Listen to external signal to abort our controller too
+  externalSignal?.addEventListener(
+    'abort',
+    () => {
+      controller.abort();
+    },
+    { once: true },
+  );
 
   try {
     const response = await fetch(url, {
@@ -114,6 +130,10 @@ function getFallbackResponse(userText: string): ChatResponsePayload {
   };
 }
 
+function buildEmptyResponse(): ChatResponsePayload {
+  return { replyText: '', emotion: 'neutral', action: 'idle' };
+}
+
 // 检查服务器连接状态
 export async function checkServerHealth(): Promise<boolean> {
   try {
@@ -142,12 +162,21 @@ export async function clearRemoteSession(sessionId: string): Promise<void> {
 export async function sendUserInput(
   payload: ChatRequestPayload,
   config: DialogueServiceConfig = {},
+  signal?: AbortSignal,
 ): Promise<DialogueServiceResult> {
   const { maxRetries, retryDelay, timeout } = { ...DEFAULT_CONFIG, ...config };
 
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (signal?.aborted) {
+      return {
+        response: buildEmptyResponse(),
+        connectionStatus: 'error',
+        error: '请求被取消',
+      };
+    }
+
     try {
       const response = await fetchWithTimeout(
         `${API_BASE_URL}/v1/chat`,
@@ -159,6 +188,7 @@ export async function sendUserInput(
           body: JSON.stringify(payload),
         },
         timeout,
+        signal,
       );
 
       if (!response.ok) {
@@ -223,15 +253,29 @@ export interface StreamCallbacks {
   onDone?: (response: ChatResponsePayload) => void;
 }
 
+export interface StreamUserInputOptions {
+  signal?: AbortSignal;
+}
+
 export async function* streamUserInput(
   payload: ChatRequestPayload,
   config: DialogueServiceConfig = {},
   callbacks: StreamCallbacks = {},
+  signal?: AbortSignal,
 ): AsyncGenerator<string, DialogueServiceResult, unknown> {
   const { timeout } = { ...DEFAULT_CONFIG, ...config };
 
   let finalResponse: ChatResponsePayload | null = null;
   let streamError: string | null = null;
+
+  // Check if already aborted
+  if (signal?.aborted) {
+    return {
+      response: buildEmptyResponse(),
+      connectionStatus: 'error',
+      error: '请求被取消',
+    };
+  }
 
   try {
     const response = await fetchWithTimeout(
@@ -242,6 +286,7 @@ export async function* streamUserInput(
         body: JSON.stringify(payload),
       },
       timeout,
+      signal,
     );
 
     if (!response.ok || !response.body) {
@@ -260,6 +305,16 @@ export async function* streamUserInput(
 
     try {
       while (true) {
+        // Check for abort during streaming
+        if (signal?.aborted) {
+          reader.cancel().catch(() => undefined);
+          return {
+            response: finalResponse ?? buildEmptyResponse(),
+            connectionStatus: 'error',
+            error: '请求被取消',
+          };
+        }
+
         const { done, value } = await reader.read();
         if (done) break;
 
@@ -300,12 +355,25 @@ export async function* streamUserInput(
       callbacks.onError?.(streamError);
     }
   } catch (error) {
+    // Check if aborted
+    if (signal?.aborted || (error instanceof DOMException && error.name === 'AbortError')) {
+      return {
+        response: finalResponse ?? buildEmptyResponse(),
+        connectionStatus: 'error',
+        error: '请求被取消',
+      };
+    }
+
     console.warn('流式请求失败，降级到普通请求:', error);
-    const fallback = await sendUserInput(payload, config);
+    const fallback = await sendUserInput(payload, config, signal);
     if (fallback.response.replyText) {
       yield fallback.response.replyText;
     }
-    return fallback;
+    // Mark as error since stream failed, even if fallback succeeded
+    return {
+      ...fallback,
+      connectionStatus: fallback.connectionStatus === 'error' ? 'error' : 'connected',
+    };
   }
 
   if (!finalResponse) {

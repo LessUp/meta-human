@@ -14,21 +14,16 @@ const sizeMap = {
   lg: 48,
 };
 
-export default function LoadingSpinner({ 
-  size = 'md', 
-  text, 
+export default function LoadingSpinner({
+  size = 'md',
+  text,
   fullScreen = false,
-  className = ''
+  className = '',
 }: LoadingSpinnerProps) {
   const content = (
     <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
-      <Loader2 
-        size={sizeMap[size]} 
-        className="text-blue-400 animate-spin" 
-      />
-      {text && (
-        <span className="text-sm text-white/60">{text}</span>
-      )}
+      <Loader2 size={sizeMap[size]} className="text-blue-400 animate-spin" />
+      {text && <span className="text-sm text-white/60">{text}</span>}
     </div>
   );
 

@@ -54,8 +54,10 @@ function createASRStateAdapter(): ASRStateAdapter {
     get currentBehavior() {
       return useDigitalHumanStore.getState().currentBehavior;
     },
-    addChatMessage: (role, text, isStreaming) => useChatSessionStore.getState().addChatMessage(role, text, isStreaming),
-    updateChatMessage: (id, updates) => useChatSessionStore.getState().updateChatMessage(id, updates),
+    addChatMessage: (role, text, isStreaming) =>
+      useChatSessionStore.getState().addChatMessage(role, text, isStreaming),
+    updateChatMessage: (id, updates) =>
+      useChatSessionStore.getState().updateChatMessage(id, updates),
   };
 }
 

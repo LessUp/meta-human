@@ -16,11 +16,13 @@ export interface ChatTransport {
   send: (
     payload: ChatRequestPayload,
     config?: DialogueServiceConfig,
+    signal?: AbortSignal,
   ) => Promise<DialogueServiceResult>;
   stream: (
     payload: ChatRequestPayload,
     config?: DialogueServiceConfig,
     callbacks?: StreamCallbacks,
+    signal?: AbortSignal,
   ) => AsyncGenerator<string, DialogueServiceResult, unknown>;
 }
 
@@ -44,16 +46,17 @@ const buildEmptyResponse = (): ChatResponsePayload => ({
 export const httpChatTransport: ChatTransport = {
   mode: 'http',
 
-  send(payload, config) {
-    return sendUserInput(payload, config);
+  send(payload, config, signal) {
+    return sendUserInput(payload, config, signal);
   },
 
   async *stream(
     payload: ChatRequestPayload,
     config: DialogueServiceConfig = {},
     callbacks: StreamCallbacks = {},
+    signal?: AbortSignal,
   ): AsyncGenerator<string, DialogueServiceResult, unknown> {
-    const result = await sendUserInput(payload, config);
+    const result = await sendUserInput(payload, config, signal);
 
     if (result.connectionStatus === 'connected') {
       callbacks.onConnected?.();
@@ -75,12 +78,12 @@ export const httpChatTransport: ChatTransport = {
 export const sseChatTransport: ChatTransport = {
   mode: 'sse',
 
-  send(payload, config) {
-    return sendUserInput(payload, config);
+  send(payload, config, signal) {
+    return sendUserInput(payload, config, signal);
   },
 
-  stream(payload, config, callbacks) {
-    return streamUserInput(payload, config, callbacks);
+  stream(payload, config, callbacks, signal) {
+    return streamUserInput(payload, config, callbacks, signal);
   },
 };
 
@@ -92,6 +95,7 @@ async function* streamOverWebSocket(
   payload: ChatRequestPayload,
   config: DialogueServiceConfig = {},
   callbacks: StreamCallbacks = {},
+  signal?: AbortSignal,
 ): AsyncGenerator<string, DialogueServiceResult, unknown> {
   const timeout = config.timeout ?? DEFAULT_TIMEOUT_MS;
   const sessionId = payload.sessionId ?? `ws_${Date.now()}`;
@@ -147,6 +151,17 @@ async function* streamOverWebSocket(
     }, timeout);
 
     while (!terminalEvent || queue.length > 0) {
+      // Check for abort signal
+      if (signal?.aborted) {
+        return {
+          response: accumulatedText
+            ? { replyText: accumulatedText, emotion: 'neutral', action: 'idle' }
+            : buildEmptyResponse(),
+          connectionStatus: 'error',
+          error: '请求被取消',
+        };
+      }
+
       if (queue.length > 0) {
         const token = queue.shift();
         if (!token) {
@@ -189,7 +204,7 @@ async function* streamOverWebSocket(
     }
 
     // No tokens received and no terminal event — HTTP fallback
-    const fallback = await sendUserInput(payload, config);
+    const fallback = await sendUserInput(payload, config, signal);
 
     if (fallback.response.replyText) {
       yield fallback.response.replyText;
@@ -197,8 +212,17 @@ async function* streamOverWebSocket(
 
     return fallback;
   } catch (error) {
+    // Check if aborted
+    if (signal?.aborted) {
+      return {
+        response: buildEmptyResponse(),
+        connectionStatus: 'error',
+        error: '请求被取消',
+      };
+    }
+
     console.warn('WebSocket 请求失败，降级到 HTTP:', error);
-    const fallback = await sendUserInput(payload, config);
+    const fallback = await sendUserInput(payload, config, signal);
 
     if (fallback.response.replyText) {
       yield fallback.response.replyText;
@@ -216,16 +240,44 @@ async function* streamOverWebSocket(
 export const webSocketChatTransport: ChatTransport = {
   mode: 'websocket',
 
-  async send(payload, config) {
-    const iterator = this.stream(payload, config);
+  async send(payload, config, signal) {
+    const timeout = config?.timeout ?? DEFAULT_TIMEOUT_MS;
+    const iterator = this.stream(payload, config, undefined, signal);
     let finalResult: DialogueServiceResult | undefined;
-    let step = await iterator.next();
 
-    while (!step.done) {
-      step = await iterator.next();
+    // Create a timeout promise
+    const timeoutPromise = new Promise<DialogueServiceResult>((_, reject) => {
+      setTimeout(() => reject(new Error('WebSocket send timeout')), timeout);
+    });
+
+    // Create the iteration promise with abort check
+    const iterationPromise = (async () => {
+      let step = await iterator.next();
+      while (!step.done) {
+        if (signal?.aborted) {
+          return {
+            response: buildEmptyResponse(),
+            connectionStatus: 'error',
+            error: '请求被取消',
+          };
+        }
+        step = await iterator.next();
+      }
+      return step.value;
+    })();
+
+    try {
+      finalResult = await Promise.race([iterationPromise, timeoutPromise]);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'WebSocket send timeout') {
+        return {
+          response: buildEmptyResponse(),
+          connectionStatus: 'error',
+          error: 'WebSocket 发送超时',
+        };
+      }
+      throw error;
     }
-
-    finalResult = step.value;
 
     return (
       finalResult ?? {
@@ -236,8 +288,8 @@ export const webSocketChatTransport: ChatTransport = {
     );
   },
 
-  stream(payload, config, callbacks) {
-    return streamOverWebSocket(payload, config, callbacks);
+  stream(payload, config, callbacks, signal) {
+    return streamOverWebSocket(payload, config, callbacks, signal);
   },
 };
 

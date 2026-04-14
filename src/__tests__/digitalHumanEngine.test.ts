@@ -208,7 +208,9 @@ describe('DigitalHumanEngine', () => {
   });
 
   it('event handler error does not crash engine', () => {
-    const badHandler = vi.fn(() => { throw new Error('oops'); });
+    const badHandler = vi.fn(() => {
+      throw new Error('oops');
+    });
     const goodHandler = vi.fn();
 
     engine.on('expression:change', badHandler);

@@ -41,9 +41,16 @@ export interface ASRStateAdapter {
   /** Current behavior (for thinking reset check). */
   currentBehavior: string;
   /** Add a message to chat history (for voice-initiated dialogue turns). */
-  addChatMessage?: (role: 'user' | 'assistant', text: string, isStreaming?: boolean) => number | null;
+  addChatMessage?: (
+    role: 'user' | 'assistant',
+    text: string,
+    isStreaming?: boolean,
+  ) => number | null;
   /** Update an existing chat message (for voice-initiated dialogue turns). */
-  updateChatMessage?: (id: number, updates: Partial<{ text: string; isStreaming: boolean }>) => void;
+  updateChatMessage?: (
+    id: number,
+    updates: Partial<{ text: string; isStreaming: boolean }>,
+  ) => void;
 }
 
 type SpeechRecognitionResultLike = ArrayLike<{ transcript: string }>;
@@ -84,9 +91,8 @@ export class TTSService {
   private currentUtterance: SpeechSynthesisUtterance | null = null;
 
   constructor(config: TTSConfig = {}, callbacks: TTSCallbacks = {}) {
-    this.synth = typeof window !== 'undefined' && 'speechSynthesis' in window
-      ? window.speechSynthesis
-      : null;
+    this.synth =
+      typeof window !== 'undefined' && 'speechSynthesis' in window ? window.speechSynthesis : null;
     this.voices = [];
     this.config = {
       lang: config.lang ?? 'zh-CN',
@@ -159,8 +165,8 @@ export class TTSService {
       utterance.volume = mergedConfig.volume!;
 
       // 选择合适的语音
-      const preferredVoice = this.voices.find(voice =>
-        voice.lang.includes(mergedConfig.lang!.split('-')[0])
+      const preferredVoice = this.voices.find((voice) =>
+        voice.lang.includes(mergedConfig.lang!.split('-')[0]),
       );
       if (preferredVoice) {
         utterance.voice = preferredVoice;
@@ -190,15 +196,15 @@ export class TTSService {
 
   speakWithOptions(
     text: string,
-    options: { lang?: string; rate?: number; pitch?: number; volume?: number; voiceName?: string } = {}
+    options: {
+      lang?: string;
+      rate?: number;
+      pitch?: number;
+      volume?: number;
+      voiceName?: string;
+    } = {},
   ) {
-    const {
-      lang = 'zh-CN',
-      rate = 1.0,
-      pitch = 1.0,
-      volume = 0.8,
-      voiceName,
-    } = options;
+    const { lang = 'zh-CN', rate = 1.0, pitch = 1.0, volume = 0.8, voiceName } = options;
 
     if (!this.synth || typeof SpeechSynthesisUtterance === 'undefined') {
       this.callbacks.onError?.('浏览器不支持语音合成功能');
@@ -222,7 +228,7 @@ export class TTSService {
       selectedVoice = this.voices.find((voice) => voice.name === voiceName);
     }
     if (!selectedVoice) {
-      selectedVoice = this.voices.find(voice => voice.lang.includes('zh'));
+      selectedVoice = this.voices.find((voice) => voice.lang.includes('zh'));
     }
     if (selectedVoice) {
       utterance.voice = selectedVoice;
@@ -306,9 +312,12 @@ export class ASRService {
   private mode: 'command' | 'dictation' = 'command';
   private pendingRestartTimer: ReturnType<typeof setTimeout> | null = null;
   private presetTimers: ReturnType<typeof setTimeout>[] = [];
+  private recognitionGeneration = 0;
 
   constructor(config: ASRConfig = {}, state: ASRStateAdapter, tts: TTSService) {
-    this.isSupportedFlag = typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window);
+    this.isSupportedFlag =
+      typeof window !== 'undefined' &&
+      ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window);
     this.config = {
       lang: config.lang ?? 'zh-CN',
       continuous: config.continuous ?? false,
@@ -336,9 +345,19 @@ export class ASRService {
   }
 
   private initRecognition(): void {
-    const SpeechRecognition = (window as unknown as { webkitSpeechRecognition?: SpeechRecognitionConstructor; SpeechRecognition?: SpeechRecognitionConstructor }).webkitSpeechRecognition
-      || (window as unknown as { SpeechRecognition?: SpeechRecognitionConstructor }).SpeechRecognition;
+    const SpeechRecognition =
+      (
+        window as unknown as {
+          webkitSpeechRecognition?: SpeechRecognitionConstructor;
+          SpeechRecognition?: SpeechRecognitionConstructor;
+        }
+      ).webkitSpeechRecognition ||
+      (window as unknown as { SpeechRecognition?: SpeechRecognitionConstructor }).SpeechRecognition;
     if (!SpeechRecognition) return;
+
+    // Increment generation counter to invalidate old callbacks
+    this.recognitionGeneration++;
+    const currentGeneration = this.recognitionGeneration;
 
     this.recognition = new SpeechRecognition();
 
@@ -348,11 +367,16 @@ export class ASRService {
     this.recognition.maxAlternatives = this.config.maxAlternatives;
 
     this.recognition.onstart = () => {
+      // Only process if this is still the current generation
+      if (currentGeneration !== this.recognitionGeneration) return;
       this.state.setBehavior('listening');
       this.callbacks.onStart?.();
     };
 
     this.recognition.onresult = (event: SpeechRecognitionEventLike) => {
+      // Only process if this is still the current generation
+      if (currentGeneration !== this.recognitionGeneration) return;
+
       let finalTranscript = '';
       let interimTranscript = '';
 
@@ -384,6 +408,9 @@ export class ASRService {
     };
 
     this.recognition.onerror = (event: SpeechRecognitionErrorEventLike) => {
+      // Only process if this is still the current generation
+      if (currentGeneration !== this.recognitionGeneration) return;
+
       console.error('语音识别错误:', event.error);
       const errorMsg = this.getErrorMessage(event.error);
       this.state.setRecording(false);
@@ -393,6 +420,9 @@ export class ASRService {
     };
 
     this.recognition.onend = () => {
+      // Only process if this is still the current generation
+      if (currentGeneration !== this.recognitionGeneration) return;
+
       this.state.setRecording(false);
       this.state.setBehavior('idle');
       this.callbacks.onEnd?.();
@@ -404,8 +434,8 @@ export class ASRService {
       'no-speech': '未检测到语音，请重试',
       'audio-capture': '无法访问麦克风，请检查权限',
       'not-allowed': '麦克风权限被拒绝',
-      'network': '网络错误，请检查连接',
-      'aborted': '语音识别被中断',
+      network: '网络错误，请检查连接',
+      aborted: '语音识别被中断',
       'language-not-supported': '不支持当前语言',
     };
     return errorMessages[error] || `语音识别失败: ${error}`;

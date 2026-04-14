@@ -1,6 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera, Environment, Float, Sparkles, ContactShadows, Html } from '@react-three/drei';
+import {
+  OrbitControls,
+  PerspectiveCamera,
+  Environment,
+  Float,
+  Sparkles,
+  ContactShadows,
+  Html,
+} from '@react-three/drei';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
@@ -20,20 +28,16 @@ function CyberAvatar({ prefersReducedMotion }: { prefersReducedMotion: boolean }
   const leftEyeRef = useRef<THREE.Mesh>(null);
   const rightEyeRef = useRef<THREE.Mesh>(null);
   const ringsRef = useRef<THREE.Group>(null);
-  
-  const {
-    currentExpression,
-    isSpeaking,
-    currentAnimation,
-    expressionIntensity
-  } = useDigitalHumanStore();
+
+  const { currentExpression, isSpeaking, currentAnimation, expressionIntensity } =
+    useDigitalHumanStore();
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     const intensity = Math.max(0, Math.min(1, expressionIntensity ?? 1));
 
     // Idle Floating Logic is handled by <Float>, we handle specific animations here
-    
+
     if (group.current) {
       // Subtle breathing/idle motion for the whole group if not handled by Float
     }
@@ -114,16 +118,24 @@ function CyberAvatar({ prefersReducedMotion }: { prefersReducedMotion: boolean }
       }
 
       ringsRef.current.rotation.y += ringSpeed * 0.05; // Accumulate rotation
-      ringsRef.current.rotation.z = Math.sin(t * 0.5 + ringSpeed) * 0.1 + Math.sin(t * 10) * ringWobble;
-      ringsRef.current.rotation.x = THREE.MathUtils.lerp(ringsRef.current.rotation.x, ringTilt, 0.1);
+      ringsRef.current.rotation.z =
+        Math.sin(t * 0.5 + ringSpeed) * 0.1 + Math.sin(t * 10) * ringWobble;
+      ringsRef.current.rotation.x = THREE.MathUtils.lerp(
+        ringsRef.current.rotation.x,
+        ringTilt,
+        0.1,
+      );
     }
   });
 
   return (
     <group ref={group}>
       {/* Floating Container */}
-      <Float speed={prefersReducedMotion ? 0 : 2} rotationIntensity={0.2} floatIntensity={prefersReducedMotion ? 0 : 0.5}>
-        
+      <Float
+        speed={prefersReducedMotion ? 0 : 2}
+        rotationIntensity={0.2}
+        floatIntensity={prefersReducedMotion ? 0 : 0.5}
+      >
         {/* --- HEAD --- */}
         <mesh ref={headRef} position={[0, 0, 0]} castShadow receiveShadow>
           {/* Main Head Shape - A smooth capsule/sphere hybrid */}
@@ -159,12 +171,12 @@ function CyberAvatar({ prefersReducedMotion }: { prefersReducedMotion: boolean }
           </mesh>
           {/* Eye Glow Spheres (Pupils) */}
           <mesh position={[-0.25, 0, 0.05]} scale={[1, 0.1, 1]}>
-             <sphereGeometry args={[0.09, 16, 16]} />
-             <meshStandardMaterial color="#0ea5e9" emissive="#0ea5e9" emissiveIntensity={4} />
+            <sphereGeometry args={[0.09, 16, 16]} />
+            <meshStandardMaterial color="#0ea5e9" emissive="#0ea5e9" emissiveIntensity={4} />
           </mesh>
           <mesh position={[0.25, 0, 0.05]} scale={[1, 0.1, 1]}>
-             <sphereGeometry args={[0.09, 16, 16]} />
-             <meshStandardMaterial color="#0ea5e9" emissive="#0ea5e9" emissiveIntensity={4} />
+            <sphereGeometry args={[0.09, 16, 16]} />
+            <meshStandardMaterial color="#0ea5e9" emissive="#0ea5e9" emissiveIntensity={4} />
           </mesh>
         </group>
 
@@ -207,13 +219,18 @@ function CyberAvatar({ prefersReducedMotion }: { prefersReducedMotion: boolean }
           <cylinderGeometry args={[0.2, 0.2, 0.3, 32]} />
           <meshStandardMaterial color="#475569" />
         </mesh>
-
       </Float>
     </group>
   );
 }
 
-function Scene({ autoRotate, modelScene }: { autoRotate?: boolean; modelScene?: THREE.Group | null }) {
+function Scene({
+  autoRotate,
+  modelScene,
+}: {
+  autoRotate?: boolean;
+  modelScene?: THREE.Group | null;
+}) {
   const prefersReducedMotion = usePrefersReducedMotion();
 
   return (
@@ -234,16 +251,30 @@ function Scene({ autoRotate, modelScene }: { autoRotate?: boolean; modelScene?: 
       ) : (
         <CyberAvatar prefersReducedMotion={prefersReducedMotion} />
       )}
-      
-      {/* Particles */}
-      <Sparkles count={prefersReducedMotion ? 0 : 100} scale={8} size={2} speed={0.4} opacity={0.5} color="#bae6fd" />
-      
-      {/* Shadows */}
-      <ContactShadows resolution={1024} scale={10} blur={2} opacity={0.5} far={10} color="#000000" />
 
-      <OrbitControls 
-        enablePan={false} 
-        minPolarAngle={Math.PI / 2.5} 
+      {/* Particles */}
+      <Sparkles
+        count={prefersReducedMotion ? 0 : 100}
+        scale={8}
+        size={2}
+        speed={0.4}
+        opacity={0.5}
+        color="#bae6fd"
+      />
+
+      {/* Shadows */}
+      <ContactShadows
+        resolution={1024}
+        scale={10}
+        blur={2}
+        opacity={0.5}
+        far={10}
+        color="#000000"
+      />
+
+      <OrbitControls
+        enablePan={false}
+        minPolarAngle={Math.PI / 2.5}
         maxPolarAngle={Math.PI / 1.8}
         enableZoom={true}
         minDistance={3}
@@ -259,10 +290,12 @@ export default function DigitalHumanViewer({
   modelUrl,
   autoRotate = false,
   showControls = true,
-  onModelLoad
+  onModelLoad,
 }: DigitalHumanViewerProps) {
   const [modelScene, setModelScene] = useState<THREE.Group | null>(null);
-  const [loadStatus, setLoadStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>(modelUrl ? 'idle' : 'ready');
+  const [loadStatus, setLoadStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>(
+    modelUrl ? 'idle' : 'ready',
+  );
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // Use ref for callback to avoid re-triggering the load effect
@@ -305,7 +338,7 @@ export default function DigitalHumanViewer({
         setLoadStatus('error');
         setLoadError(message);
         onModelLoadRef.current?.({ type: 'procedural-fallback', error: message });
-      }
+      },
     );
 
     return () => {
@@ -323,6 +356,38 @@ export default function DigitalHumanViewer({
           const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
           materials.forEach((mat) => {
             if (mat instanceof THREE.Material) {
+              // Dispose all textures attached to the material
+              const textureProps = [
+                'map',
+                'normalMap',
+                'roughnessMap',
+                'metalnessMap',
+                'emissiveMap',
+                'aoMap',
+                'lightMap',
+                'alphaMap',
+                'envMap',
+                'bumpMap',
+                'displacementMap',
+                'specularMap',
+                'clearcoatMap',
+                'clearcoatRoughnessMap',
+                'clearcoatNormalMap',
+                'sheenRoughnessMap',
+                'sheenColorMap',
+                'iridescenceMap',
+                'iridescenceThicknessMap',
+                'thicknessMap',
+                'transmissionMap',
+              ] as const;
+
+              textureProps.forEach((prop) => {
+                const texture = (mat as unknown as Record<string, THREE.Texture | null>)[prop];
+                if (texture) {
+                  texture.dispose();
+                }
+              });
+
               mat.dispose();
             }
           });
@@ -351,7 +416,11 @@ export default function DigitalHumanViewer({
             <div className="flex items-center gap-2">
               <span className="text-white/70">模型状态:</span>
               <span className={loadStatus === 'ready' ? 'text-green-400' : 'text-yellow-300'}>
-                {loadStatus === 'ready' ? '已加载' : loadStatus === 'loading' ? '加载中' : '使用内置模型'}
+                {loadStatus === 'ready'
+                  ? '已加载'
+                  : loadStatus === 'loading'
+                    ? '加载中'
+                    : '使用内置模型'}
               </span>
             </div>
             <div className="flex items-center gap-2">

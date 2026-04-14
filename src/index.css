@@ -4,8 +4,9 @@
 
 @layer base {
   :root {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans",
-      Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    font-family:
+      -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif,
+      'Apple Color Emoji', 'Segoe UI Emoji';
     line-height: 1.5;
     font-weight: 400;
 
@@ -86,12 +87,17 @@
   }
 
   @keyframes cursor-blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
   }
 
   .streaming-cursor::after {
-    content: "▊";
+    content: '▊';
     animation: cursor-blink 0.8s step-end infinite;
     margin-left: 2px;
     color: rgba(147, 197, 253, 0.8);
