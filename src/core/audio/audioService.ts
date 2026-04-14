@@ -569,7 +569,7 @@ export class ASRService {
         },
         onResetBehavior: () => {
           if (this.state.currentBehavior === 'thinking') {
-            this.tts.stop();
+            this.state.setBehavior('idle');
           }
         },
       });

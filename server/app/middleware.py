@@ -43,6 +43,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.rpm = rpm or get_settings().rate_limit_rpm
         self._requests: dict[str, list[float]] = defaultdict(list)
+        self._request_count = 0
+        self._cleanup_interval = 1000  # 每 1000 次请求执行一次全量清理
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         if self.rpm <= 0:
@@ -55,6 +57,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # 清理窗口外的记录
         timestamps = self._requests[client_ip]
         self._requests[client_ip] = [t for t in timestamps if t > window_start]
+
+        # 定期清理无活动 IP 键，防止内存泄漏
+        self._request_count += 1
+        if self._request_count >= self._cleanup_interval:
+            self._request_count = 0
+            stale_ips = [ip for ip, ts in self._requests.items() if not ts]
+            for ip in stale_ips:
+                del self._requests[ip]
 
         if len(self._requests[client_ip]) >= self.rpm:
             logger.warning("Rate limit exceeded for %s", client_ip)
@@ -88,7 +98,9 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 class AuthMiddleware(BaseHTTPMiddleware):
     """API Key 认证中间件：验证 X-API-Key 请求头"""
 
-    EXEMPT_PATHS = {"/health", "/"}
+    # WebSocket 升级请求不支持自定义 header，需要豁免
+    # /docs, /redoc, /openapi.json 是 FastAPI 内置文档，也应豁免
+    EXEMPT_PATHS = {"/health", "/", "/ws", "/docs", "/redoc", "/openapi.json"}
 
     def __init__(self, app) -> None:
         super().__init__(app)
