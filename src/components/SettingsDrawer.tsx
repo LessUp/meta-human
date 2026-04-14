@@ -65,95 +65,108 @@ export default function SettingsDrawer({
         aria-label="设置面板"
         className={`absolute top-0 right-0 h-full w-full sm:w-80 md:w-96 bg-black/80 backdrop-blur-xl border-l border-white/10 z-30 transform transition-transform duration-500 ease-out ${show ? 'translate-x-0' : 'translate-x-full'}`}
       >
-      <div className="p-6 h-full flex flex-col">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-lg font-medium text-white/90 flex items-center gap-2">
-            <Settings className="w-4 h-4" /> Control Systems
-          </h2>
-          <button
-            onClick={toggleTheme}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-            aria-label={isDark ? '切换到浅色模式' : '切换到深色模式'}
-          >
-            {isDark ? <Sun className="w-5 h-5 text-gray-400" /> : <Moon className="w-5 h-5 text-gray-400" />}
-          </button>
-          <button onClick={onClose} aria-label="关闭设置" className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-            <X className="w-5 h-5 text-gray-400" />
-          </button>
-        </div>
-
-        {/* Navigation Tabs */}
-        <div role="tablist" className="flex space-x-1 bg-white/5 p-1 rounded-lg mb-6 overflow-x-auto">
-          {TABS.map(tab => (
+        <div className="p-6 h-full flex flex-col">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-lg font-medium text-white/90 flex items-center gap-2">
+              <Settings className="w-4 h-4" /> Control Systems
+            </h2>
             <button
-              key={tab}
-              role="tab"
-              aria-selected={activeTab === tab}
-              onClick={() => onTabChange(tab)}
-              className={`flex-1 py-2 text-xs font-medium rounded-md transition-all capitalize ${activeTab === tab ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+              onClick={toggleTheme}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              aria-label={isDark ? '切换到浅色模式' : '切换到深色模式'}
             >
-              {tab}
+              {isDark ? (
+                <Sun className="w-5 h-5 text-gray-400" />
+              ) : (
+                <Moon className="w-5 h-5 text-gray-400" />
+              )}
             </button>
-          ))}
-        </div>
+            <button
+              onClick={onClose}
+              aria-label="关闭设置"
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-400" />
+            </button>
+          </div>
 
-        {/* Content Area */}
-        <div role="tabpanel" aria-label={activeTab} className="flex-1 overflow-y-auto pr-2 space-y-6 custom-scrollbar">
-          {activeTab === 'basic' && (
-            <div className="space-y-4">
-              <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                <ControlPanel
-                  isPlaying={isPlaying}
-                  isRecording={isRecording}
-                  isMuted={isMuted}
-                  autoRotate={autoRotate}
-                  onPlayPause={onPlayPause}
-                  onReset={onReset}
-                  onToggleRecording={onToggleRecording}
-                  onToggleMute={onToggleMute}
-                  onToggleAutoRotate={onToggleAutoRotate}
-                  onVoiceCommand={onVoiceCommand}
+          {/* Navigation Tabs */}
+          <div
+            role="tablist"
+            className="flex space-x-1 bg-white/5 p-1 rounded-lg mb-6 overflow-x-auto"
+          >
+            {TABS.map((tab) => (
+              <button
+                key={tab}
+                role="tab"
+                aria-selected={activeTab === tab}
+                onClick={() => onTabChange(tab)}
+                className={`flex-1 py-2 text-xs font-medium rounded-md transition-all capitalize ${activeTab === tab ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          {/* Content Area */}
+          <div
+            role="tabpanel"
+            aria-label={activeTab}
+            className="flex-1 overflow-y-auto pr-2 space-y-6 custom-scrollbar"
+          >
+            {activeTab === 'basic' && (
+              <div className="space-y-4">
+                <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+                  <ControlPanel
+                    isPlaying={isPlaying}
+                    isRecording={isRecording}
+                    isMuted={isMuted}
+                    autoRotate={autoRotate}
+                    onPlayPause={onPlayPause}
+                    onReset={onReset}
+                    onToggleRecording={onToggleRecording}
+                    onToggleMute={onToggleMute}
+                    onToggleAutoRotate={onToggleAutoRotate}
+                    onVoiceCommand={onVoiceCommand}
+                  />
+                </div>
+              </div>
+            )}
+            {activeTab === 'expression' && (
+              <ExpressionControlPanel
+                currentExpression={currentExpression}
+                onExpressionChange={onExpressionChange}
+              />
+            )}
+            {activeTab === 'behavior' && (
+              <BehaviorControlPanel
+                currentBehavior={currentBehavior}
+                onBehaviorChange={onBehaviorChange}
+              />
+            )}
+            {activeTab === 'vision' && (
+              <div className="text-sm text-gray-400 p-4 border border-white/10 rounded-xl bg-white/5">
+                Vision Mirror Module requires camera access.
+                <VisionMirrorPanel
+                  onEmotionChange={(emotion) => {
+                    // setEmotion 内部通过 EMOTION_TO_EXPRESSION 映射自动设置对应表情
+                    digitalHumanEngine.setEmotion(emotion);
+                  }}
+                  onHeadMotion={(motion) => {
+                    digitalHumanEngine.playAnimation(motion);
+                    toast(`Motion Detected: ${motion}`, { icon: '📸' });
+                  }}
                 />
               </div>
-            </div>
-          )}
-          {activeTab === 'expression' && (
-            <ExpressionControlPanel
-              currentExpression={currentExpression}
-              onExpressionChange={onExpressionChange}
-            />
-          )}
-          {activeTab === 'behavior' && (
-            <BehaviorControlPanel
-              currentBehavior={currentBehavior}
-              onBehaviorChange={onBehaviorChange}
-            />
-          )}
-          {activeTab === 'vision' && (
-            <div className="text-sm text-gray-400 p-4 border border-white/10 rounded-xl bg-white/5">
-              Vision Mirror Module requires camera access.
-              <VisionMirrorPanel
-                onEmotionChange={(emotion) => {
-                  // setEmotion 内部通过 EMOTION_TO_EXPRESSION 映射自动设置对应表情
-                  digitalHumanEngine.setEmotion(emotion);
-                }}
-                onHeadMotion={(motion) => {
-                  digitalHumanEngine.playAnimation(motion);
-                  toast(`Motion Detected: ${motion}`, { icon: '📸' });
-                }}
-              />
-            </div>
-          )}
-          {activeTab === 'voice' && (
-            <div className="space-y-4">
-              <VoiceInteractionPanel
-                onTranscript={(text) => onChatSend(text)}
-              />
-            </div>
-          )}
+            )}
+            {activeTab === 'voice' && (
+              <div className="space-y-4">
+                <VoiceInteractionPanel onTranscript={(text) => onChatSend(text)} />
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 }

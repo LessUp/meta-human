@@ -118,7 +118,7 @@ class VisionService {
           facingMode: 'user',
           width: { ideal: 640 },
           height: { ideal: 480 },
-          frameRate: { ideal: 30 }
+          frameRate: { ideal: 30 },
         },
         audio: false,
       });
@@ -137,8 +137,7 @@ class VisionService {
       const mod = (await import('@mediapipe/face_mesh')) as unknown as FaceMeshModuleLike;
       const FaceMesh = mod.FaceMesh;
       this.faceMesh = new FaceMesh({
-        locateFile: (file: string) =>
-          `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
+        locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
       });
       this.faceMesh.setOptions({
         maxNumFaces: 1,
@@ -167,8 +166,7 @@ class VisionService {
       const poseMod = (await import('@mediapipe/pose')) as unknown as PoseModuleLike;
       const Pose = poseMod.Pose;
       this.pose = new Pose({
-        locateFile: (file: string) =>
-          `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+        locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
       });
       this.pose.setOptions({
         modelComplexity: 0,
@@ -203,12 +201,12 @@ class VisionService {
   private getCameraErrorMessage(error: unknown): string {
     const errorName = error instanceof DOMException ? error.name : '';
     const errorMessages: Record<string, string> = {
-      'NotAllowedError': '摄像头权限被拒绝，请在浏览器设置中允许访问摄像头',
-      'NotFoundError': '未检测到摄像头设备，请确保摄像头已连接',
-      'NotReadableError': '摄像头被其他应用占用，请关闭其他使用摄像头的程序',
-      'OverconstrainedError': '摄像头不支持请求的分辨率',
-      'SecurityError': '安全限制：请通过 HTTPS 访问或在本地运行',
-      'AbortError': '摄像头访问被中断',
+      NotAllowedError: '摄像头权限被拒绝，请在浏览器设置中允许访问摄像头',
+      NotFoundError: '未检测到摄像头设备，请确保摄像头已连接',
+      NotReadableError: '摄像头被其他应用占用，请关闭其他使用摄像头的程序',
+      OverconstrainedError: '摄像头不支持请求的分辨率',
+      SecurityError: '安全限制：请通过 HTTPS 访问或在本地运行',
+      AbortError: '摄像头访问被中断',
     };
     const msg = error instanceof Error ? error.message : String(error);
     return errorMessages[errorName] || `摄像头访问失败: ${msg || errorName}`;
@@ -295,7 +293,9 @@ class VisionService {
     return landmarks;
   }
 
-  private computeHeadPose(landmarks: Landmark[] | undefined): { yaw: number; pitch: number } | null {
+  private computeHeadPose(
+    landmarks: Landmark[] | undefined,
+  ): { yaw: number; pitch: number } | null {
     if (!landmarks || landmarks.length < 300) {
       return null;
     }

@@ -69,6 +69,7 @@ export class MetaHumanWSClient {
   private maxReconnectAttempts = 5;
   private resolveConnect: (() => void) | null = null;
   private rejectConnect: ((reason?: unknown) => void) | null = null;
+  private isManuallyDisconnected = false;
 
   constructor(sessionId: string) {
     this.sessionId = sessionId;
@@ -104,7 +105,11 @@ export class MetaHumanWSClient {
         reject(event);
       };
 
-      this.ws.onclose = () => this.attemptReconnect();
+      this.ws.onclose = () => {
+        if (!this.isManuallyDisconnected) {
+          this.attemptReconnect();
+        }
+      };
     });
   }
 
@@ -115,6 +120,7 @@ export class MetaHumanWSClient {
   }
 
   disconnect(): void {
+    this.isManuallyDisconnected = true;
     this.reconnectAttempts = this.maxReconnectAttempts;
     if (this.rejectConnect) {
       this.rejectConnect(new Error('WebSocket disconnected'));
@@ -126,10 +132,11 @@ export class MetaHumanWSClient {
   }
 
   private attemptReconnect(): void {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) return;
+    if (this.isManuallyDisconnected || this.reconnectAttempts >= this.maxReconnectAttempts) return;
     this.reconnectAttempts++;
     const delay = Math.min(1000 * 2 ** this.reconnectAttempts, 30000);
     setTimeout(() => {
+      if (this.isManuallyDisconnected) return;
       if (this.messageHandler) {
         this.connect(this.messageHandler).catch(() => {});
       }

@@ -14,17 +14,62 @@ interface ExpressionControlPanelProps {
   onExpressionChange: (expression: string, intensity: number) => void;
 }
 
-export default function ExpressionControlPanel({ currentExpression, onExpressionChange }: ExpressionControlPanelProps) {
+export default function ExpressionControlPanel({
+  currentExpression,
+  onExpressionChange,
+}: ExpressionControlPanelProps) {
   const [intensity, setIntensity] = useState(0.8);
 
   const expressions: ExpressionControl[] = [
-    { name: 'neutral', label: 'Neutral', icon: <Meh size={20} />, color: 'text-gray-400', intensity: 0.5 },
-    { name: 'smile', label: 'Smile', icon: <Smile size={20} />, color: 'text-green-400', intensity: 0.7 },
-    { name: 'laugh', label: 'Laugh', icon: <Laugh size={20} />, color: 'text-yellow-400', intensity: 1.0 },
-    { name: 'surprise', label: 'Surprise', icon: <Zap size={20} />, color: 'text-orange-400', intensity: 0.8 },
-    { name: 'sad', label: 'Sad', icon: <Frown size={20} />, color: 'text-blue-400', intensity: 0.6 },
-    { name: 'angry', label: 'Angry', icon: <Angry size={20} />, color: 'text-red-400', intensity: 0.9 },
-    { name: 'blink', label: 'Blink', icon: <Eye size={20} />, color: 'text-purple-400', intensity: 0.4 },
+    {
+      name: 'neutral',
+      label: 'Neutral',
+      icon: <Meh size={20} />,
+      color: 'text-gray-400',
+      intensity: 0.5,
+    },
+    {
+      name: 'smile',
+      label: 'Smile',
+      icon: <Smile size={20} />,
+      color: 'text-green-400',
+      intensity: 0.7,
+    },
+    {
+      name: 'laugh',
+      label: 'Laugh',
+      icon: <Laugh size={20} />,
+      color: 'text-yellow-400',
+      intensity: 1.0,
+    },
+    {
+      name: 'surprise',
+      label: 'Surprise',
+      icon: <Zap size={20} />,
+      color: 'text-orange-400',
+      intensity: 0.8,
+    },
+    {
+      name: 'sad',
+      label: 'Sad',
+      icon: <Frown size={20} />,
+      color: 'text-blue-400',
+      intensity: 0.6,
+    },
+    {
+      name: 'angry',
+      label: 'Angry',
+      icon: <Angry size={20} />,
+      color: 'text-red-400',
+      intensity: 0.9,
+    },
+    {
+      name: 'blink',
+      label: 'Blink',
+      icon: <Eye size={20} />,
+      color: 'text-purple-400',
+      intensity: 0.4,
+    },
   ];
 
   const handleExpressionClick = (expressionName: string, defaultIntensity: number) => {
@@ -45,7 +90,9 @@ export default function ExpressionControlPanel({ currentExpression, onExpression
         <h3 className="text-lg font-medium text-white">Face Control</h3>
         <div className="flex items-center space-x-2 px-3 py-1 bg-white/5 rounded-full border border-white/5">
           <Palette size={14} className="text-white/60" />
-          <span className="text-xs text-white/80 font-mono uppercase">{currentExpression || 'Neutral'}</span>
+          <span className="text-xs text-white/80 font-mono uppercase">
+            {currentExpression || 'Neutral'}
+          </span>
         </div>
       </div>
 
@@ -78,7 +125,9 @@ export default function ExpressionControlPanel({ currentExpression, onExpression
       {/* Intensity Slider */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold text-white/40 uppercase tracking-wider">Intensity</label>
+          <label className="text-xs font-semibold text-white/40 uppercase tracking-wider">
+            Intensity
+          </label>
           <span className="text-xs font-mono text-blue-400">{Math.round(intensity * 100)}%</span>
         </div>
         <input
@@ -95,11 +144,13 @@ export default function ExpressionControlPanel({ currentExpression, onExpression
 
       {/* Advanced Triggers */}
       <div className="space-y-3">
-        <h4 className="text-xs font-semibold text-white/40 uppercase tracking-wider">Micro-Expressions</h4>
+        <h4 className="text-xs font-semibold text-white/40 uppercase tracking-wider">
+          Micro-Expressions
+        </h4>
         <div className="grid grid-cols-2 gap-2">
           {['Eyebrow Raise', 'Quick Blink', 'Mouth Open', 'Nod'].map((action, i) => {
-             const keys = ['eyebrow_raise', 'eye_blink', 'mouth_open', 'head_nod'];
-             return (
+            const keys = ['eyebrow_raise', 'eye_blink', 'mouth_open', 'head_nod'];
+            return (
               <button
                 key={action}
                 onClick={() => onExpressionChange(keys[i], intensity)}
@@ -108,7 +159,7 @@ export default function ExpressionControlPanel({ currentExpression, onExpression
               >
                 {action}
               </button>
-             )
+            );
           })}
         </div>
       </div>

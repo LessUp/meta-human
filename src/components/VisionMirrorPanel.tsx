@@ -27,7 +27,10 @@ const EMOTION_LABELS: Record<UserEmotion, string> = {
   angry: '😠 愤怒',
 };
 
-export default function VisionMirrorPanel({ onEmotionChange, onHeadMotion }: VisionMirrorPanelProps) {
+export default function VisionMirrorPanel({
+  onEmotionChange,
+  onHeadMotion,
+}: VisionMirrorPanelProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -74,7 +77,7 @@ export default function VisionMirrorPanel({ onEmotionChange, onHeadMotion }: Vis
       if (videoRef.current) {
         setIsLoading(true);
         setError(null);
-        
+
         const success = await visionService.start(
           videoRef.current,
           (emotion) => {
@@ -87,9 +90,9 @@ export default function VisionMirrorPanel({ onEmotionChange, onHeadMotion }: Vis
             onHeadMotion?.(motion);
           },
         );
-        
+
         setIsLoading(false);
-        
+
         if (success) {
           setIsCameraOn(true);
           toast.success('摄像头已启动');
@@ -110,10 +113,15 @@ export default function VisionMirrorPanel({ onEmotionChange, onHeadMotion }: Vis
             <span className="text-[10px] text-white/40 font-mono">{fps} FPS</span>
           )}
           <div className="flex items-center space-x-2">
-            <div className={`w-1.5 h-1.5 rounded-full ${
-              isLoading ? 'bg-yellow-500 animate-pulse' :
-              isCameraOn ? 'bg-red-500 animate-pulse' : 'bg-white/20'
-            }`} />
+            <div
+              className={`w-1.5 h-1.5 rounded-full ${
+                isLoading
+                  ? 'bg-yellow-500 animate-pulse'
+                  : isCameraOn
+                    ? 'bg-red-500 animate-pulse'
+                    : 'bg-white/20'
+              }`}
+            />
             <span className="text-xs text-white/60">
               {isLoading ? '启动中' : isCameraOn ? 'LIVE' : '离线'}
             </span>
@@ -129,7 +137,7 @@ export default function VisionMirrorPanel({ onEmotionChange, onHeadMotion }: Vis
             <span className="text-xs text-white/60">正在启动摄像头...</span>
           </div>
         )}
-        
+
         {/* 错误状态 */}
         {error && !isLoading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-900/20 z-10">
@@ -137,7 +145,7 @@ export default function VisionMirrorPanel({ onEmotionChange, onHeadMotion }: Vis
             <span className="text-xs text-red-300 text-center px-4">{error}</span>
           </div>
         )}
-        
+
         {/* 离线状态 */}
         {!isCameraOn && !isLoading && !error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-white/20">
@@ -145,7 +153,7 @@ export default function VisionMirrorPanel({ onEmotionChange, onHeadMotion }: Vis
             <span className="text-xs uppercase tracking-widest">摄像头未开启</span>
           </div>
         )}
-        
+
         <video
           ref={videoRef}
           className={`w-full h-full object-cover transition-opacity ${isCameraOn ? 'opacity-100' : 'opacity-0'} transform scale-x-[-1]`}
@@ -153,7 +161,7 @@ export default function VisionMirrorPanel({ onEmotionChange, onHeadMotion }: Vis
           playsInline
           muted
         />
-        
+
         {isCameraOn && (
           <>
             <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur rounded text-[10px] text-white/80 border border-white/10">
@@ -175,13 +183,13 @@ export default function VisionMirrorPanel({ onEmotionChange, onHeadMotion }: Vis
             {EMOTION_LABELS[currentEmotion]}
           </span>
         </div>
-        
+
         <button
           onClick={handleToggleCamera}
           disabled={isLoading}
           className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-medium transition-all border disabled:opacity-50 disabled:cursor-not-allowed ${
-            isCameraOn 
-              ? 'bg-red-500/20 text-red-400 border-red-500/50 hover:bg-red-500/30' 
+            isCameraOn
+              ? 'bg-red-500/20 text-red-400 border-red-500/50 hover:bg-red-500/30'
               : 'bg-blue-500/20 text-blue-400 border-blue-500/50 hover:bg-blue-500/30'
           }`}
           aria-label={isCameraOn ? '关闭摄像头' : '开启摄像头'}

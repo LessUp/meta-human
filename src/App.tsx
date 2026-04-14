@@ -1,11 +1,11 @@
-import { HashRouter as Router, Routes, Route } from "react-router-dom";
-import { Suspense, lazy } from "react";
-import ErrorBoundary from "@/components/ui/ErrorBoundary";
-import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
+import ErrorBoundary from '@/components/ui/ErrorBoundary';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 // 懒加载页面组件
-const DigitalHumanPage = lazy(() => import("@/pages/DigitalHumanPage"));
-const AdvancedDigitalHumanPage = lazy(() => import("@/pages/AdvancedDigitalHumanPage"));
+const DigitalHumanPage = lazy(() => import('@/pages/DigitalHumanPage'));
+const AdvancedDigitalHumanPage = lazy(() => import('@/pages/AdvancedDigitalHumanPage'));
 
 // 页面加载 fallback
 function PageLoader() {

@@ -20,18 +20,37 @@ export const ANIMATION_DURATIONS: Record<string, number> = {
 };
 
 export const VALID_EXPRESSIONS: ExpressionType[] = [
-  'neutral', 'smile', 'laugh', 'surprise', 'sad', 'angry',
-  'blink', 'eyebrow_raise', 'eye_blink', 'mouth_open', 'head_nod',
+  'neutral',
+  'smile',
+  'laugh',
+  'surprise',
+  'sad',
+  'angry',
+  'blink',
+  'eyebrow_raise',
+  'eye_blink',
+  'mouth_open',
+  'head_nod',
 ];
 
-export const VALID_EMOTIONS: EmotionType[] = [
-  'neutral', 'happy', 'surprised', 'sad', 'angry',
-];
+export const VALID_EMOTIONS: EmotionType[] = ['neutral', 'happy', 'surprised', 'sad', 'angry'];
 
 export const VALID_BEHAVIORS: BehaviorType[] = [
-  'idle', 'greeting', 'listening', 'thinking', 'speaking', 'excited',
-  'wave', 'greet', 'think', 'nod', 'shakeHead', 'dance', 'speak',
-  'waveHand', 'raiseHand',
+  'idle',
+  'greeting',
+  'listening',
+  'thinking',
+  'speaking',
+  'excited',
+  'wave',
+  'greet',
+  'think',
+  'nod',
+  'shakeHead',
+  'dance',
+  'speak',
+  'waveHand',
+  'raiseHand',
 ];
 
 export const ANIMATION_TO_BEHAVIOR: Record<string, BehaviorType> = {

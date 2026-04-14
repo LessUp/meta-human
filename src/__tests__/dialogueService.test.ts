@@ -326,11 +326,7 @@ describe('streamUserInput', () => {
     mockFetchStream(stream);
 
     const onDone = vi.fn();
-    const gen = streamUserInput(
-      { userText: 'hello' },
-      { maxRetries: 0 },
-      { onDone },
-    );
+    const gen = streamUserInput({ userText: 'hello' }, { maxRetries: 0 }, { onDone });
 
     for await (const _ of gen) {
       // consume
@@ -352,11 +348,7 @@ describe('streamUserInput', () => {
     mockFetchStream(stream);
 
     const onConnected = vi.fn();
-    const gen = streamUserInput(
-      { userText: 'hi' },
-      { maxRetries: 0 },
-      { onConnected },
-    );
+    const gen = streamUserInput({ userText: 'hi' }, { maxRetries: 0 }, { onConnected });
 
     for await (const _ of gen) {
       // consume
@@ -374,11 +366,7 @@ describe('streamUserInput', () => {
     mockFetchStream(stream);
 
     const onError = vi.fn();
-    const gen = streamUserInput(
-      { userText: 'hi' },
-      { maxRetries: 0 },
-      { onError },
-    );
+    const gen = streamUserInput({ userText: 'hi' }, { maxRetries: 0 }, { onError });
 
     for await (const _ of gen) {
       // consume
@@ -423,8 +411,12 @@ describe('streamUserInput', () => {
   it('skips malformed SSE data gracefully', async () => {
     const encoder = new TextEncoder();
     const malformed = encoder.encode('data: not-json\n\n');
-    const validToken = encoder.encode(`data: ${JSON.stringify({ type: 'token', content: 'OK' })}\n\n`);
-    const doneEvent = encoder.encode(`data: ${JSON.stringify({ type: 'done', replyText: 'OK', emotion: 'neutral', action: 'idle' })}\n\n`);
+    const validToken = encoder.encode(
+      `data: ${JSON.stringify({ type: 'token', content: 'OK' })}\n\n`,
+    );
+    const doneEvent = encoder.encode(
+      `data: ${JSON.stringify({ type: 'done', replyText: 'OK', emotion: 'neutral', action: 'idle' })}\n\n`,
+    );
 
     let index = 0;
     const chunks = [malformed, validToken, doneEvent];

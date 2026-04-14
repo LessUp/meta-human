@@ -8,7 +8,10 @@ interface VoiceInteractionPanelProps {
   onSpeak?: (text: string) => void;
 }
 
-export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceInteractionPanelProps) {
+export default function VoiceInteractionPanel({
+  onTranscript,
+  onSpeak,
+}: VoiceInteractionPanelProps) {
   const { isRecording, isMuted, setRecording, toggleMute } = useDigitalHumanStore();
   const [transcript, setTranscript] = useState('');
   const [isSupported, setIsSupported] = useState(false);
@@ -21,15 +24,16 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
   // 初始化语音识别和合成
   useEffect(() => {
     // 检查浏览器支持
-    const hasSpeechRecognition = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+    const hasSpeechRecognition =
+      'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
     const hasSpeechSynthesis = 'speechSynthesis' in window;
-    
+
     setIsSupported(hasSpeechRecognition && hasSpeechSynthesis);
-    
+
     if (hasSpeechSynthesis) {
       loadVoices();
     }
-    
+
     return () => {
       asrService.stop();
     };
@@ -39,9 +43,9 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
   const loadVoices = () => {
     const voices = ttsService.getVoices();
     setAvailableVoices(voices);
-    
+
     // 优先选择中文语音
-    const chineseVoice = voices.find(v => v.lang.includes('zh'));
+    const chineseVoice = voices.find((v) => v.lang.includes('zh'));
     if (chineseVoice) {
       setVoice(chineseVoice);
     } else if (voices.length > 0) {
@@ -52,7 +56,7 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
   // 开始/停止录音
   const toggleRecording = () => {
     if (!isSupported) return;
-    
+
     if (isRecording) {
       asrService.stop();
       setRecording(false);
@@ -62,7 +66,7 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
         onResult: (text: string) => {
           setTranscript(text);
           onTranscript(text);
-        }
+        },
       });
     }
   };
@@ -70,15 +74,15 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
   // 语音合成
   const speakText = (text: string) => {
     if (isMuted) return;
-    
+
     ttsService.speakWithOptions(text, {
       lang: 'zh-CN',
       volume,
       pitch,
       rate,
-      voiceName: voice?.name
+      voiceName: voice?.name,
     });
-    
+
     onSpeak?.(text);
   };
 
@@ -106,8 +110,12 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">语音交互</h3>
         <div className="flex items-center space-x-2">
-          <div className={`w-2 h-2 rounded-full ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
-          <span className="text-sm text-gray-600 dark:text-gray-300">{isRecording ? '录音中' : '待机'}</span>
+          <div
+            className={`w-2 h-2 rounded-full ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-gray-300 dark:bg-gray-600'}`}
+          ></div>
+          <span className="text-sm text-gray-600 dark:text-gray-300">
+            {isRecording ? '录音中' : '待机'}
+          </span>
         </div>
       </div>
 
@@ -118,20 +126,20 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
             onClick={toggleRecording}
             aria-label={isRecording ? '停止录音' : '开始录音'}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-              isRecording 
-                ? 'bg-red-500 hover:bg-red-600 text-white' 
+              isRecording
+                ? 'bg-red-500 hover:bg-red-600 text-white'
                 : 'bg-blue-500 hover:bg-blue-600 text-white'
             }`}
           >
             {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
             <span>{isRecording ? '停止录音' : '开始录音'}</span>
           </button>
-          
+
           <button
             onClick={toggleMute}
             aria-label={isMuted ? '取消静音' : '静音'}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-              isMuted 
+              isMuted
                 ? 'bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200'
                 : 'bg-purple-500 hover:bg-purple-600 text-white'
             }`}
@@ -166,11 +174,13 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
 
         {/* 语音选择 */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">语音选择</label>
+          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+            语音选择
+          </label>
           <select
             value={voice?.name || ''}
             onChange={(e) => {
-              const selectedVoice = availableVoices.find(v => v.name === e.target.value);
+              const selectedVoice = availableVoices.find((v) => v.name === e.target.value);
               setVoice(selectedVoice || null);
             }}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -234,13 +244,15 @@ export default function VoiceInteractionPanel({ onTranscript, onSpeak }: VoiceIn
 
       {/* 快速测试文本 */}
       <div className="space-y-3">
-        <label className="block text-sm font-medium text-gray-600 dark:text-gray-300">快速测试文本</label>
+        <label className="block text-sm font-medium text-gray-600 dark:text-gray-300">
+          快速测试文本
+        </label>
         <div className="grid grid-cols-2 gap-2">
           {[
             '您好！我是数字人助手。',
             '今天天气真不错！',
             '有什么可以帮助您的吗？',
-            '感谢您的使用！'
+            '感谢您的使用！',
           ].map((text, index) => (
             <button
               key={index}

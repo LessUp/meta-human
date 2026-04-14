@@ -1,8 +1,8 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { Toaster } from 'sonner'
-import App from './App'
-import './index.css'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { Toaster } from 'sonner';
+import App from './App';
+import './index.css';
 
 if (import.meta.env.DEV) {
   console.log(
@@ -17,4 +17,4 @@ createRoot(document.getElementById('root')!).render(
     <App />
     <Toaster position="top-right" richColors closeButton />
   </StrictMode>,
-)
+);
