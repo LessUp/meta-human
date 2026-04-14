@@ -76,6 +76,8 @@ export function useChatStream(options: UseChatStreamOptions) {
           isMuted,
           speakWith: (textToSpeak) => ttsService.speak(textToSpeak),
           setLoading,
+          // 流式模式下助手消息通过 onStreamToken 逐步更新，
+          // 此处显式设为 undefined 以避免 handleDialogueResponse 再次添加完整消息导致重复
           onAddAssistantMessage: undefined,
           onAddUserMessage: (t) => {
             addChatMessage('user', t);

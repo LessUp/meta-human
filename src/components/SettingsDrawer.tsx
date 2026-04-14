@@ -134,13 +134,7 @@ export default function SettingsDrawer({
               Vision Mirror Module requires camera access.
               <VisionMirrorPanel
                 onEmotionChange={(emotion) => {
-                  if (emotion === 'happy') {
-                    digitalHumanEngine.setExpression('smile');
-                  } else if (emotion === 'surprised') {
-                    digitalHumanEngine.setExpression('surprise');
-                  } else {
-                    digitalHumanEngine.setExpression('neutral');
-                  }
+                  // setEmotion 内部通过 EMOTION_TO_EXPRESSION 映射自动设置对应表情
                   digitalHumanEngine.setEmotion(emotion);
                 }}
                 onHeadMotion={(motion) => {

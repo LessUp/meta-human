@@ -194,8 +194,9 @@ class RedisSessionStore(SessionStore):
         self._redis.set(self._messages_key(session_id), json.dumps(current[-max_length:]))
 
     def touch(self, session_id: str) -> None:
-        # Store with 1 hour TTL so inactive sessions get auto-cleaned by Redis
-        self._redis.set(self._active_key(session_id), str(time.monotonic()), ex=3600)
+        # 使用 time.time() 而非 time.monotonic()，因为 Redis 是跨进程存储，
+        # monotonic 值在不同进程间不可比较
+        self._redis.set(self._active_key(session_id), str(time.time()), ex=3600)
 
     def clear(self, session_id: str) -> bool:
         keys = [
