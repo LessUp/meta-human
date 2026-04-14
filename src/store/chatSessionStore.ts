@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import { generateId } from '../lib/utils';
 
 export type ChatRole = 'user' | 'assistant';
 
@@ -28,7 +29,7 @@ const ENABLE_DEVTOOLS = import.meta.env.DEV && import.meta.env.MODE !== 'test';
 let nextChatMessageId = 0;
 
 const generateSessionId = (): string => {
-  return `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  return generateId('session');
 };
 
 const generateChatMessageId = (): number => {

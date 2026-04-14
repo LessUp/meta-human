@@ -94,8 +94,11 @@ export class MetaHumanWSClient {
         try {
           const data = JSON.parse(event.data) as WSServerEvent;
           this.messageHandler?.(data);
-        } catch {
-          /* ignore parse errors */
+        } catch (error) {
+          // Log malformed messages in development for debugging
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('[WSClient] Failed to parse message:', event.data, error);
+          }
         }
       };
 

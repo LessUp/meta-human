@@ -5,6 +5,7 @@ import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { useSystemStore } from '../store/systemStore';
 import { ttsService, asrService } from '../core/audio';
 import { digitalHumanEngine } from '../core/avatar';
+import { executeVoiceCommand, getDefaultVoiceCommandHandlers } from '../lib/voiceCommands';
 import { Toaster, toast } from 'sonner';
 import { Wifi, WifiOff } from 'lucide-react';
 
@@ -63,31 +64,11 @@ export default function DigitalHumanPage() {
     toggleAutoRotate();
   };
 
-  // 处理语音命令
+  // 处理语音命令（使用共享工具）
   const handleVoiceCommand = useCallback((command: string) => {
     toast.success(`执行命令: ${command}`);
-
-    // 根据命令执行不同操作
-    switch (command) {
-      case '打招呼':
-        asrService.performGreeting();
-        break;
-      case '跳舞':
-        asrService.performDance();
-        break;
-      case '说话':
-        void ttsService.speak('您好！有什么可以帮助您的吗？').catch(() => undefined);
-        break;
-      case '表情': {
-        const expressions = ['smile', 'surprise', 'laugh'];
-        const randomExpr = expressions[Math.floor(Math.random() * expressions.length)];
-        digitalHumanEngine.setExpression(randomExpr);
-        setTimeout(() => digitalHumanEngine.setExpression('neutral'), 3000);
-        break;
-      }
-      default:
-        void ttsService.speak(`收到命令: ${command}`).catch(() => undefined);
-    }
+    const handlers = getDefaultVoiceCommandHandlers();
+    executeVoiceCommand(command, handlers);
   }, []);
 
   // 组件卸载时清理
