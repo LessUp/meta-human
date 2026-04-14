@@ -29,12 +29,24 @@ function CyberAvatar({ prefersReducedMotion }: { prefersReducedMotion: boolean }
   const rightEyeRef = useRef<THREE.Mesh>(null);
   const ringsRef = useRef<THREE.Group>(null);
 
-  const { currentExpression, isSpeaking, currentAnimation, expressionIntensity } =
-    useDigitalHumanStore();
+  // Use refs to avoid re-renders from store subscription in useFrame
+  const storeRef = useRef(useDigitalHumanStore.getState());
+  const intensityRef = useRef(storeRef.current.expressionIntensity ?? 0.8);
+
+  // Subscribe to store changes and update refs without triggering re-renders
+  useEffect(() => {
+    const unsubscribe = useDigitalHumanStore.subscribe((state) => {
+      storeRef.current = state;
+      intensityRef.current = state.expressionIntensity ?? 0.8;
+    });
+    return unsubscribe;
+  }, []);
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
-    const intensity = Math.max(0, Math.min(1, expressionIntensity ?? 1));
+    // Read from refs to avoid re-renders in the animation loop
+    const { currentExpression, isSpeaking, currentAnimation } = storeRef.current;
+    const intensity = Math.max(0, Math.min(1, intensityRef.current));
 
     // Idle Floating Logic is handled by <Float>, we handle specific animations here
 
@@ -352,43 +364,55 @@ export default function DigitalHumanViewer({
       modelScene?.traverse((child) => {
         if ((child as THREE.Mesh).isMesh) {
           const mesh = child as THREE.Mesh;
-          mesh.geometry.dispose();
+          try {
+            mesh.geometry.dispose();
+          } catch (error) {
+            console.warn('Failed to dispose geometry:', error);
+          }
           const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
           materials.forEach((mat) => {
             if (mat instanceof THREE.Material) {
-              // Dispose all textures attached to the material
-              const textureProps = [
-                'map',
-                'normalMap',
-                'roughnessMap',
-                'metalnessMap',
-                'emissiveMap',
-                'aoMap',
-                'lightMap',
-                'alphaMap',
-                'envMap',
-                'bumpMap',
-                'displacementMap',
-                'specularMap',
-                'clearcoatMap',
-                'clearcoatRoughnessMap',
-                'clearcoatNormalMap',
-                'sheenRoughnessMap',
-                'sheenColorMap',
-                'iridescenceMap',
-                'iridescenceThicknessMap',
-                'thicknessMap',
-                'transmissionMap',
-              ] as const;
+              try {
+                // Dispose all textures attached to the material
+                const textureProps = [
+                  'map',
+                  'normalMap',
+                  'roughnessMap',
+                  'metalnessMap',
+                  'emissiveMap',
+                  'aoMap',
+                  'lightMap',
+                  'alphaMap',
+                  'envMap',
+                  'bumpMap',
+                  'displacementMap',
+                  'specularMap',
+                  'clearcoatMap',
+                  'clearcoatRoughnessMap',
+                  'clearcoatNormalMap',
+                  'sheenRoughnessMap',
+                  'sheenColorMap',
+                  'iridescenceMap',
+                  'iridescenceThicknessMap',
+                  'thicknessMap',
+                  'transmissionMap',
+                ] as const;
 
-              textureProps.forEach((prop) => {
-                const texture = (mat as unknown as Record<string, THREE.Texture | null>)[prop];
-                if (texture) {
-                  texture.dispose();
-                }
-              });
+                textureProps.forEach((prop) => {
+                  try {
+                    const texture = (mat as unknown as Record<string, THREE.Texture | null>)[prop];
+                    if (texture) {
+                      texture.dispose();
+                    }
+                  } catch (error) {
+                    console.warn(`Failed to dispose texture ${prop}:`, error);
+                  }
+                });
 
-              mat.dispose();
+                mat.dispose();
+              } catch (error) {
+                console.warn('Failed to dispose material:', error);
+              }
             }
           });
         }

@@ -6,6 +6,7 @@ import { useSystemStore } from '../store/systemStore';
 import { asrService } from '../core/audio';
 import { digitalHumanEngine } from '../core/avatar';
 import { clearRemoteSession } from '../core/dialogue/dialogueService';
+import { executeVoiceCommand } from '../lib/voiceCommands';
 import { useChatStream } from './useChatStream';
 import { useConnectionHealth } from './useConnectionHealth';
 
@@ -94,29 +95,26 @@ export function useAdvancedDigitalHumanController() {
 
   const handleVoiceCommand = useCallback(
     (command: string) => {
-      switch (command) {
-        case '打招呼':
+      executeVoiceCommand(command, {
+        onGreeting: () => {
           asrService.performGreeting();
           toast.success('执行打招呼动作');
-          break;
-        case '跳舞':
+        },
+        onDance: () => {
           asrService.performDance();
           toast.success('开始跳舞');
-          break;
-        case '说话':
+        },
+        onSpeak: () => {
           handleChatSend('你好，请自我介绍一下');
-          break;
-        case '表情': {
-          const expressions = ['smile', 'surprise', 'laugh'];
-          const randomExpr = expressions[Math.floor(Math.random() * expressions.length)];
-          digitalHumanEngine.setExpression(randomExpr);
-          toast.success(`切换到 ${randomExpr} 表情`);
-          setTimeout(() => digitalHumanEngine.setExpression('neutral'), 3000);
-          break;
-        }
-        default:
-          handleChatSend(command);
-      }
+        },
+        onExpression: (expression) => {
+          digitalHumanEngine.setExpression(expression);
+          toast.success(`切换到 ${expression} 表情`);
+        },
+        onDefault: (cmd) => {
+          handleChatSend(cmd);
+        },
+      });
     },
     [handleChatSend],
   );

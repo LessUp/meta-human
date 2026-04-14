@@ -51,7 +51,6 @@ export default function ChatDock({
             <div
               key={msg.id}
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`}
-              aria-busy={msg.isStreaming ? 'true' : 'false'}
             >
               <div
                 className={`max-w-[80%] px-5 py-3 rounded-2xl text-sm backdrop-blur-md border shadow-xl ${
@@ -59,6 +58,9 @@ export default function ChatDock({
                     ? 'bg-blue-600/80 border-blue-500/50 text-white rounded-br-none'
                     : 'bg-white/10 border-white/10 text-gray-100 rounded-bl-none'
                 }`}
+                role={msg.isStreaming ? 'status' : undefined}
+                aria-busy={msg.isStreaming ? 'true' : 'false'}
+                aria-live={msg.isStreaming ? 'polite' : undefined}
               >
                 <span className={msg.isStreaming ? 'streaming-cursor text-white/90' : ''}>
                   {msg.text || (msg.isStreaming ? '正在生成回复...' : '')}
@@ -137,7 +139,11 @@ export default function ChatDock({
 
       {/* Error Banner */}
       {error && (
-        <div className="mt-3 px-4 py-2 bg-red-500/20 border border-red-500/30 rounded-xl flex items-center gap-2 text-red-300 text-sm">
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="mt-3 px-4 py-2 bg-red-500/20 border border-red-500/30 rounded-xl flex items-center gap-2 text-red-300 text-sm"
+        >
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span className="flex-1">{error}</span>
           <button

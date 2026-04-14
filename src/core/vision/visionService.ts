@@ -234,7 +234,10 @@ class VisionService {
         await this.pose.send({ image: this.video });
       }
     } catch (error) {
-      // 单帧错误不影响继续运行
+      // 单帧错误不影响继续运行，但需要记录以便调试
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[VisionService] Single frame error:', error);
+      }
     }
 
     if (this.running) {
