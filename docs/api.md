@@ -1,17 +1,23 @@
-# 后端 API 契约（Demo/SDK）
+# API Reference
 
-本文档描述前端 Demo/SDK 依赖的后端接口契约。交互式文档在后端启动后可访问 `/docs`。
+Backend API contract for MetaHuman Engine.
 
-## 1. GET /health
+**Base URL:** `VITE_API_BASE_URL` or `http://localhost:8000`
 
-用于健康检查与运行模式确认。
+## Endpoints
 
-响应示例：
+### Health Check
+
+```
+GET /health
+```
+
+**Response:**
 
 ```json
 {
   "status": "ok",
-  "uptime_seconds": 12.34,
+  "uptime_seconds": 123.45,
   "version": "1.0.0",
   "services": {
     "chat": "available",
@@ -22,118 +28,290 @@
 }
 ```
 
-说明：
+**Service Status Values:**
+- `available` — Service is working
+- `mock_mode` — No API key, using mock
+- `unavailable` — Service not configured
 
-- `services.llm`：`available`（有 key）或 `mock_mode`（无 key）
-- `services.tts`：`available` 或 `unavailable`
-- `services.asr`：`available` 或 `unavailable`
+---
 
-## 2. POST /v1/chat
+### Chat
 
-对话接口，输入文本，返回结构化的数字人驱动信息。
+```
+POST /v1/chat
+```
 
-### 2.1 Request
+**Request:**
 
 ```json
 {
   "sessionId": "optional-session-id",
-  "userText": "你好",
-  "meta": { "optional": "context" }
+  "userText": "Hello, how are you?",
+  "meta": {}
 }
 ```
 
-### 2.2 Response
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `sessionId` | string | No | Session identifier for context |
+| `userText` | string | Yes | User's message |
+| `meta` | object | No | Additional context |
+
+**Response:**
 
 ```json
 {
-  "replyText": "您好！很高兴见到您，有什么可以帮助您的吗？",
+  "replyText": "I'm doing great! How can I help you today?",
   "emotion": "happy",
   "action": "wave"
 }
 ```
 
-- `emotion`：`neutral` | `happy` | `surprised` | `sad` | `angry`
-- `action`：`idle` | `wave` | `greet` | `think` | `nod` | `shakeHead` | `dance` | `speak`
+| Field | Type | Description |
+|-------|------|-------------|
+| `replyText` | string | Assistant's text response |
+| `emotion` | enum | `neutral`, `happy`, `surprised`, `sad`, `angry` |
+| `action` | enum | `idle`, `wave`, `greet`, `think`, `nod`, `shakeHead`, `dance`, `speak` |
 
-### 2.3 行为与回退策略
+**Behavior:**
+- Without `OPENAI_API_KEY`: Returns local mock response
+- On OpenAI error: Falls back to mock, guarantees valid response
 
-- 未配置 `OPENAI_API_KEY`：后端返回本地 Mock（遵守同一 Response 结构）。
-- OpenAI 调用失败（超时/网络/HTTP 错误）：回退 Mock，保证前端链路不断。
+---
 
-## 3. POST /v1/chat/stream
-
-流式对话接口（Server-Sent Events）。请求体与 `/v1/chat` 相同。
-
-每个 SSE 事件为 JSON：
+### Streaming Chat
 
 ```
-data: {"type": "token", "content": "你"}
-data: {"type": "token", "content": "好"}
-data: {"type": "done", "replyText": "你好！", "emotion": "happy", "action": "wave"}
+POST /v1/chat/stream
+Content-Type: application/json
+Accept: text/event-stream
 ```
 
-## 4. POST /v1/tts
+**Request:** Same as `/v1/chat`
 
-文字转语音，返回音频字节流。
+**Response:** Server-Sent Events
 
-### 4.1 Request
+```
+data: {"type": "token", "content": "I'm"}
+
+data: {"type": "token", "content": " doing"}
+
+data: {"type": "token", "content": " great!"}
+
+data: {"type": "done", "replyText": "I'm doing great!", "emotion": "happy", "action": "wave"}
+```
+
+**Event Types:**
+
+| Type | Fields | Description |
+|------|--------|-------------|
+| `token` | `content` | Incremental text chunk |
+| `done` | `replyText`, `emotion`, `action` | Final response |
+
+---
+
+### Text-to-Speech
+
+```
+POST /v1/tts
+```
+
+**Request:**
 
 ```json
 {
-  "text": "你好，很高兴见到你",
+  "text": "Hello, nice to meet you",
   "voice": "zh-CN-XiaoxiaoNeural",
   "rate": "+0%",
   "format": "mp3"
 }
 ```
 
-### 4.2 Response
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `text` | string | Yes | - | Text to synthesize |
+| `voice` | string | No | Provider default | Voice identifier |
+| `rate` | string | No | `+0%` | Speaking rate adjustment |
+| `format` | string | No | `mp3` | Audio format |
 
-`Content-Type: audio/mpeg`，返回音频二进制数据。
+**Response:**
+- `Content-Type: audio/mpeg`
+- Binary audio data
 
-## 5. GET /v1/tts/voices
+---
 
-获取可用语音列表。
+### List Voices
+
+```
+GET /v1/tts/voices
+```
+
+**Response:**
 
 ```json
 {
   "provider": "edge",
   "available": true,
   "voices": [
-    { "id": "zh-CN-XiaoxiaoNeural", "name": "...", "locale": "zh-CN", "gender": "Female" }
+    {
+      "id": "zh-CN-XiaoxiaoNeural",
+      "name": "Xiaoxiao",
+      "locale": "zh-CN",
+      "gender": "Female"
+    }
   ]
 }
 ```
 
-## 6. POST /v1/asr
+---
 
-语音识别，上传音频文件。
+### Speech Recognition
 
-- **Content-Type**: `multipart/form-data`
-- **字段**: `file`（音频文件）、`language`（可选，如 `zh`）
-
-```json
-{ "text": "你好世界", "language": "zh", "duration": 2.5 }
+```
+POST /v1/asr
+Content-Type: multipart/form-data
 ```
 
-## 7. GET /v1/asr/status
+**Form Fields:**
 
-ASR 服务状态。
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `file` | File | Yes | Audio file (wav, mp3, etc.) |
+| `language` | string | No | Language code (e.g., `zh`, `en`) |
+
+**Response:**
 
 ```json
-{ "provider": "whisper", "available": false }
+{
+  "text": "Hello world",
+  "language": "en",
+  "duration": 2.5
+}
 ```
 
-## 8. 会话管理
+---
 
-### GET /v1/sessions
+### ASR Status
 
-列出所有活跃会话。
+```
+GET /v1/asr/status
+```
 
-### GET /v1/session/{session_id}/history
+**Response:**
 
-获取指定会话历史。
+```json
+{
+  "provider": "whisper",
+  "available": false
+}
+```
 
-### DELETE /v1/session/{session_id}
+---
 
-清除指定会话历史。
+### Session Management
+
+```
+GET /v1/sessions
+```
+
+List all active sessions.
+
+```
+GET /v1/session/{session_id}/history
+```
+
+Get conversation history for a session.
+
+```
+DELETE /v1/session/{session_id}
+```
+
+Clear session history.
+
+---
+
+## WebSocket
+
+```
+WebSocket /ws
+```
+
+Real-time bidirectional communication.
+
+**Client → Server:**
+
+```json
+{
+  "type": "chat",
+  "userText": "Hello",
+  "sessionId": "session-123",
+  "meta": {}
+}
+```
+
+**Server → Client:**
+
+```json
+{"type": "token", "content": "Hi"}
+
+{"type": "token", "content": " there!"}
+
+{"type": "done", "replyText": "Hi there!", "emotion": "happy", "action": "wave"}
+```
+
+**Error Event:**
+
+```json
+{
+  "type": "error",
+  "message": "Request timeout"
+}
+```
+
+---
+
+## Error Responses
+
+All endpoints may return errors in this format:
+
+```json
+{
+  "detail": "Error message describing what went wrong"
+}
+```
+
+**Common HTTP Status Codes:**
+
+| Code | Meaning |
+|------|---------|
+| 400 | Bad request — invalid input |
+| 401 | Unauthorized — missing/invalid API key |
+| 429 | Too many requests — rate limited |
+| 500 | Server error — fallback may activate |
+| 503 | Service unavailable — check health endpoint |
+
+---
+
+## Rate Limiting
+
+Default: 60 requests per minute (configurable via `RATE_LIMIT_RPM`)
+
+Rate limit headers included in responses:
+
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 45
+X-RateLimit-Reset: 1700000000
+```
+
+---
+
+## CORS
+
+Configure allowed origins via `CORS_ALLOW_ORIGINS` environment variable:
+
+```
+CORS_ALLOW_ORIGINS=https://example.com,https://app.example.com
+```
+
+For local development, all origins are allowed.

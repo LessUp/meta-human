@@ -1,268 +1,284 @@
-<p align="center">
-  <img src="public/favicon.svg" width="80" alt="MetaHuman Engine" />
-</p>
-
-<h1 align="center">MetaHuman Engine</h1>
+# MetaHuman Engine
 
 <p align="center">
-  A modular, real-time 3D digital human interaction engine for the browser.
+  <img src="public/favicon.svg" width="100" alt="MetaHuman Engine" />
 </p>
 
 <p align="center">
-  <strong>English</strong> | <a href="README.zh-CN.md">简体中文</a>
+  <strong>Give AI a real-time interactive digital body</strong>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/React-18-61dafb?logo=react" alt="React" />
-  <img src="https://img.shields.io/badge/Three.js-r158-black?logo=threedotjs" alt="Three.js" />
-  <img src="https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Vite-5-646cff?logo=vite" alt="Vite" />
-  <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
+  Browser-native 3D digital human engine with voice, vision, and dialogue capabilities.
+  <br />
+  <strong>Zero-config</strong> · <strong>Offline-ready</strong> · <strong>Production-grade</strong>
+</p>
+
+<p align="center">
+  <a href="#quick-start"><strong>Quick Start</strong></a> ·
+  <a href="#features"><strong>Features</strong></a> ·
+  <a href="#architecture"><strong>Architecture</strong></a> ·
+  <a href="docs/"><strong>Docs</strong></a> ·
+  <a href="README.zh-CN.md"><strong>中文</strong></a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" alt="React" />
+  <img src="https://img.shields.io/badge/Three.js-r158-000000?logo=threedotjs&logoColor=white" alt="Three.js" />
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white" alt="Vite" />
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
 </p>
 
 ---
 
-## Overview
-
-**MetaHuman Engine** is a browser-native digital human interaction engine that provides **3D avatar rendering**, **voice conversation**, **visual perception**, and **behavior control** as composable modules. Built for virtual customer service, live streaming avatars, educational assistants, and more.
-
-## Key Features
-
-| Module | Capabilities | Technology |
-|--------|-------------|------------|
-| **Avatar** | Real-time 3D rendering, facial expressions, skeletal animation | Three.js + React Three Fiber |
-| **Audio** | TTS speech synthesis, ASR speech recognition | Web Speech API |
-| **Dialogue** | Multi-turn conversation, local fallback, streaming (planned) | REST API with retry & degradation |
-| **Vision** | Facial emotion analysis, head motion detection, gesture recognition | MediaPipe Face Mesh & Pose |
-
 ## Quick Start
 
-### Prerequisites
-
-- **Node.js** >= 18.0.0
-- **npm** >= 9.0.0
-
-### Installation
-
 ```bash
-# Clone the repository
+# Clone and install
 git clone https://github.com/LessUp/meta-human.git
 cd meta-human
-
-# Install dependencies
 npm install
 
-# Start the development server
+# Start development server
 npm run dev
 ```
 
-### Environment Variables
+Open **http://localhost:5173** — your 3D avatar is ready!
 
-Copy `.env.example` to `.env.local` and configure as needed:
+> No API key required. The engine automatically falls back to local mock mode for out-of-the-box demos.
 
-```bash
-cp .env.example .env.local
+---
+
+## Features
+
+### 🎭 3D Avatar Engine
+
+| Feature | Description |
+|---------|-------------|
+| GLB/GLTF Support | Load custom models or use built-in procedural avatar |
+| Emotion-Driven | Happy, surprised, sad, angry moods map to expressions |
+| Skeletal Animation | Wave, greet, nod, dance triggered by dialogue |
+| Adaptive Performance | 60fps rendering with device-based quality scaling |
+
+```typescript
+import { digitalHumanEngine } from '@core/avatar';
+
+digitalHumanEngine.perform({
+  emotion: 'happy',
+  expression: 'smile',
+  animation: 'wave'
+});
 ```
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `VITE_API_BASE_URL` | Backend dialogue service URL | `http://localhost:8000` |
+### 🗣️ Voice Interaction
+
+| Feature | Description |
+|---------|-------------|
+| TTS | Edge TTS for natural voice synthesis |
+| ASR | Browser-native speech recognition |
+| Smart Muting | Auto-pause TTS when user speaks |
+| Voice Detection | Visual feedback during recording |
+
+```typescript
+import { ttsService, asrService } from '@core/audio';
+
+await ttsService.speak('Hello! How can I help?');
+
+asrService.start({
+  onResult: (text) => dialogueService.send(text)
+});
+```
+
+### 🧠 Intelligent Dialogue
+
+| Feature | Description |
+|---------|-------------|
+| Multi-Modal Response | Returns `{ replyText, emotion, action }` |
+| Streaming | Real-time token-by-token via SSE |
+| Graceful Degradation | Falls back to local mock when API unavailable |
+| Session Management | Persistent conversation context |
+
+```typescript
+import { dialogueService } from '@core/dialogue';
+
+const response = await dialogueService.send({
+  text: 'Tell me a joke',
+  sessionId: 'user-123'
+});
+// → { replyText: '...', emotion: 'happy', action: 'laugh' }
+```
+
+### 👁️ Visual Perception
+
+| Feature | Description |
+|---------|-------------|
+| Face Mesh | 468 landmarks for micro-expression detection |
+| Pose Estimation | Upper body gesture recognition |
+| Emotion Mapping | Real-time emotion inference |
+| Privacy First | All processing in browser, no data leaves client |
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                          UI Layer                                │
+│   ChatDock · TopHUD · ControlPanel · SettingsDrawer             │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────┐
+│                       Core Engine Layer                          │
+│   Avatar · Dialogue · Vision · Audio · Performance              │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────┐
+│                       State Layer                                │
+│   chatSessionStore · systemStore · digitalHumanStore            │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────┐
+│                      External Services                           │
+│   Three.js · Web Speech API · MediaPipe · OpenAI API            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### State Management
+
+Three focused domains minimize re-renders:
+
+| Store | Responsibility |
+|-------|----------------|
+| `chatSessionStore` | Message history, session lifecycle |
+| `systemStore` | Connection status, errors, performance metrics |
+| `digitalHumanStore` | Avatar runtime state (expression, animation, audio) |
+
+---
 
 ## Project Structure
 
 ```
 src/
-├── core/                   # Core engine layer
-│   ├── avatar/             #   3D avatar engine
-│   ├── audio/              #   Audio services (TTS / ASR)
-│   ├── dialogue/           #   Dialogue orchestration & transport
-│   └── vision/             #   Visual perception & emotion mapping
-├── components/             # UI components
-│   ├── ui/                 #   Shared UI primitives
-│   ├── DigitalHumanViewer  #   3D viewer
-│   ├── ControlPanel        #   Control panel
-│   └── ...                 #   Expression / Behavior / Voice / Vision panels
-├── hooks/                  # Custom React hooks
-├── store/                  # Zustand global state
-├── pages/                  # Page components
-├── lib/                    # Utility functions
-├── App.tsx                 # Router entry
-└── main.tsx                # Application entry
+├── core/                          # Engine modules
+│   ├── avatar/                    # 3D rendering & animation
+│   │   ├── DigitalHumanEngine.ts  # Unified driver
+│   │   └── constants.ts           # Expressions, animations
+│   ├── audio/                     # TTS & ASR services
+│   ├── dialogue/                  # Chat transport & orchestration
+│   │   ├── dialogueService.ts     # API client
+│   │   ├── dialogueOrchestrator.ts
+│   │   └── chatTransport.ts       # HTTP/SSE/WebSocket
+│   ├── vision/                    # MediaPipe pipeline
+│   │   ├── visionService.ts
+│   │   └── visionMapper.ts
+│   └── performance/               # Device capability detection
+├── components/                    # React components
+│   ├── DigitalHumanViewer.tsx     # 3D viewport
+│   ├── ChatDock.tsx               # Chat interface
+│   ├── TopHUD.tsx                 # Status bar
+│   ├── ControlPanel.tsx           # Quick controls
+│   ├── VoiceInteractionPanel.tsx
+│   ├── VisionMirrorPanel.tsx
+│   └── ui/                        # Shared primitives
+├── store/                         # Zustand stores
+│   ├── chatSessionStore.ts
+│   ├── systemStore.ts
+│   └── digitalHumanStore.ts
+├── hooks/                         # Custom hooks
+├── pages/                         # Route pages
+└── lib/                           # Utilities
 ```
 
-## Available Scripts
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start the development server |
-| `npm run build` | Production build |
-| `npm run build:pages` | GitHub Pages build (`/meta-human/`) |
-| `npm run preview` | Preview production build |
-| `npm run lint` | Run ESLint checks |
-| `npm run lint:fix` | Auto-fix ESLint issues |
-| `npm run format` | Format code with Prettier |
-| `npm run test` | Run tests in watch mode |
-| `npm run test:run` | Run tests once |
-| `npm run test:coverage` | Generate coverage report |
-| `npm run typecheck` | TypeScript type checking |
-
-## Tech Stack
-
-- **Framework** — React 18 + TypeScript
-- **3D Rendering** — Three.js + React Three Fiber + Drei
-- **State Management** — Zustand
-- **Styling** — Tailwind CSS
-- **Build Tool** — Vite 5
-- **Testing** — Vitest + Testing Library
-- **CI/CD** — GitHub Actions
-- **Deployment** — GitHub Pages
+---
 
 ## Deployment
 
-### GitHub Pages
-
-This repository now uses **GitHub Pages** as the primary deployment target.
-
-1. Add a repository variable named `VITE_API_BASE_URL`
-2. Push to `master` or run the `Deploy Pages` workflow manually
-3. After the first successful deployment, the site will be available at:
-
-```text
-https://lessup.github.io/meta-human/
-```
-
-Client-side routes use hash URLs on Pages, for example:
-
-```text
-https://lessup.github.io/meta-human/#/advanced
-```
-
-### Backend on Render
-
-Use the root-level `render.yaml` blueprint to deploy the FastAPI backend to Render.
-
-1. Create a new Blueprint service from this repository in Render
-2. Confirm the generated service uses:
-   - Root Directory: `server`
-   - Build Command: `pip install -r requirements.txt`
-   - Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-   - Health Check Path: `/health`
-3. Set backend environment variables in Render
-   - Required for Pages access: `CORS_ALLOW_ORIGINS=https://lessup.github.io`
-   - Required for real model replies: `OPENAI_API_KEY`
-   - See `server/.env.example` for the full variable list
-4. After deployment, copy the Render service URL, for example:
-
-```text
-https://your-render-service.onrender.com
-```
-
-5. Set the GitHub Actions repository variable:
-
-```text
-VITE_API_BASE_URL=https://your-render-service.onrender.com
-```
-
-6. Re-run the `Deploy Pages` workflow so the frontend points to the Render backend
-
-### Build commands
+### GitHub Pages (Frontend)
 
 ```bash
-# Standard production build
-npm run build
-
-# GitHub Pages build (/meta-human/ base path)
 npm run build:pages
 ```
 
-> The Pages workflow reads `VITE_API_BASE_URL` from GitHub Actions repository variables. If it is missing, the deployed app will fall back to `http://localhost:8000`, which is not suitable for production.
+1. Set `VITE_API_BASE_URL` in GitHub Repository Variables
+2. Push to `master` or run "Deploy Pages" workflow
+3. Live at: `https://lessup.github.io/meta-human/`
 
-> For backend deployment variables, use `server/.env.example` as the Render reference template.
+### Render (Backend)
 
-## Architecture
+Use `render.yaml` blueprint:
 
-
-```
-┌──────────────────────────────────────────┐
-│                  UI Layer                 │
-│   Pages ← Components ← Hooks ← Store    │
-├──────────────────────────────────────────┤
-│               Core Engine                │
-│  ┌────────┐ ┌───────┐ ┌────────┐ ┌─────┐│
-│  │ Avatar │ │ Audio │ │Dialogue│ │Vision││
-│  └────────┘ └───────┘ └────────┘ └─────┘│
-├──────────────────────────────────────────┤
-│            External Services             │
-│  Three.js  Web Speech  REST API MediaPipe│
-└──────────────────────────────────────────┘
+```bash
+# Deploys FastAPI backend with:
+POST /v1/chat          # OpenAI-compatible chat
+POST /v1/chat/stream   # SSE streaming
+POST /v1/tts           # Text-to-speech
+POST /v1/asr           # Speech-to-text
+WebSocket /ws          # Real-time streaming
 ```
 
-## API Quick Reference
+**Required Environment Variables:**
 
-### Avatar Engine
+| Variable | Description |
+|----------|-------------|
+| `OPENAI_API_KEY` | AI responses (optional, falls back to mock) |
+| `CORS_ALLOW_ORIGINS` | Frontend domain for CORS |
 
-```typescript
-import { digitalHumanEngine } from '@/core/avatar';
+---
 
-digitalHumanEngine.setExpression('smile');
-digitalHumanEngine.setEmotion('happy');
-digitalHumanEngine.playAnimation('wave');
-digitalHumanEngine.performGreeting();
+## Scripts
+
+```bash
+# Development
+npm run dev              # Start dev server (port 5173)
+npm run preview          # Preview production build
+
+# Build
+npm run build            # Production build
+npm run build:pages      # GitHub Pages build
+
+# Quality
+npm run lint             # ESLint check
+npm run lint:fix         # Auto-fix ESLint issues
+npm run format           # Prettier formatting
+npm run typecheck        # TypeScript check
+
+# Testing
+npm run test             # Vitest watch mode
+npm run test:run         # Run tests once
+npm run test:coverage    # Coverage report
 ```
 
-### Audio Services
-
-```typescript
-import { ttsService, asrService } from '@/core/audio';
-
-// Text-to-Speech
-await ttsService.speak('Hello, how can I help you?');
-
-// Speech Recognition
-asrService.start({ mode: 'command' });
-```
-
-### State Management
-
-```typescript
-import { useDigitalHumanStore } from '@/store/digitalHumanStore';
-
-const { isPlaying, currentExpression, play, pause } = useDigitalHumanStore();
-```
-
-## Keyboard Shortcuts
-
-| Key | Action |
-|-----|--------|
-| `Space` | Play / Pause |
-| `R` | Reset |
-| `M` | Toggle mute |
-| `V` | Toggle recording |
-| `S` | Toggle settings panel |
-| `1` – `4` | Quick actions |
-| `Esc` | Close settings |
+---
 
 ## Browser Support
 
-| Browser | Version |
-|---------|---------|
-| Chrome | >= 90 |
-| Edge | >= 90 |
-| Firefox | >= 90 |
-| Safari | >= 15 |
+| Chrome | Edge | Firefox | Safari |
+|:------:|:----:|:-------:|:------:|
+| 90+ ✅ | 90+ ✅ | 90+ ✅ | 15+ ✅ |
 
-> Speech Recognition (ASR) requires **Chrome** or **Edge** due to Web Speech API limitations.
+> Speech Recognition (ASR) requires Chrome or Edge due to Web Speech API limitations.
+
+---
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feat/my-feature`)
-3. Commit your changes (`git commit -m 'feat: add my feature'`)
-4. Push to the branch (`git push origin feat/my-feature`)
+2. Create feature branch: `git checkout -b feat/amazing-feature`
+3. Commit changes: `git commit -m 'feat: add amazing feature'`
+4. Push: `git push origin feat/amazing-feature`
 5. Open a Pull Request
 
-Please follow [Conventional Commits](https://www.conventionalcommits.org/) specification.
+Follow [Conventional Commits](https://www.conventionalcommits.org/).
+
+---
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) © LessUp
+
+---
+
+<p align="center">
+  Built with ❤️ to make digital humans accessible to everyone
+</p>

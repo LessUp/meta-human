@@ -1,212 +1,284 @@
-<p align="center">
-  <img src="public/favicon.svg" width="80" alt="MetaHuman Engine" />
-</p>
-
-<h1 align="center">MetaHuman Engine</h1>
+# MetaHuman 数字人引擎
 
 <p align="center">
-  基于 Web 技术的实时 3D 数字人交互引擎
+  <img src="public/favicon.svg" width="100" alt="MetaHuman Engine" />
 </p>
 
 <p align="center">
-  <a href="README.md">English</a> | <strong>简体中文</strong>
+  <strong>让 AI 拥有实时互动的数字身躯</strong>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/React-18-61dafb?logo=react" alt="React" />
-  <img src="https://img.shields.io/badge/Three.js-r158-black?logo=threedotjs" alt="Three.js" />
-  <img src="https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Vite-5-646cff?logo=vite" alt="Vite" />
-  <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
+  基于浏览器的 3D 数字人引擎，集成语音、视觉、对话能力
+  <br />
+  <strong>零配置</strong> · <strong>离线可用</strong> · <strong>生产级</strong>
+</p>
+
+<p align="center">
+  <a href="#快速开始"><strong>快速开始</strong></a> ·
+  <a href="#核心功能"><strong>功能</strong></a> ·
+  <a href="#架构"><strong>架构</strong></a> ·
+  <a href="docs/"><strong>文档</strong></a> ·
+  <a href="README.md"><strong>English</strong></a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" alt="React" />
+  <img src="https://img.shields.io/badge/Three.js-r158-000000?logo=threedotjs&logoColor=white" alt="Three.js" />
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white" alt="Vite" />
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
 </p>
 
 ---
 
-## 概述
-
-MetaHuman Engine 是一个模块化的浏览器端数字人交互引擎，提供 **3D 虚拟形象渲染**、**语音对话**、**视觉感知** 和 **行为控制** 等核心能力。适用于虚拟客服、直播数字人、教育助手等场景。
-
-## 核心特性
-
-| 模块 | 能力 | 技术方案 |
-|------|------|----------|
-| **Avatar** | 3D 实时渲染、表情控制、骨骼动画 | Three.js + React Three Fiber |
-| **Audio** | TTS 语音合成、ASR 语音识别 | Web Speech API |
-| **Dialogue** | 多轮对话、本地降级、流式响应（预留） | REST API + 重试机制 |
-| **Vision** | 人脸情感分析、头部动作检测、手势识别 | MediaPipe Face Mesh & Pose |
-
 ## 快速开始
 
-### 环境要求
-
-- **Node.js** ≥ 18.0.0
-- **npm** ≥ 9.0.0
-
-### 安装与运行
-
 ```bash
-# 克隆仓库
+# 克隆并安装
 git clone https://github.com/LessUp/meta-human.git
 cd meta-human
-
-# 安装依赖
 npm install
 
 # 启动开发服务器
 npm run dev
 ```
 
-### 环境变量
+打开 **http://localhost:5173** — 你的 3D 数字人已就绪！
 
-复制 `.env.example` 为 `.env.local`，按需修改：
+> 无需 API Key。引擎自动降级到本地 Mock 模式，开箱即用。
 
-```bash
-cp .env.example .env.local
+---
+
+## 核心功能
+
+### 🎭 3D 数字人引擎
+
+| 功能 | 说明 |
+|------|------|
+| GLB/GLTF 支持 | 加载自定义模型或使用内置程序化形象 |
+| 情绪驱动 | 高兴、惊讶、悲伤、愤怒自动映射表情 |
+| 骨骼动画 | 挥手、问候、点头、跳舞，由对话触发 |
+| 自适应性能 | 60fps 渲染，根据设备能力调节画质 |
+
+```typescript
+import { digitalHumanEngine } from '@core/avatar';
+
+digitalHumanEngine.perform({
+  emotion: 'happy',
+  expression: 'smile',
+  animation: 'wave'
+});
 ```
 
-| 变量名 | 说明 | 默认值 |
-|--------|------|--------|
-| `VITE_API_BASE_URL` | 后端对话服务地址 | `http://localhost:8000` |
+### 🗣️ 语音交互
+
+| 功能 | 说明 |
+|------|------|
+| TTS 语音合成 | Edge TTS 提供自然流畅的语音 |
+| ASR 语音识别 | 浏览器原生语音转文字 |
+| 智能静音 | 用户说话时自动暂停播报 |
+| 语音检测 | 录音时提供视觉反馈 |
+
+```typescript
+import { ttsService, asrService } from '@core/audio';
+
+await ttsService.speak('你好！有什么可以帮您？');
+
+asrService.start({
+  onResult: (text) => dialogueService.send(text)
+});
+```
+
+### 🧠 智能对话
+
+| 功能 | 说明 |
+|------|------|
+| 多模态响应 | 返回 `{ replyText, emotion, action }` |
+| 流式输出 | 通过 SSE 实时逐字响应 |
+| 优雅降级 | API 不可用时自动回退 Mock |
+| 会话管理 | 持久化对话上下文 |
+
+```typescript
+import { dialogueService } from '@core/dialogue';
+
+const response = await dialogueService.send({
+  text: '讲个笑话',
+  sessionId: 'user-123'
+});
+// → { replyText: '...', emotion: 'happy', action: 'laugh' }
+```
+
+### 👁️ 视觉感知
+
+| 功能 | 说明 |
+|------|------|
+| 人脸网格 | 468 个关键点捕捉微表情 |
+| 姿态估计 | 上半身手势识别 |
+| 情绪映射 | 实时情绪推断 |
+| 隐私优先 | 全部在浏览器处理，数据不上传 |
+
+---
+
+## 架构
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                          UI 层                                   │
+│   ChatDock · TopHUD · ControlPanel · SettingsDrawer             │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────┐
+│                        核心引擎层                                │
+│   Avatar · Dialogue · Vision · Audio · Performance              │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────┐
+│                         状态层                                   │
+│   chatSessionStore · systemStore · digitalHumanStore            │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────┐
+│                        外部服务                                  │
+│   Three.js · Web Speech API · MediaPipe · OpenAI API            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 状态管理
+
+三个独立域，最小化重渲染：
+
+| Store | 职责 |
+|-------|------|
+| `chatSessionStore` | 消息历史、会话生命周期 |
+| `systemStore` | 连接状态、错误、性能指标 |
+| `digitalHumanStore` | 数字人运行时状态 |
+
+---
 
 ## 项目结构
 
 ```
 src/
-├── core/                   # 核心引擎层
-│   ├── avatar/             #   3D 虚拟形象引擎
-│   ├── audio/              #   语音服务（TTS / ASR）
-│   ├── dialogue/           #   对话编排与通信
-│   └── vision/             #   视觉感知与情感映射
-├── components/             # UI 组件
-│   ├── ui/                 #   通用 UI 组件
-│   ├── DigitalHumanViewer  #   3D 查看器
-│   ├── ControlPanel        #   控制面板
-│   └── ...                 #   表情 / 行为 / 语音 / 视觉面板
-├── hooks/                  # 自定义 Hooks
-├── store/                  # Zustand 全局状态
-├── pages/                  # 页面组件
-├── lib/                    # 工具函数
-├── App.tsx                 # 路由入口
-└── main.tsx                # 应用入口
+├── core/                          # 引擎模块
+│   ├── avatar/                    # 3D 渲染与动画
+│   │   ├── DigitalHumanEngine.ts  # 统一驱动入口
+│   │   └── constants.ts           # 表情、动作常量
+│   ├── audio/                     # TTS & ASR 服务
+│   ├── dialogue/                  # 对话传输与编排
+│   │   ├── dialogueService.ts     # API 客户端
+│   │   ├── dialogueOrchestrator.ts
+│   │   └── chatTransport.ts       # HTTP/SSE/WebSocket
+│   ├── vision/                    # MediaPipe 管道
+│   │   ├── visionService.ts
+│   │   └── visionMapper.ts
+│   └── performance/               # 设备能力检测
+├── components/                    # React 组件
+│   ├── DigitalHumanViewer.tsx     # 3D 视口
+│   ├── ChatDock.tsx               # 聊天界面
+│   ├── TopHUD.tsx                 # 状态栏
+│   ├── ControlPanel.tsx           # 快捷控制
+│   ├── VoiceInteractionPanel.tsx
+│   ├── VisionMirrorPanel.tsx
+│   └── ui/                        # 共享原语
+├── store/                         # Zustand 状态
+│   ├── chatSessionStore.ts
+│   ├── systemStore.ts
+│   └── digitalHumanStore.ts
+├── hooks/                         # 自定义 Hooks
+├── pages/                         # 路由页面
+└── lib/                           # 工具函数
 ```
 
-## 可用脚本
+---
 
-| 命令 | 说明 |
-|------|------|
-| `npm run dev` | 启动开发服务器 |
-| `npm run build` | 生产构建 |
-| `npm run build:pages` | GitHub Pages 构建（`/meta-human/`） |
-| `npm run preview` | 预览生产构建 |
-| `npm run lint` | ESLint 检查 |
-| `npm run lint:fix` | ESLint 自动修复 |
-| `npm run format` | Prettier 格式化 |
-| `npm run test` | 运行测试（watch 模式） |
-| `npm run test:run` | 运行测试（单次） |
-| `npm run test:coverage` | 测试覆盖率报告 |
-| `npm run typecheck` | TypeScript 类型检查 |
+## 部署
 
-## 技术栈
-
-- **前端框架** — React 18 + TypeScript
-- **3D 渲染** — Three.js + React Three Fiber + Drei
-- **状态管理** — Zustand
-- **样式** — Tailwind CSS
-- **构建** — Vite 5
-- **测试** — Vitest + Testing Library
-- **CI/CD** — GitHub Actions
-- **部署** — GitHub Pages
-
-## 部署说明
-
-### GitHub Pages
-
-当前仓库以 **GitHub Pages** 作为主要发布方式。
-
-1. 在仓库中配置名为 `VITE_API_BASE_URL` 的 Repository Variable
-2. 推送到 `master`，或手动运行 `Deploy Pages` workflow
-3. 首次部署成功后，站点地址为：
-
-```text
-https://lessup.github.io/meta-human/
-```
-
-Pages 上的前端路由会使用 Hash URL，例如：
-
-```text
-https://lessup.github.io/meta-human/#/advanced
-```
-
-### Render 后端部署
-
-使用仓库根目录的 `render.yaml` 可以把 FastAPI 后端部署到 Render。
-
-1. 在 Render 中从本仓库创建 Blueprint 服务
-2. 确认生成的服务配置为：
-   - Root Directory：`server`
-   - Build Command：`pip install -r requirements.txt`
-   - Start Command：`uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-   - Health Check Path：`/health`
-3. 在 Render 中配置后端环境变量
-   - Pages 联通至少需要：`CORS_ALLOW_ORIGINS=https://lessup.github.io`
-   - 需要真实大模型回复时，再配置：`OPENAI_API_KEY`
-   - 完整变量列表见 `server/.env.example`
-4. 部署成功后，复制 Render 服务地址，例如：
-
-```text
-https://your-render-service.onrender.com
-```
-
-5. 在 GitHub Actions 的 Repository Variables 中设置：
-
-```text
-VITE_API_BASE_URL=https://your-render-service.onrender.com
-```
-
-6. 重新运行 `Deploy Pages` workflow，让前端指向 Render 后端
-
-### 构建命令
+### GitHub Pages（前端）
 
 ```bash
-# 常规生产构建
-npm run build
-
-# GitHub Pages 构建（/meta-human/ 基础路径）
 npm run build:pages
 ```
 
-> Pages workflow 会从 GitHub Actions 的 Repository Variables 中读取 `VITE_API_BASE_URL`。如果未配置，线上构建会回退到 `http://localhost:8000`，不适合生产环境。
+1. 在 GitHub 仓库变量中设置 `VITE_API_BASE_URL`
+2. 推送到 `master` 或运行 "Deploy Pages" 工作流
+3. 访问：`https://lessup.github.io/meta-human/`
 
-> 后端部署变量请以 `server/.env.example` 为参考模板。
+### Render（后端）
 
-## 架构概览
+使用 `render.yaml` 蓝图：
 
-
-```
-┌──────────────────────────────────────────┐
-│                  UI Layer                 │
-│   Pages ← Components ← Hooks ← Store    │
-├──────────────────────────────────────────┤
-│               Core Engine                │
-│  ┌────────┐ ┌───────┐ ┌────────┐ ┌─────┐│
-│  │ Avatar │ │ Audio │ │Dialogue│ │Vision││
-│  └────────┘ └───────┘ └────────┘ └─────┘│
-├──────────────────────────────────────────┤
-│            External Services             │
-│  Three.js  Web Speech  REST API MediaPipe│
-└──────────────────────────────────────────┘
+```bash
+# 部署 FastAPI 后端：
+POST /v1/chat          # OpenAI 兼容对话
+POST /v1/chat/stream   # SSE 流式
+POST /v1/tts           # 语音合成
+POST /v1/asr           # 语音识别
+WebSocket /ws          # 实时流
 ```
 
-## 贡献指南
+**必需环境变量：**
+
+| 变量 | 说明 |
+|------|------|
+| `OPENAI_API_KEY` | AI 响应（可选，自动降级） |
+| `CORS_ALLOW_ORIGINS` | 前端域名 |
+
+---
+
+## 脚本
+
+```bash
+# 开发
+npm run dev              # 启动开发服务器（端口 5173）
+npm run preview          # 预览生产构建
+
+# 构建
+npm run build            # 生产构建
+npm run build:pages      # GitHub Pages 构建
+
+# 质量
+npm run lint             # ESLint 检查
+npm run lint:fix         # 自动修复
+npm run format           # Prettier 格式化
+npm run typecheck        # TypeScript 检查
+
+# 测试
+npm run test             # Vitest 监听模式
+npm run test:run         # 运行一次
+npm run test:coverage    # 覆盖率报告
+```
+
+---
+
+## 浏览器支持
+
+| Chrome | Edge | Firefox | Safari |
+|:------:|:----:|:-------:|:------:|
+| 90+ ✅ | 90+ ✅ | 90+ ✅ | 15+ ✅ |
+
+> 语音识别（ASR）需要 Chrome 或 Edge 浏览器。
+
+---
+
+## 贡献
 
 1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feat/my-feature`)
-3. 提交变更 (`git commit -m 'feat: add my feature'`)
-4. 推送分支 (`git push origin feat/my-feature`)
+2. 创建特性分支：`git checkout -b feat/your-feature`
+3. 提交变更：`git commit -m 'feat: add feature'`
+4. 推送：`git push origin feat/your-feature`
 5. 发起 Pull Request
 
-请遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范。
+遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范。
+
+---
 
 ## 许可证
 
-[MIT](LICENSE)
+[MIT](LICENSE) © LessUp
+
+---
+
+<p align="center">
+  用 ❤️ 打造，让每个人都能拥有自己的数字人
+</p>

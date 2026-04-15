@@ -12,6 +12,38 @@ export interface ChatPerformanceMetrics {
   completedAt: number | null;
 }
 
+export interface RenderPerformanceMetrics {
+  /** Current FPS estimate */
+  currentFPS: number;
+  /** Average FPS over the last sampling period */
+  averageFPS: number;
+  /** Frame time in milliseconds */
+  frameTimeMs: number;
+  /** Number of draw calls (if available) */
+  drawCalls: number | null;
+  /** Number of triangles rendered (if available) */
+  triangleCount: number | null;
+  /** Timestamp of last metrics update */
+  lastUpdatedAt: number;
+}
+
+export interface ModelLoadMetrics {
+  /** URL of the loaded model */
+  modelUrl: string | null;
+  /** Time taken to load the model in ms */
+  loadTimeMs: number | null;
+  /** Size of the model in bytes (if available) */
+  modelSizeBytes: number | null;
+  /** Whether the model was loaded from cache */
+  fromCache: boolean;
+  /** Error message if loading failed */
+  error: string | null;
+  /** Timestamp when load started */
+  startedAt: number | null;
+  /** Timestamp when load completed */
+  completedAt: number | null;
+}
+
 interface SystemState {
   isConnected: boolean;
   connectionStatus: ConnectionStatus;
@@ -20,6 +52,8 @@ interface SystemState {
   lastErrorTime: number | null;
   chatTransportMode: Exclude<ChatTransportMode, 'auto'>;
   chatPerformance: ChatPerformanceMetrics;
+  renderPerformance: RenderPerformanceMetrics;
+  modelLoadMetrics: ModelLoadMetrics;
   setConnected: (connected: boolean) => void;
   setConnectionStatus: (status: ConnectionStatus) => void;
   setLoading: (loading: boolean) => void;
@@ -28,6 +62,12 @@ interface SystemState {
   startChatPerformanceTrace: () => void;
   markChatFirstToken: () => void;
   finalizeChatPerformanceTrace: (status?: 'completed' | 'failed') => void;
+  // Render performance tracking
+  updateRenderPerformance: (metrics: Partial<RenderPerformanceMetrics>) => void;
+  // Model load tracking
+  startModelLoad: (modelUrl: string) => void;
+  completeModelLoad: (loadTimeMs: number, modelSizeBytes?: number) => void;
+  failModelLoad: (error: string) => void;
   clearError: () => void;
   resetSystemState: () => void;
 }
@@ -48,6 +88,23 @@ export const useSystemStore = create<SystemState>()(
         status: 'idle',
         firstTokenMs: null,
         responseCompleteMs: null,
+        startedAt: null,
+        completedAt: null,
+      },
+      renderPerformance: {
+        currentFPS: 60,
+        averageFPS: 60,
+        frameTimeMs: 16.67,
+        drawCalls: null,
+        triangleCount: null,
+        lastUpdatedAt: Date.now(),
+      },
+      modelLoadMetrics: {
+        modelUrl: null,
+        loadTimeMs: null,
+        modelSizeBytes: null,
+        fromCache: false,
+        error: null,
         startedAt: null,
         completedAt: null,
       },
@@ -112,6 +169,48 @@ export const useSystemStore = create<SystemState>()(
           };
         }),
 
+      updateRenderPerformance: (metrics) =>
+        set((state) => ({
+          renderPerformance: {
+            ...state.renderPerformance,
+            ...metrics,
+            lastUpdatedAt: Date.now(),
+          },
+        })),
+
+      startModelLoad: (modelUrl) =>
+        set({
+          modelLoadMetrics: {
+            modelUrl,
+            loadTimeMs: null,
+            modelSizeBytes: null,
+            fromCache: false,
+            error: null,
+            startedAt: Date.now(),
+            completedAt: null,
+          },
+        }),
+
+      completeModelLoad: (loadTimeMs, modelSizeBytes) =>
+        set((state) => ({
+          modelLoadMetrics: {
+            ...state.modelLoadMetrics,
+            loadTimeMs,
+            modelSizeBytes: modelSizeBytes ?? null,
+            fromCache: false,
+            completedAt: Date.now(),
+          },
+        })),
+
+      failModelLoad: (error) =>
+        set((state) => ({
+          modelLoadMetrics: {
+            ...state.modelLoadMetrics,
+            error,
+            completedAt: Date.now(),
+          },
+        })),
+
       setError: (error) => {
         if (!error) {
           set({ error: null, lastErrorTime: null });
@@ -137,6 +236,23 @@ export const useSystemStore = create<SystemState>()(
           connectionStatus: 'connected',
           isConnected: true,
           isLoading: false,
+          renderPerformance: {
+            currentFPS: 60,
+            averageFPS: 60,
+            frameTimeMs: 16.67,
+            drawCalls: null,
+            triangleCount: null,
+            lastUpdatedAt: Date.now(),
+          },
+          modelLoadMetrics: {
+            modelUrl: null,
+            loadTimeMs: null,
+            modelSizeBytes: null,
+            fromCache: false,
+            error: null,
+            startedAt: null,
+            completedAt: null,
+          },
         }),
     }),
     { name: 'system-store', enabled: ENABLE_DEVTOOLS },

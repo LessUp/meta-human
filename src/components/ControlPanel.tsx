@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Play,
   Pause,
@@ -11,6 +11,7 @@ import {
   Wifi,
   WifiOff,
   Loader2,
+  type LucideIcon,
 } from 'lucide-react';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { useSystemStore, type ConnectionStatus } from '../store/systemStore';
@@ -28,20 +29,33 @@ interface ControlPanelProps {
   onVoiceCommand: (command: string) => void;
 }
 
-// 连接状态显示配置
-const connectionStatusConfig: Record<
-  ConnectionStatus,
-  { label: string; color: string; icon: React.ReactNode }
-> = {
-  connected: { label: '在线', color: 'text-green-400', icon: <Wifi className="w-3 h-3" /> },
+interface StatusConfig {
+  label: string;
+  color: string;
+  icon: LucideIcon;
+  spin?: boolean;
+}
+
+// 连接状态显示配置 - 使用 Icon 组件避免创建 React 节点
+const connectionStatusConfig: Record<ConnectionStatus, StatusConfig> = {
+  connected: { label: '在线', color: 'text-green-400', icon: Wifi },
   connecting: {
     label: '连接中',
     color: 'text-yellow-400',
-    icon: <Loader2 className="w-3 h-3 animate-spin" />,
+    icon: Loader2,
+    spin: true,
   },
-  disconnected: { label: '离线', color: 'text-gray-400', icon: <WifiOff className="w-3 h-3" /> },
-  error: { label: '错误', color: 'text-red-400', icon: <WifiOff className="w-3 h-3" /> },
+  disconnected: { label: '离线', color: 'text-gray-400', icon: WifiOff },
+  error: { label: '错误', color: 'text-red-400', icon: WifiOff },
 };
+
+// 语音命令配置 - 移出组件避免每次渲染重建
+const VOICE_COMMANDS = [
+  { command: '打招呼', label: '👋 打招呼' },
+  { command: '跳舞', label: '💃 跳舞' },
+  { command: '说话', label: '🗣️ 说话' },
+  { command: '表情', label: '😊 表情' },
+] as const;
 
 export default function ControlPanel({
   isPlaying,
@@ -58,14 +72,12 @@ export default function ControlPanel({
   // 从 store 获取状态
   const connectionStatus = useSystemStore((s) => s.connectionStatus);
   const { isSpeaking, currentBehavior } = useDigitalHumanStore();
-  const statusConfig = connectionStatusConfig[connectionStatus];
-
-  const voiceCommands = [
-    { command: '打招呼', label: '👋 Say Hello' },
-    { command: '跳舞', label: '💃 Dance' },
-    { command: '说话', label: '🗣️ Speak' },
-    { command: '表情', label: '😊 Emote' },
-  ];
+  
+  // Memoize status configuration lookup
+  const statusConfig = useMemo(
+    () => connectionStatusConfig[connectionStatus],
+    [connectionStatus]
+  );
 
   return (
     <div className="space-y-6">
@@ -159,11 +171,12 @@ export default function ControlPanel({
       <div className="space-y-3">
         <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider">快速命令</h3>
         <div className="grid grid-cols-2 gap-2">
-          {voiceCommands.map((cmd) => (
+          {VOICE_COMMANDS.map((cmd) => (
             <button
               key={cmd.command}
               onClick={() => onVoiceCommand(cmd.command)}
-              aria-label={`快速命令: ${cmd.label}`}
+              title={cmd.label}
+              aria-label={`执行命令: ${cmd.label}`}
               className="px-3 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 rounded-lg text-xs transition-colors text-left truncate"
             >
               {cmd.command}
@@ -179,7 +192,10 @@ export default function ControlPanel({
           <div className="flex justify-between items-center">
             <span className="text-white/60">连接状态</span>
             <span className={`flex items-center gap-1.5 ${statusConfig.color}`}>
-              {statusConfig.icon}
+              <statusConfig.icon
+                className={`w-3 h-3 ${statusConfig.spin ? 'animate-spin' : ''}`}
+                aria-hidden="true"
+              />
               {statusConfig.label}
             </span>
           </div>

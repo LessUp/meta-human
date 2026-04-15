@@ -64,6 +64,7 @@ export const loggers = {
   transport: createLogger('ChatTransport'),
   ws: createLogger('WSClient'),
   app: createLogger('App'),
+  core: createLogger('Core'),
 } as const;
 
 export default createLogger;

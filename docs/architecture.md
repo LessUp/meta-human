@@ -1,148 +1,317 @@
-# MetaHuman 交互 Demo/SDK 架构说明
+# Architecture
 
-## 1. 定位与范围
+## System Overview
 
-本仓库以“交互 Demo/SDK”为中心：展示 3D 数字人、语音交互、视觉镜像、LLM 对话等能力，并确保在无云端配置时也能稳定运行。
+MetaHuman Engine follows a layered architecture with clear separation of concerns.
 
-非目标（当前仓库不做/不承诺）：
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                          UI Layer                                │
+│   Pages → Components → Hooks → Store                            │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────┐
+│                       Core Engine Layer                          │
+│   Avatar · Dialogue · Vision · Audio · Performance              │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────┐
+│                      External Services                           │
+│   Three.js · Web Speech API · MediaPipe · OpenAI                │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-- 用户体系与权限（注册/登录/管理员）
-- 模型管理后台（上传/编辑/发布）
-- 行为编辑器（时间轴/复杂编排）
-- 平台化部署管理（多租户/灰度/回滚）
+## Layer Details
 
-## 2. 前端架构（React + Vite + TypeScript）
+### 1. UI Layer
 
-### 2.1 入口与路由
+**Pages**
 
-- 应用入口：`src/main.tsx` → `src/App.tsx`
-- 路由：
-  - `/`、`/advanced`：`AdvancedDigitalHumanPage`（默认、功能最完整）
-  - `/digital-human`：`DigitalHumanPage`（简化版页面）
+| Page | Route | Purpose |
+|------|-------|---------|
+| `AdvancedDigitalHumanPage` | `/`, `/advanced` | Full-featured main experience |
+| `DigitalHumanPage` | `/digital-human` | Simple demo page |
 
-### 2.2 UI 组件层（`src/components/`）
+**Components**
 
-- `DigitalHumanViewer`
-  - Three.js + React Three Fiber 渲染数字人
-  - 支持加载 GLB/GLTF；加载失败或未配置模型时使用内置 procedural avatar 兜底
-- `ControlPanel`
-  - 播放/重置、录音、静音等快捷控制
-- `VoiceInteractionPanel`
-  - ASR/TTS 面板（Web Speech API）
-  - 录音/静音状态与全局 store 同步
-- `VisionMirrorPanel`
-  - 摄像头预览 + MediaPipe 推理结果展示
-- `ExpressionControlPanel`、`BehaviorControlPanel`
-  - 手动驱动表情/行为，用于演示与调试
+| Component | Responsibility |
+|-----------|----------------|
+| `DigitalHumanViewer` | 3D viewport, model loading, procedural avatar fallback |
+| `ChatDock` | Chat input, message list, streaming display |
+| `TopHUD` | Status bar: connection, behavior, performance metrics |
+| `ControlPanel` | Quick actions: play/pause, reset, voice commands |
+| `SettingsDrawer` | Tabbed settings: expressions, behaviors, voice, vision |
 
-### 2.3 状态管理（`src/store/digitalHumanStore.ts`）
+**Hooks**
 
-- 状态源：Zustand
-- 关键状态：
-  - 会话：`sessionId`（localStorage：`metahuman_session_id`）
-  - 播放与音频：`isPlaying`、`isRecording`、`isMuted`、`isSpeaking`
-  - 表情与动作：`currentEmotion`、`currentExpression`、`currentAnimation`
-  - 系统状态：`connectionStatus`、`error`
+| Hook | Purpose |
+|------|---------|
+| `useAdvancedDigitalHumanController` | Business logic for main page |
+| `useChatStream` | Chat message lifecycle, streaming |
+| `useConnectionHealth` | Health checks, reconnect logic |
 
-UI 层尽量“只读 store + 调用高层 action”，避免直接操作底层 Web API。
+### 2. Core Engine Layer
 
-### 2.4 核心能力层（`src/core/`）
+#### Avatar Engine
 
-- `core/avatar/DigitalHumanEngine.ts`
-  - 统一驱动数字人表现（情绪/表情/动画/复合动作）
-- `core/audio/audioService.ts`
-  - `ttsService`：文字转语音（Web Speech API）
-  - `asrService`：语音识别（Web Speech API）
-  - 负责同步 store 中的录音/说话等状态
-- `core/dialogue/dialogueService.ts`
-  - 与后端 `/v1/chat` 通讯（超时、重试、降级）
-- `core/dialogue/dialogueOrchestrator.ts`
-  - 将 `{ replyText, emotion, action }` 应用到 UI/store/engine/TTS（如存在）
-- `core/vision/visionService.ts` + `core/vision/visionMapper.ts`
-  - 摄像头管理、FaceMesh/Pose 推理
-  - 将原始关键点映射为简化的 `emotion` 与头部动作（`nod`/`shakeHead` 等）
+**File:** `core/avatar/DigitalHumanEngine.ts`
 
-## 3. 后端架构（FastAPI）
+Imperative façade for avatar control:
 
-- 入口：`server/app/main.py`
-- API：
-  - `GET /health`
-  - `POST /v1/chat`
-- 对话服务：`server/app/services/dialogue.py`
-  - 当配置 `OPENAI_API_KEY` 时：调用 OpenAI Chat Completions
-  - 未配置 key 或请求异常：回退本地 Mock（保证 Demo 可用）
+```typescript
+class DigitalHumanEngine {
+  // Single unified call
+  perform({ emotion, expression, animation }): void
+  
+  // Individual controls
+  setEmotion(emotion: EmotionType): void
+  setExpression(expression: ExpressionType): void
+  playAnimation(animation: string): void
+  
+  // Lifecycle
+  reset(): void
+  dispose(): void
+}
+```
 
-## 4. 关键数据流
+**Emotion → Expression Mapping:**
 
-### 4.1 文本/语音 → 对话 → 驱动数字人
+| Emotion | Default Expression |
+|---------|-------------------|
+| happy | smile |
+| surprised | surprise |
+| sad | sad |
+| angry | angry |
+| neutral | neutral |
 
-1. 用户输入文本，或通过 ASR 得到文本
-2. 前端 `sendUserInput()` 调用后端 `POST /v1/chat`
-3. 后端返回结构化数据：`{ replyText, emotion, action }`
-4. 前端更新：
-   - 聊天记录
-   - `DigitalHumanEngine`（表情/情绪/动作）
-   - 未静音时：`ttsService.speak(replyText)`
+#### Dialogue System
 
-### 4.2 摄像头 → 视觉镜像
+**Transport Abstraction:**
 
-1. `visionService` 获取视频帧并运行推理
-2. `visionMapper` 输出简化状态（emotion、nod/shake 等）
-3. 页面/引擎应用到数字人表现（表情与动作）
+```
+ChatTransport Interface
+├── HTTP Transport    → POST /v1/chat
+├── SSE Transport     → POST /v1/chat/stream
+└── WebSocket Transport → WebSocket /ws
+```
 
-## 5. 当前架构评估
+**Auto-selection Priority:**
+1. Probe WebSocket capability
+2. Fall back to SSE
+3. Final fall back to HTTP
 
-- 优点
-  - 已经形成 `page -> hooks -> orchestrator/service -> store` 的基本分层，`AdvancedDigitalHumanPage` 比早期版本更薄。
-  - 前端对后端断连有 fallback，适合 Demo/SDK 场景。
-  - 3D、语音、视觉、对话四条主能力链路已经能独立演进。
-- 当前主要问题
-  - 聊天消息生命周期分散在 hook、orchestrator、store 三处，容易出现占位消息、流式结束、错误清理不同步。
-  - 传输层当前同时存在普通 HTTP、SSE、预研 WebSocket，但还没有统一的 transport 抽象。
-  - UI store 同时承载渲染态、会话态、系统态，后续复杂度继续上升时会增加无关重渲染和状态耦合。
-  - 视觉、语音、3D 渲染都偏浏览器能力驱动，缺少统一的健康状态和性能观测面板。
+**Orchestrator Flow:**
 
-## 6. 后续技术路线图
+```
+User Input
+    │
+    ▼
+dialogueOrchestrator.runDialogueTurnStream()
+    │
+    ├─► Add user message to store
+    ├─► Set loading state
+    ├─► Set behavior: 'thinking'
+    │
+    ▼
+Transport.stream()
+    │
+    ├─► onStreamToken: Update message progressively
+    ├─► onDone: Apply emotion/action to avatar
+    │
+    ▼
+TTS.speak(replyText) [if not muted]
+```
 
-### Phase 1: 稳定交互主链路
+#### Vision Pipeline
 
-- 收敛消息生命周期：用户消息、助手占位、流式 token、结束态、错误态由同一条消息状态流管理。
-- 补齐流式聊天测试：重点覆盖并发请求、占位消息清理、fallback、TTS 失败。
-- 清理高频路径上的无效订阅，优先优化聊天区、HUD、控制面板的 store 订阅方式。
+**File:** `core/vision/visionService.ts`
 
-### Phase 2: 统一实时传输层
+```
+Camera → MediaPipe Face Mesh
+                    │
+                    ▼
+         visionMapper.mapFaceToEmotion()
+                    │
+                    ▼
+              Emotion Result
+                    │
+                    ▼
+         digitalHumanEngine.setEmotion()
+```
 
-- 抽象 `chat transport` 接口，屏蔽 `POST /v1/chat`、`SSE /v1/chat/stream`、`WebSocket /ws` 的差异。
-- 默认保留 SSE，WebSocket 作为增强模式接入，不把页面逻辑和具体传输协议绑定。
-- 给 transport 增加连接态、重连策略、超时和 server capability 探测。
-- 支持通过 `VITE_CHAT_TRANSPORT=http|sse|websocket` 切换策略，便于灰度验证。
-- `auto` 模式下新增运行时 probe：优先尝试 WebSocket 握手，失败则回落到 SSE，再退化到 HTTP；当前结果同步到 `systemStore.chatTransportMode`。
+**Detected Signals:**
+- Emotions: happy, sad, surprised, angry, neutral
+- Motions: nod, shake head, raise hand, wave
 
-### Phase 3: 拆分状态域
+#### Audio Services
 
-- 将当前 store 按 `session/chat`、`avatar/runtime`、`system/connection` 三个域拆分。
-- 减少 3D 渲染状态和聊天 UI 状态的相互影响，降低页面级组件重渲染。
-- 将可序列化状态和不可序列化运行时对象彻底分开。
-- 当前已完成第一步：`sessionId/chatHistory` 与消息增删改逻辑已迁移到独立 `chatSessionStore`，`digitalHumanStore` 保留跨域协调动作 `initSession`。
-- 当前已完成第二步：`error/isLoading/connectionStatus/isConnected` 已迁移到独立 `systemStore`，连接健康检查、聊天错误反馈、HUD 与输入区状态展示均已接入新域。
+**TTS (Text-to-Speech):**
+- Primary: Web Speech API
+- Fallback: Silent mode with text display
+- Features: Queue management, interruption support
 
-### Phase 4: 体验与性能优化
+**ASR (Speech-to-Text):**
+- Browser-native Speech Recognition
+- Modes: command mode, dictation mode
+- Voice commands: greeting, dance, speak, emote
 
-- Viewer 根据设备能力动态调节粒子数、阴影、DPR 和后处理开关。
-- 为聊天区、设置面板、模型加载过程补充 skeleton/placeholder，减少跳变感。
-- 增加前端性能埋点：首屏加载、模型加载耗时、首 token 时间、完整回复时间。
-- 当前已完成首轮聊天指标采集：最近一次对话的 `firstTokenMs` 与 `responseCompleteMs` 已记录到 `systemStore.chatPerformance`，并在 `TopHUD` 中展示。
+### 3. State Layer
 
-## 7. 本轮已落地优化
+**Store Separation:**
 
-- 修复流式聊天占位消息 `id` 不一致导致的消息不更新问题。
-- 修复流式结束回调重复触发问题，避免 UI 状态重复收尾。
-- 聊天气泡在流式开始但尚未收到 token 时，展示明确的生成态文案。
-- 聊天 hook 改为 selector 订阅，减少因 store 全量订阅带来的额外重渲染。
-- 新增统一 `chat transport` 抽象，并让 orchestrator 改为依赖 transport 而不是直接依赖具体协议实现。
-- 修复流式降级到 fallback 时丢失 `connectionStatus/error` 的问题。
-- 抽离独立 `chatSessionStore`，将聊天消息与会话 ID 从 `digitalHumanStore` 中分域，降低聊天 UI 对主运行时 store 的耦合。
-- 抽离独立 `systemStore`，将连接状态、加载态和错误态从 `digitalHumanStore` 中分域，进一步收窄主 store 职责边界。
-- 新增 chat transport capability probe，并在健康检查时刷新自动选择结果，为后续 WebSocket 灰度与能力探测打基础。
-- 抽离 `useAdvancedDigitalHumanController`，将高级页面的业务控制逻辑从布局组件中移出，降低页面组件复杂度并为后续 controller 测试留出边界。
-- 增加聊天性能快照采集与 HUD 可视化，可直接观察最近一次请求的首 token 时间和完整响应时间。
+```
+┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐
+│  chatSessionStore   │  │    systemStore      │  │ digitalHumanStore   │
+├─────────────────────┤  ├─────────────────────┤  ├─────────────────────┤
+│ • sessionId         │  │ • connectionStatus  │  │ • isPlaying         │
+│ • chatHistory       │  │ • error             │  │ • isRecording       │
+│ • addMessage()      │  │ • isLoading         │  │ • isSpeaking        │
+│ • updateMessage()   │  │ • chatPerformance   │  │ • currentEmotion    │
+│                     │  │ • renderPerformance │  │ • currentAnimation  │
+└─────────────────────┘  └─────────────────────┘  └─────────────────────┘
+```
+
+**Why Three Stores?**
+- Minimizes re-renders (chat updates don't trigger avatar re-renders)
+- Clear ownership boundaries
+- Easier testing and debugging
+
+## Data Flows
+
+### Text Dialogue Flow
+
+```
+User types message
+       │
+       ▼
+ChatDock.handleSend()
+       │
+       ▼
+useChatStream.handleChatSend()
+       │
+       ▼
+runDialogueTurnStream()
+       │
+       ├──► chatSessionStore.addMessage('user', text)
+       ├──► chatSessionStore.addMessage('assistant', '', isStreaming: true)
+       │
+       ▼
+chatTransport.stream()
+       │
+       ├──► onStreamToken → updateMessage(id, text)
+       └──► onDone → apply response.emotion, response.action
+              │
+              ▼
+       ttsService.speak(replyText) [if not muted]
+```
+
+### Voice Input Flow
+
+```
+User clicks record
+       │
+       ▼
+asrService.start()
+       │
+       ▼
+User speaks
+       │
+       ▼
+onResult(text)
+       │
+       ▼
+handleChatSend(text) → [same as text flow]
+```
+
+### Vision Flow
+
+```
+User enables camera
+       │
+       ▼
+visionService.start()
+       │
+       ▼
+MediaPipe inference (each frame)
+       │
+       ▼
+visionMapper.mapFaceToEmotion(landmarks)
+       │
+       ▼
+{ emotion, motion }
+       │
+       ├──► digitalHumanEngine.setEmotion(emotion)
+       └──► digitalHumanEngine.playAnimation(motion)
+```
+
+## Performance Optimizations
+
+### Adaptive Rendering
+
+Device capability detection in `core/performance/deviceCapability.ts`:
+
+| Tier | Shadows | Particles | DPR | Post-processing |
+|------|---------|-----------|-----|-----------------|
+| High | ✅ 2048 | 100 | 1-2 | ✅ |
+| Medium | ✅ 1024 | 50 | 1-1.5 | ❌ |
+| Low | ❌ | 20 | 1-1.2 | ❌ |
+
+### Animation Throttling
+
+- Tab visibility detection pauses animations
+- Low-end devices skip frames (render every 2nd frame)
+- Reduced motion preference respected
+
+### State Subscription Optimization
+
+```typescript
+// ❌ Bad: subscribes to entire store
+const store = useDigitalHumanStore();
+
+// ✅ Good: subscribes to specific value
+const isPlaying = useDigitalHumanStore(s => s.isPlaying);
+```
+
+## Error Handling
+
+### Fallback Chain
+
+```
+1. Try primary operation
+       │
+       ▼ (failure)
+2. Try fallback operation
+       │
+       ▼ (failure)
+3. Show user-friendly message
+4. Maintain app functionality
+```
+
+**Examples:**
+
+| Operation | Primary | Fallback |
+|-----------|---------|----------|
+| Chat API | OpenAI | Local mock |
+| 3D Model | GLB file | Procedural avatar |
+| TTS | Web Speech | Silent (text only) |
+| Vision | MediaPipe | Panel disabled |
+
+## Extension Points
+
+### Adding New Emotion
+
+1. Add type to `store/digitalHumanStore.ts`
+2. Add mapping in `core/avatar/constants.ts`
+3. Add UI option in `ExpressionControlPanel.tsx`
+
+### Adding New Animation
+
+1. Add type to `store/digitalHumanStore.ts`
+2. Implement in `DigitalHumanViewer.tsx` CyberAvatar component
+3. Add trigger in `DigitalHumanEngine.ts`
+
+### Adding New Transport
+
+1. Implement `ChatTransport` interface in `core/dialogue/chatTransport.ts`
+2. Add to transport registry
+3. Update auto-selection logic

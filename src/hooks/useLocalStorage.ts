@@ -1,4 +1,7 @@
 import { useState, useCallback } from 'react';
+import { loggers } from '../lib/logger';
+
+const logger = loggers.app;
 
 export function useLocalStorage<T>(
   key: string,
@@ -21,7 +24,7 @@ export function useLocalStorage<T>(
         try {
           window.localStorage.setItem(key, JSON.stringify(nextValue));
         } catch {
-          console.warn(`Failed to save "${key}" to localStorage`);
+          logger.warn(`Failed to save "${key}" to localStorage`);
         }
         return nextValue;
       });
@@ -34,7 +37,7 @@ export function useLocalStorage<T>(
       window.localStorage.removeItem(key);
       setStoredValue(initialValue);
     } catch {
-      console.warn(`Failed to remove "${key}" from localStorage`);
+      logger.warn(`Failed to remove "${key}" from localStorage`);
     }
   }, [key, initialValue]);
 

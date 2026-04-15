@@ -539,9 +539,25 @@ export class ASRService {
    * Call this when disposing the service.
    */
   dispose(): void {
+    // Clear all preset timers first to prevent memory leaks
+    this.clearPresetTimers();
+
+    // Stop recognition and cleanup
     this.stop();
+
+    // Clear recognition instance and callbacks
     this.recognition = null;
     this.callbacks = {};
+    this.onResultCallback = null;
+
+    // Clear any pending restart timer
+    if (this.pendingRestartTimer) {
+      clearTimeout(this.pendingRestartTimer);
+      this.pendingRestartTimer = null;
+    }
+
+    // Increment generation to invalidate any pending callbacks
+    this.recognitionGeneration++;
   }
 
   abort(): void {

@@ -1,124 +1,289 @@
-# 开发与运行
+# Development Guide
 
-## 1. 前置要求
+## Prerequisites
 
-- Node.js：>= 18
-- npm：>= 9
-- Python：建议 >= 3.10（用于运行 FastAPI 后端）
+| Requirement | Version |
+|-------------|---------|
+| Node.js | ≥ 18 |
+| npm | ≥ 9 |
+| Python | ≥ 3.10 (for backend) |
 
-## 2. 前端（Vite + React）
+## Quick Start
 
-### 2.1 安装与启动
-
-- 安装依赖（推荐按 lockfile 精确安装）：
-
-```bash
-npm ci
-```
-
-- 开发模式：
+### Frontend
 
 ```bash
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
 ```
 
-- 构建：
+Open **http://localhost:5173**
+
+### Backend
 
 ```bash
-npm run build
-```
-
-- 本地预览构建产物：
-
-```bash
-npm run preview
-```
-
-### 2.2 前端环境变量
-
-- `VITE_API_BASE_URL`
-  - 说明：后端地址
-  - 本地开发：`http://localhost:8000`
-  - GitHub Pages 生产环境：`https://<your-render-service>.onrender.com`
-- `VITE_CHAT_TRANSPORT`
-  - 可选；`http`、`sse`、`websocket`
-  - 默认：`auto`（当前优先走 SSE）
-
-## 3. 后端（FastAPI）
-
-### 3.1 安装依赖
-
-建议在项目根目录创建虚拟环境：
-
-```bash
+# Create virtual environment
 python -m venv .venv
 source .venv/bin/activate
+
+# Install dependencies
 pip install -r server/requirements.txt
-```
 
-### 3.2 启动服务
-
-推荐直接从项目根目录启动：
-
-```bash
+# Start server
 uvicorn --app-dir server app.main:app --reload --port 8000
 ```
 
-或者进入 `server` 目录后启动：
+Backend runs at **http://localhost:8000**
+
+---
+
+## Environment Variables
+
+### Frontend (`.env.local`)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VITE_API_BASE_URL` | `http://localhost:8000` | Backend API URL |
+| `VITE_CHAT_TRANSPORT` | `auto` | Transport: `http`, `sse`, `websocket`, `auto` |
+
+### Backend (`server/.env`)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPENAI_API_KEY` | — | OpenAI API key (optional) |
+| `OPENAI_MODEL` | `gpt-3.5-turbo` | Model to use |
+| `OPENAI_BASE_URL` | — | Custom API endpoint |
+| `LLM_PROVIDER` | `openai` | LLM provider |
+| `TTS_PROVIDER` | `edge` | TTS provider |
+| `ASR_PROVIDER` | `whisper` | ASR provider |
+| `RATE_LIMIT_RPM` | `60` | Rate limit per minute |
+| `CORS_ALLOW_ORIGINS` | — | Comma-separated allowed origins |
+
+---
+
+## Scripts Reference
+
+### Development
 
 ```bash
-cd server
-uvicorn app.main:app --reload --port 8000
+npm run dev          # Start dev server (port 5173)
+npm run preview      # Preview production build
+npm run serve        # Preview on 0.0.0.0:3000
 ```
 
-启动后可访问：
+### Build
 
-- `GET http://localhost:8000/health`
-- `POST http://localhost:8000/v1/chat`
+```bash
+npm run build        # Production build → dist/
+npm run build:pages  # GitHub Pages build → dist/ (base: /meta-human/)
+npm run build:mobile # Mobile build → dist-mobile/
+npm run build:desktop # Desktop build → dist-desktop/
+npm run build:ar     # AR build → dist-ar/
+```
 
-### 3.3 后端环境变量
+### Quality
 
-- `OPENAI_API_KEY`
-  - 可选；不配置时后端自动使用本地 Mock 回复
-- `OPENAI_MODEL`
-  - 可选；默认：`gpt-3.5-turbo`
-- `OPENAI_BASE_URL`
-  - 可选；支持传入域名、`/v1` 前缀或完整路径，例如：
-    - `https://api.openai.com`
-    - `https://api.openai.com/v1`
-    - `https://api.openai.com/v1/chat/completions`
-    - `http://localhost:8080`（自建网关/代理）
-  - 后端会自动规范化为最终的 `.../v1/chat/completions`
-- `LLM_PROVIDER`
-  - 可选；默认：`openai`
-- `TTS_PROVIDER`
-  - 可选；默认：`edge`
-- `ASR_PROVIDER`
-  - 可选；默认：`whisper`
-- `RATE_LIMIT_RPM`
-  - 可选；默认：`60`
-- `CORS_ALLOW_ORIGINS`
-  - 可选；逗号分隔的 Origin 列表
-  - Render + GitHub Pages 推荐值：`https://lessup.github.io`
+```bash
+npm run lint         # ESLint check
+npm run lint:fix     # Auto-fix ESLint issues
+npm run format       # Prettier formatting
+npm run typecheck    # TypeScript validation
+```
 
-### 3.4 Render 部署清单
+### Testing
 
-1. 在 Render 中从仓库导入 Blueprint（仓库根目录的 `render.yaml`）
-2. 确认后端服务配置如下：
-   - Root Directory：`server`
-   - Build Command：`pip install -r requirements.txt`
-   - Start Command：`uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-   - Health Check Path：`/health`
-3. 在 Render 中配置后端环境变量
-   - 至少配置 `CORS_ALLOW_ORIGINS=https://lessup.github.io`
-   - 如果需要真实 LLM 回复，再配置 `OPENAI_API_KEY`
-4. 部署成功后，拿到 Render 服务地址，例如：`https://your-render-service.onrender.com`
-5. 在 GitHub 仓库 Settings → Secrets and variables → Actions → Variables 中设置：
-   - `VITE_API_BASE_URL=https://your-render-service.onrender.com`
-6. 重新运行 GitHub Pages 的 `Deploy Pages` workflow
-7. 打开 `https://lessup.github.io/meta-human/` 验证页面与后端连通
+```bash
+npm run test         # Vitest watch mode
+npm run test:run     # Run tests once
+npm run test:coverage # Generate coverage report
 
-## 4. 浏览器能力说明
+# Run specific test file
+npx vitest run src/__tests__/digitalHuman.test.tsx
 
-- 语音能力依赖 Web Speech API：推荐 Chromium 系浏览器；不同系统/浏览器的 voice 列表可能不同。
-- 摄像头/麦克风权限通常要求 https 或 localhost 环境。
+# Run tests matching name
+npx vitest run -t "renders without crashing"
+```
+
+---
+
+## Deployment
+
+### GitHub Pages (Frontend)
+
+1. **Build configuration**
+
+   Ensure `VITE_API_BASE_URL` is set in GitHub Repository Variables.
+
+2. **Deploy**
+
+   ```bash
+   git push origin master
+   # Or manually trigger "Deploy Pages" workflow
+   ```
+
+3. **Verify**
+
+   Visit `https://lessup.github.io/meta-human/`
+
+### Render (Backend)
+
+1. **Create Blueprint service**
+
+   Import from repository using `render.yaml` in project root.
+
+2. **Configure service**
+
+   | Setting | Value |
+   |---------|-------|
+   | Root Directory | `server` |
+   | Build Command | `pip install -r requirements.txt` |
+   | Start Command | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
+   | Health Check | `/health` |
+
+3. **Set environment variables**
+
+   ```
+   CORS_ALLOW_ORIGINS=https://lessup.github.io
+   OPENAI_API_KEY=sk-...  # optional
+   ```
+
+4. **Connect frontend**
+
+   Set `VITE_API_BASE_URL` in GitHub Repository Variables to your Render URL.
+
+---
+
+## Project Conventions
+
+### File Naming
+
+- Components: `PascalCase.tsx`
+- Utilities: `camelCase.ts`
+- Tests: `*.test.ts` or `*.test.tsx`
+
+### Import Paths
+
+Use `@/` alias for `src/`:
+
+```typescript
+import { Button } from '@/components/ui/Button';
+import { useDigitalHumanStore } from '@/store/digitalHumanStore';
+```
+
+### State Management
+
+Use Zustand selectors to prevent unnecessary re-renders:
+
+```typescript
+// ✅ Good
+const isPlaying = useDigitalHumanStore(s => s.isPlaying);
+
+// ❌ Avoid
+const { isPlaying, isRecording, ... } = useDigitalHumanStore();
+```
+
+### Component Structure
+
+```typescript
+// 1. Imports
+import { useState } from 'react';
+
+// 2. Types
+interface Props {
+  title: string;
+}
+
+// 3. Constants (outside component)
+const DEFAULT_TITLE = 'Hello';
+
+// 4. Component
+export function MyComponent({ title }: Props) {
+  // Hooks at top
+  const [count, setCount] = useState(0);
+
+  // Handlers
+  const handleClick = () => setCount(c => c + 1);
+
+  // Render
+  return <button onClick={handleClick}>{title}</button>;
+}
+```
+
+---
+
+## Browser Requirements
+
+### Required for Full Functionality
+
+| Feature | Requirement |
+|---------|-------------|
+| WebGL | Any modern browser |
+| Speech Synthesis | Any modern browser |
+| Speech Recognition | Chrome or Edge |
+| Camera Access | HTTPS or localhost |
+| MediaPipe | WebGL 2.0 support |
+
+### Supported Browsers
+
+| Browser | Version | Notes |
+|---------|---------|-------|
+| Chrome | 90+ | Full support |
+| Edge | 90+ | Full support |
+| Firefox | 90+ | No ASR |
+| Safari | 15+ | Limited speech API |
+
+---
+
+## Troubleshooting
+
+### Model Not Loading
+
+1. Check browser console for errors
+2. Verify URL is accessible
+3. Fallback avatar will display automatically
+
+### Speech Not Working
+
+1. Check browser permissions
+2. Ensure HTTPS or localhost
+3. Chrome/Edge required for ASR
+
+### Backend Connection Issues
+
+1. Verify `VITE_API_BASE_URL` is correct
+2. Check CORS settings on backend
+3. Ensure backend is running
+
+### Performance Issues
+
+1. Check device tier in console logs
+2. Reduce quality in browser devtools
+3. Disable vision panel if not needed
+
+---
+
+## Contributing
+
+1. Fork the repository
+2. Create feature branch: `git checkout -b feat/amazing-feature`
+3. Make changes with tests
+4. Run quality checks: `npm run lint && npm run typecheck && npm run test:run`
+5. Commit: `git commit -m 'feat: add amazing feature'`
+6. Push: `git push origin feat/amazing-feature`
+7. Open Pull Request
+
+### Commit Convention
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+| Type | Description |
+|------|-------------|
+| `feat` | New feature |
+| `fix` | Bug fix |
+| `docs` | Documentation |
+| `refactor` | Code refactoring |
+| `test` | Adding tests |
+| `chore` | Maintenance |
