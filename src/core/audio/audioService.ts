@@ -263,7 +263,7 @@ export class TTSService {
 
     utterance.onerror = (event) => {
       this.currentUtterance = null;
-      console.error('语音合成错误:', event);
+      logger.error('语音合成错误:', event);
       this.callbacks.onError?.('语音合成失败');
     };
 

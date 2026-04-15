@@ -10,11 +10,19 @@ export interface VoiceCommandHandlers {
   onDefault?: (command: string) => void;
 }
 
+let expressionResetTimer: ReturnType<typeof setTimeout> | null = null;
+
 /**
  * Execute a voice command with customizable handlers.
  * This centralizes voice command logic to avoid duplication.
  */
 export function executeVoiceCommand(command: string, handlers: VoiceCommandHandlers = {}): void {
+  // Clear any pending reset timer to avoid stale callbacks
+  if (expressionResetTimer) {
+    clearTimeout(expressionResetTimer);
+    expressionResetTimer = null;
+  }
+
   switch (command) {
     case '打招呼':
       handlers.onGreeting?.();
@@ -30,7 +38,10 @@ export function executeVoiceCommand(command: string, handlers: VoiceCommandHandl
       const randomExpr = expressions[Math.floor(Math.random() * expressions.length)];
       handlers.onExpression?.(randomExpr);
       // Reset to neutral after 3 seconds
-      setTimeout(() => handlers.onExpression?.('neutral'), 3000);
+      expressionResetTimer = setTimeout(() => {
+        handlers.onExpression?.('neutral');
+        expressionResetTimer = null;
+      }, 3000);
       break;
     }
     default:
