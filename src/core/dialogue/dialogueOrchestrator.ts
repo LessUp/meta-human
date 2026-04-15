@@ -5,6 +5,9 @@ import {
 } from './dialogueService';
 import { getDefaultChatTransport } from './chatTransport';
 import { digitalHumanEngine } from '../avatar';
+import { loggers } from '../../lib/logger';
+
+const logger = loggers.orchestrator;
 
 export interface DialogueHandleOptions {
   isMuted?: boolean;
@@ -28,6 +31,14 @@ export interface DialogueTurnOptions extends DialogueHandleOptions {
 
 let pendingTurn: Promise<ChatResponsePayload | undefined> | null = null;
 
+/**
+ * Reset the dialogue orchestrator state.
+ * Call this during app initialization or testing to clear module-level state.
+ */
+export function resetDialogueOrchestrator(): void {
+  pendingTurn = null;
+}
+
 export async function runDialogueTurn(
   userText: string,
   options: DialogueTurnOptions = {},
@@ -38,7 +49,7 @@ export async function runDialogueTurn(
   }
 
   if (pendingTurn) {
-    console.warn('对话请求被忽略：上一轮对话仍在进行中');
+    logger.warn('对话请求被忽略：上一轮对话仍在进行中');
     return undefined;
   }
 
@@ -110,7 +121,7 @@ export async function runDialogueTurnStream(
   }
 
   if (pendingTurn) {
-    console.warn('对话请求被忽略：上一轮对话仍在进行中');
+    logger.warn('对话请求被忽略：上一轮对话仍在进行中');
     return undefined;
   }
 
@@ -135,6 +146,7 @@ export async function runDialogueTurnStream(
   digitalHumanEngine.setBehavior('thinking');
 
   let didFinishStream = false;
+  let streamLock = 0; // Use counter for synchronization across async boundaries
 
   const finishStream = () => {
     if (didFinishStream) {
@@ -148,6 +160,7 @@ export async function runDialogueTurnStream(
   const execute = async (): Promise<ChatResponsePayload | undefined> => {
     let streamResult: DialogueServiceResult | null = null;
     const chatTransport = getDefaultChatTransport();
+    const currentStreamLock = ++streamLock;
 
     try {
       const generator = chatTransport.stream(
@@ -160,9 +173,21 @@ export async function runDialogueTurnStream(
       let step = await generator.next();
 
       while (!step.done) {
+        // Check if this stream is still valid
+        if (currentStreamLock !== streamLock) {
+          logger.warn('Stream invalidated by new request');
+          return undefined;
+        }
+
         accumulatedText += step.value;
         onStreamToken?.(accumulatedText);
-        step = await generator.next();
+
+        try {
+          step = await generator.next();
+        } catch (genError: unknown) {
+          logger.error('Generator error:', genError);
+          throw genError;
+        }
       }
 
       streamResult = step.value;
@@ -197,7 +222,7 @@ export async function runDialogueTurnStream(
       finishStream();
       return result.response;
     } catch (error) {
-      console.error('流式对话失败:', error);
+      logger.error('流式对话失败:', error);
       onError?.(error instanceof Error ? error.message : '流式对话失败');
       return undefined;
     } finally {
@@ -234,7 +259,7 @@ export async function handleDialogueResponse(
     try {
       await speakWith(res.replyText);
     } catch (error: unknown) {
-      console.warn('语音播报失败，但对话文本已返回:', error);
+      logger.warn('语音播报失败，但对话文本已返回:', error);
       onError?.(error instanceof Error ? error.message : '语音播报失败');
     }
   }

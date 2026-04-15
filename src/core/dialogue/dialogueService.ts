@@ -1,4 +1,5 @@
 import { sleep } from '../../lib/utils';
+import { loggers } from '../../lib/logger';
 import type { EmotionType } from '../../store/digitalHumanStore';
 
 export interface ChatRequestPayload {
@@ -39,16 +40,36 @@ export class DialogueApiError extends Error {
   }
 }
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(
-  /\/+$/,
-  '',
-);
+const logger = loggers.dialogue;
 
+const API_BASE_URL = validateApiUrl(import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000');
+
+/**
+ * Validates and normalizes an API URL.
+ * Throws an error if the URL is malformed.
+ */
+function validateApiUrl(url: string): string {
+  const normalized = url.replace(/\/+$/, '');
+  try {
+    new URL(normalized);
+    return normalized;
+  } catch {
+    logger.error(`Invalid API URL: ${url}`);
+    // Return a safe default that will fail gracefully
+    return 'http://localhost:8000';
+  }
+}
+
+// Named constants for configuration
 const DEFAULT_CONFIG: Required<DialogueServiceConfig> = {
   maxRetries: 3,
   retryDelay: 1000,
   timeout: 15000,
 };
+
+// Named constants for timeouts and thresholds
+const HEALTH_CHECK_TIMEOUT_MS = 5000;
+const SESSION_DELETE_TIMEOUT_MS = 5000;
 
 // 带超时的 fetch
 async function fetchWithTimeout(
@@ -67,13 +88,11 @@ async function fetchWithTimeout(
   }
 
   // Listen to external signal to abort our controller too
-  externalSignal?.addEventListener(
-    'abort',
-    () => {
-      controller.abort();
-    },
-    { once: true },
-  );
+  let abortHandler: (() => void) | null = null;
+  if (externalSignal) {
+    abortHandler = () => controller.abort();
+    externalSignal.addEventListener('abort', abortHandler, { once: true });
+  }
 
   try {
     const response = await fetch(url, {
@@ -83,6 +102,10 @@ async function fetchWithTimeout(
     return response;
   } finally {
     clearTimeout(timeoutId);
+    // Clean up the event listener if fetch completes before external signal aborts
+    if (abortHandler && externalSignal) {
+      externalSignal.removeEventListener('abort', abortHandler);
+    }
   }
 }
 
@@ -137,7 +160,11 @@ function buildEmptyResponse(): ChatResponsePayload {
 // 检查服务器连接状态
 export async function checkServerHealth(): Promise<boolean> {
   try {
-    const response = await fetchWithTimeout(`${API_BASE_URL}/health`, { method: 'GET' }, 5000);
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}/health`,
+      { method: 'GET' },
+      HEALTH_CHECK_TIMEOUT_MS,
+    );
     return response.ok;
   } catch {
     return false;
@@ -151,7 +178,7 @@ export async function clearRemoteSession(sessionId: string): Promise<void> {
     await fetchWithTimeout(
       `${API_BASE_URL}/v1/session/${encodeURIComponent(sessionId)}`,
       { method: 'DELETE' },
-      5000,
+      SESSION_DELETE_TIMEOUT_MS,
     );
   } catch {
     // 静默失败，不影响前端新会话的创建
@@ -236,7 +263,7 @@ export async function sendUserInput(
     }
   }
 
-  console.error('对话服务所有重试都失败:', lastError);
+  logger.error('对话服务所有重试都失败:', lastError);
   const errorMsg = lastError?.message || '对话服务不可用';
 
   return {
@@ -343,7 +370,7 @@ export async function* streamUserInput(
               callbacks.onDone?.(finalResponse);
             }
           } catch {
-            console.warn('SSE 事件解析失败:', raw);
+            logger.warn('SSE 事件解析失败:', raw);
           }
         }
       }
@@ -364,7 +391,7 @@ export async function* streamUserInput(
       };
     }
 
-    console.warn('流式请求失败，降级到普通请求:', error);
+    logger.warn('流式请求失败，降级到普通请求:', error);
     const fallback = await sendUserInput(payload, config, signal);
     if (fallback.response.replyText) {
       yield fallback.response.replyText;

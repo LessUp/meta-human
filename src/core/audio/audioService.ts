@@ -1,4 +1,7 @@
 import { runDialogueTurn } from '../dialogue/dialogueOrchestrator';
+import { loggers } from '../../lib/logger';
+
+const logger = loggers.audio;
 
 // TTS 配置接口
 export interface TTSConfig {
@@ -53,7 +56,8 @@ export interface ASRStateAdapter {
   ) => void;
 }
 
-type SpeechRecognitionResultLike = ArrayLike<{ transcript: string }>;
+type SpeechRecognitionResultItem = { transcript: string; isFinal?: boolean };
+type SpeechRecognitionResultLike = ArrayLike<SpeechRecognitionResultItem>;
 type SpeechRecognitionResultListLike = ArrayLike<SpeechRecognitionResultLike>;
 
 type SpeechRecognitionEventLike = {
@@ -89,6 +93,7 @@ export class TTSService {
   private isInitialized: boolean = false;
   private callbacks: TTSCallbacks;
   private currentUtterance: SpeechSynthesisUtterance | null = null;
+  private voiceLoadHandler: (() => void) | null = null;
 
   constructor(config: TTSConfig = {}, callbacks: TTSCallbacks = {}) {
     this.synth =
@@ -118,8 +123,21 @@ export class TTSService {
 
     loadVoiceList();
     if (!this.isInitialized) {
-      this.synth.onvoiceschanged = loadVoiceList;
+      this.voiceLoadHandler = loadVoiceList;
+      this.synth.onvoiceschanged = this.voiceLoadHandler;
     }
+  }
+
+  /**
+   * Cleanup resources and remove event listeners.
+   * Call this when disposing the service.
+   */
+  dispose(): void {
+    if (this.synth && this.voiceLoadHandler) {
+      this.synth.onvoiceschanged = null;
+      this.voiceLoadHandler = null;
+    }
+    this.stop();
   }
 
   updateConfig(config: Partial<TTSConfig>): void {
@@ -184,7 +202,7 @@ export class TTSService {
 
       utterance.onerror = (event) => {
         this.currentUtterance = null;
-        console.error('语音合成错误:', event);
+        logger.error('语音合成错误:', event);
         this.callbacks.onError?.(`语音合成失败: ${event.error}`);
         reject(new Error(event.error));
       };
@@ -382,8 +400,10 @@ export class ASRService {
 
       const startIndex = event.resultIndex ?? 0;
       for (let i = startIndex; i < event.results.length; i++) {
-        const transcript = event.results[i]?.[0]?.transcript ?? '';
-        if ((event.results[i] as unknown as { isFinal?: boolean })?.isFinal) {
+        const result = event.results[i] as SpeechRecognitionResultLike & { isFinal?: boolean };
+        const transcript = result?.[0]?.transcript ?? '';
+        const isFinal = result?.isFinal ?? false;
+        if (isFinal) {
           finalTranscript += transcript;
         } else {
           interimTranscript += transcript;
@@ -411,7 +431,7 @@ export class ASRService {
       // Only process if this is still the current generation
       if (currentGeneration !== this.recognitionGeneration) return;
 
-      console.error('语音识别错误:', event.error);
+      logger.error('语音识别错误:', event.error);
       const errorMsg = this.getErrorMessage(event.error);
       this.state.setRecording(false);
       this.state.setBehavior('idle');
@@ -442,12 +462,14 @@ export class ASRService {
   }
 
   private speakSafely(text: string): void {
-    void this.tts.speak(text).catch(() => undefined);
+    void this.tts.speak(text).catch((error: unknown) => {
+      logger.warn('Speech failed safely:', error instanceof Error ? error.message : error);
+    });
   }
 
   start(options?: ASRStartOptions): boolean {
     if (!this.isSupportedFlag) {
-      console.warn('浏览器不支持语音识别');
+      logger.warn('浏览器不支持语音识别');
       this.state.setError('浏览器不支持语音识别功能，请使用 Chrome 或 Edge 浏览器');
       return false;
     }
@@ -474,7 +496,7 @@ export class ASRService {
       this.state.setRecording(true);
       return true;
     } catch (error: unknown) {
-      console.error('启动语音识别失败:', error);
+      logger.error('启动语音识别失败:', error);
       this.state.setRecording(false);
 
       // 处理已经在运行的情况
@@ -505,8 +527,21 @@ export class ASRService {
         // 忽略停止错误
       }
     }
+    // Clear event handlers to allow garbage collection
     this.onResultCallback = null;
     this.mode = 'command';
+    // Increment generation to invalidate any pending callbacks
+    this.recognitionGeneration++;
+  }
+
+  /**
+   * Cleanup resources and remove event listeners.
+   * Call this when disposing the service.
+   */
+  dispose(): void {
+    this.stop();
+    this.recognition = null;
+    this.callbacks = {};
   }
 
   abort(): void {
@@ -604,7 +639,7 @@ export class ASRService {
         },
       });
     } catch (error: unknown) {
-      console.error('对话服务错误:', error);
+      logger.error('对话服务错误:', error);
       this.state.setError('对话服务暂时不可用，请稍后重试');
       this.state.setBehavior('idle');
     }

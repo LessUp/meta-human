@@ -3,6 +3,14 @@ import { devtools } from 'zustand/middleware';
 import { useChatSessionStore } from './chatSessionStore';
 import { useSystemStore } from './systemStore';
 
+// Named constants
+const RECORDING_TIMEOUT_MS = 30000;
+const DEFAULT_EXPRESSION_INTENSITY = 0.8;
+const ENABLE_DEVTOOLS =
+  typeof import.meta !== 'undefined' &&
+  import.meta.env?.DEV === true &&
+  import.meta.env?.MODE !== 'test';
+
 // 表情类型定义
 export type EmotionType = 'neutral' | 'happy' | 'surprised' | 'sad' | 'angry';
 export type ExpressionType =
@@ -33,6 +41,7 @@ export type BehaviorType =
   | 'speak'
   | 'waveHand'
   | 'raiseHand';
+
 interface DigitalHumanState {
   // 模型状态
   isPlaying: boolean;
@@ -77,8 +86,6 @@ interface DigitalHumanState {
 
 let recordingTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
-const ENABLE_DEVTOOLS = import.meta.env.DEV && import.meta.env.MODE !== 'test';
-
 const clearRecordingTimeout = (): void => {
   if (recordingTimeoutId) {
     clearTimeout(recordingTimeoutId);
@@ -98,7 +105,7 @@ export const useDigitalHumanStore = create<DigitalHumanState>()(
       isSpeaking: false,
       currentEmotion: 'neutral',
       currentExpression: 'neutral',
-      expressionIntensity: 0.8,
+      expressionIntensity: DEFAULT_EXPRESSION_INTENSITY,
       currentBehavior: 'idle',
 
       // 状态设置方法
@@ -140,7 +147,7 @@ export const useDigitalHumanStore = create<DigitalHumanState>()(
           currentAnimation: 'idle',
           currentEmotion: 'neutral',
           currentExpression: 'neutral',
-          expressionIntensity: 0.8,
+          expressionIntensity: DEFAULT_EXPRESSION_INTENSITY,
           currentBehavior: 'idle',
         });
       },
@@ -153,7 +160,7 @@ export const useDigitalHumanStore = create<DigitalHumanState>()(
             get().stopRecording();
           }
           recordingTimeoutId = null;
-        }, 30000);
+        }, RECORDING_TIMEOUT_MS);
       },
 
       stopRecording: () => {

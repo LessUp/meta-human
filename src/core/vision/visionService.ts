@@ -1,4 +1,5 @@
 import { mapFaceToEmotion, UserEmotion } from './visionMapper';
+import { loggers } from '../../lib/logger';
 
 type EmotionCallback = (emotion: UserEmotion) => void;
 type MotionCallback = (motion: 'nod' | 'shakeHead' | 'raiseHand' | 'waveHand') => void;
@@ -13,6 +14,8 @@ export interface VisionServiceCallbacks {
   onError?: ErrorCallback;
   onStatusChange?: StatusCallback;
 }
+
+const logger = loggers.vision;
 
 type Landmark = { x: number; y: number; z: number };
 type FaceMeshResultsLike = { multiFaceLandmarks?: Landmark[][] };
@@ -34,6 +37,49 @@ type PoseModuleLike = {
   Pose: new (options: { locateFile: (file: string) => string }) => MediaPipeModelLike;
 };
 
+// MediaPipe face landmark indices - these are standard indices for specific facial features
+const FACE_LANDMARK_INDICES = {
+  LEFT_EYE: 33,
+  RIGHT_EYE: 263,
+  NOSE: 1,
+  FOREHEAD: 10,
+  CHIN: 152,
+  MIN_LANDMARKS_REQUIRED: 300,
+} as const;
+
+// MediaPipe pose landmark indices
+const POSE_LANDMARK_INDICES = {
+  LEFT_SHOULDER: 11,
+  RIGHT_SHOULDER: 12,
+  LEFT_WRIST: 15,
+  RIGHT_WRIST: 16,
+  MIN_LANDMARKS_REQUIRED: 17,
+} as const;
+
+// Motion detection thresholds
+const MOTION_THRESHOLDS = {
+  NOD: 0.04,
+  SHAKE_HEAD: 0.04,
+  YAW_TOLERANCE: 0.02,
+  RAISE_HAND: 0.05,
+  WAVE_HAND: 0.06,
+  RAISE_HISTORY_COUNT: 10,
+  HISTORY_WINDOW: 20,
+  MOTION_COOLDOWN_MS: 800,
+  MIN_HISTORY_FOR_MOTION: 10,
+} as const;
+
+// Camera configuration
+const CAMERA_CONFIG = {
+  FACING_MODE: 'user',
+  WIDTH: 640,
+  HEIGHT: 480,
+  FRAME_RATE: 30,
+} as const;
+
+// FPS calculation
+const FPS_INTERVAL_MS = 1000;
+
 class VisionService {
   private video: HTMLVideoElement | null = null;
   private stream: MediaStream | null = null;
@@ -50,6 +96,7 @@ class VisionService {
   private frameCount = 0;
   private lastFpsTime = 0;
   private fps = 0;
+  private rafId: number | null = null;
 
   getStatus(): VisionStatus {
     return this.status;
@@ -69,7 +116,7 @@ class VisionService {
   }
 
   private handleError(message: string, error?: unknown): void {
-    console.error(message, error);
+    logger.error(message, error);
     this.setStatus('error');
     this.callbacks.onError?.(message);
   }
@@ -112,27 +159,56 @@ class VisionService {
     }
 
     // 获取摄像头权限
+    const cameraSuccess = await this.initializeCamera(videoElement);
+    if (!cameraSuccess) {
+      return false;
+    }
+
+    // 初始化人脸检测模型
+    await this.initializeFaceMesh();
+
+    // 初始化姿态检测模型
+    await this.initializePose();
+
+    // 检查是否有至少一个模型加载成功
+    if (this.faceMesh || this.pose) {
+      this.running = true;
+      this.setStatus('running');
+      this.lastFpsTime = performance.now();
+      this.loop();
+      return true;
+    } else {
+      this.handleError('视觉模型加载失败，请刷新页面重试');
+      return false;
+    }
+  }
+
+  // 初始化摄像头
+  private async initializeCamera(videoElement: HTMLVideoElement): Promise<boolean> {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: 'user',
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-          frameRate: { ideal: 30 },
+          facingMode: CAMERA_CONFIG.FACING_MODE,
+          width: { ideal: CAMERA_CONFIG.WIDTH },
+          height: { ideal: CAMERA_CONFIG.HEIGHT },
+          frameRate: { ideal: CAMERA_CONFIG.FRAME_RATE },
         },
         audio: false,
       });
       this.stream = stream;
       videoElement.srcObject = stream;
       await videoElement.play();
+      return true;
     } catch (error: unknown) {
       const errorMessage = this.getCameraErrorMessage(error);
       this.handleError(errorMessage, error);
       this.setStatus('no_camera');
       return false;
     }
+  }
 
-    // 初始化人脸检测模型
+  // 初始化人脸检测模型
+  private async initializeFaceMesh(): Promise<void> {
     try {
       const mod = (await import('@mediapipe/face_mesh')) as unknown as FaceMeshModuleLike;
       const FaceMesh = mod.FaceMesh;
@@ -157,11 +233,13 @@ class VisionService {
         }
       });
     } catch (error) {
-      console.warn('人脸检测模型加载失败，部分功能可能受限', error);
+      logger.warn('人脸检测模型加载失败，部分功能可能受限', error);
       // 不阻止继续运行，因为可能只是模型加载问题
     }
+  }
 
-    // 初始化姿态检测模型
+  // 初始化姿态检测模型
+  private async initializePose(): Promise<void> {
     try {
       const poseMod = (await import('@mediapipe/pose')) as unknown as PoseModuleLike;
       const Pose = poseMod.Pose;
@@ -182,18 +260,7 @@ class VisionService {
         }
       });
     } catch (error) {
-      console.warn('姿态检测模型加载失败，手势识别功能将不可用', error);
-    }
-
-    if (this.faceMesh || this.pose) {
-      this.running = true;
-      this.setStatus('running');
-      this.lastFpsTime = performance.now();
-      this.loop();
-      return true;
-    } else {
-      this.handleError('视觉模型加载失败，请刷新页面重试');
-      return false;
+      logger.warn('姿态检测模型加载失败，手势识别功能将不可用', error);
     }
   }
 
@@ -220,7 +287,7 @@ class VisionService {
     // FPS 计算
     this.frameCount++;
     const now = performance.now();
-    if (now - this.lastFpsTime >= 1000) {
+    if (now - this.lastFpsTime >= FPS_INTERVAL_MS) {
       this.fps = this.frameCount;
       this.frameCount = 0;
       this.lastFpsTime = now;
@@ -235,13 +302,12 @@ class VisionService {
       }
     } catch (error) {
       // 单帧错误不影响继续运行，但需要记录以便调试
-      if (process.env.NODE_ENV === 'development') {
-        console.debug('[VisionService] Single frame error:', error);
-      }
+      logger.debug('Single frame error:', error);
     }
 
+    // Only schedule next frame if still running
     if (this.running) {
-      requestAnimationFrame(() => {
+      this.rafId = requestAnimationFrame(() => {
         void this.loop();
       });
     }
@@ -249,6 +315,13 @@ class VisionService {
 
   stop(): void {
     this.running = false;
+
+    // Cancel any pending animation frame
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+
     this.setStatus('idle');
 
     if (this.stream) {
@@ -276,7 +349,11 @@ class VisionService {
     if (!results || typeof results !== 'object') {
       return undefined;
     }
+    // Type guard to check if results has the expected shape
     const typed = results as FaceMeshResultsLike;
+    if (!('multiFaceLandmarks' in typed)) {
+      return undefined;
+    }
     const landmarks = typed.multiFaceLandmarks?.[0];
     if (!Array.isArray(landmarks)) {
       return undefined;
@@ -288,7 +365,11 @@ class VisionService {
     if (!results || typeof results !== 'object') {
       return undefined;
     }
+    // Type guard to check if results has the expected shape
     const typed = results as PoseResultsLike;
+    if (!('poseLandmarks' in typed)) {
+      return undefined;
+    }
     const landmarks = typed.poseLandmarks;
     if (!Array.isArray(landmarks)) {
       return undefined;
@@ -299,14 +380,14 @@ class VisionService {
   private computeHeadPose(
     landmarks: Landmark[] | undefined,
   ): { yaw: number; pitch: number } | null {
-    if (!landmarks || landmarks.length < 300) {
+    if (!landmarks || landmarks.length < FACE_LANDMARK_INDICES.MIN_LANDMARKS_REQUIRED) {
       return null;
     }
-    const leftEye = landmarks[33];
-    const rightEye = landmarks[263];
-    const nose = landmarks[1];
-    const forehead = landmarks[10];
-    const chin = landmarks[152];
+    const leftEye = landmarks[FACE_LANDMARK_INDICES.LEFT_EYE];
+    const rightEye = landmarks[FACE_LANDMARK_INDICES.RIGHT_EYE];
+    const nose = landmarks[FACE_LANDMARK_INDICES.NOSE];
+    const forehead = landmarks[FACE_LANDMARK_INDICES.FOREHEAD];
+    const chin = landmarks[FACE_LANDMARK_INDICES.CHIN];
     if (!leftEye || !rightEye || !nose || !forehead || !chin) {
       return null;
     }
@@ -325,13 +406,16 @@ class VisionService {
     const { yaw, pitch } = pose;
     this.yawHistory.push(yaw);
     this.pitchHistory.push(pitch);
-    if (this.yawHistory.length > 20) {
+    if (this.yawHistory.length > MOTION_THRESHOLDS.HISTORY_WINDOW) {
       this.yawHistory.shift();
     }
-    if (this.pitchHistory.length > 20) {
+    if (this.pitchHistory.length > MOTION_THRESHOLDS.HISTORY_WINDOW) {
       this.pitchHistory.shift();
     }
-    if (this.yawHistory.length < 10 || this.pitchHistory.length < 10) {
+    if (
+      this.yawHistory.length < MOTION_THRESHOLDS.MIN_HISTORY_FOR_MOTION ||
+      this.pitchHistory.length < MOTION_THRESHOLDS.MIN_HISTORY_FOR_MOTION
+    ) {
       return null;
     }
     const yawMin = Math.min(...this.yawHistory);
@@ -340,15 +424,12 @@ class VisionService {
     const pitchMax = Math.max(...this.pitchHistory);
     const yawRange = yawMax - yawMin;
     const pitchRange = pitchMax - pitchMin;
-    const nodThreshold = 0.04;
-    const shakeThreshold = 0.04;
-    const tolerance = 0.02;
-    if (pitchRange > nodThreshold && yawRange < tolerance) {
+    if (pitchRange > MOTION_THRESHOLDS.NOD && yawRange < MOTION_THRESHOLDS.YAW_TOLERANCE) {
       this.yawHistory = [];
       this.pitchHistory = [];
       return 'nod';
     }
-    if (yawRange > shakeThreshold && pitchRange < tolerance) {
+    if (yawRange > MOTION_THRESHOLDS.SHAKE_HEAD && pitchRange < MOTION_THRESHOLDS.YAW_TOLERANCE) {
       this.yawHistory = [];
       this.pitchHistory = [];
       return 'shakeHead';
@@ -358,14 +439,14 @@ class VisionService {
 
   private detectUpperBodyMotion(results: unknown): 'raiseHand' | 'waveHand' | null {
     const landmarks = this.getPoseLandmarks(results);
-    if (!landmarks || landmarks.length < 17) {
+    if (!landmarks || landmarks.length < POSE_LANDMARK_INDICES.MIN_LANDMARKS_REQUIRED) {
       return null;
     }
 
-    const leftShoulder = landmarks[11];
-    const rightShoulder = landmarks[12];
-    const leftWrist = landmarks[15];
-    const rightWrist = landmarks[16];
+    const leftShoulder = landmarks[POSE_LANDMARK_INDICES.LEFT_SHOULDER];
+    const rightShoulder = landmarks[POSE_LANDMARK_INDICES.RIGHT_SHOULDER];
+    const leftWrist = landmarks[POSE_LANDMARK_INDICES.LEFT_WRIST];
+    const rightWrist = landmarks[POSE_LANDMARK_INDICES.RIGHT_WRIST];
 
     if (!leftShoulder || !rightShoulder || !leftWrist || !rightWrist) {
       return null;
