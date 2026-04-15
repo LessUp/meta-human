@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import {
   OrbitControls,
   PerspectiveCamera,
@@ -12,10 +12,21 @@ import {
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
-import { usePrefersReducedMotion } from '../hooks';
+import { usePrefersReducedMotion, useIsTabVisibleRef } from '../hooks';
 import { loggers } from '../lib/logger';
+import { getDeviceCapabilities, type DeviceCapabilities } from '../core/performance';
+import { useSystemStore } from '../store/systemStore';
 
 const logger = loggers.app;
+
+/** Rotate camera around Y axis at origin */
+function rotateCameraHorizontal(camera: THREE.Camera, angle: number): void {
+  const x = camera.position.x * Math.cos(angle) - camera.position.z * Math.sin(angle);
+  const z = camera.position.x * Math.sin(angle) + camera.position.z * Math.cos(angle);
+  camera.position.x = x;
+  camera.position.z = z;
+  camera.lookAt(0, 0, 0);
+}
 
 interface DigitalHumanViewerProps {
   modelUrl?: string;
@@ -24,8 +35,117 @@ interface DigitalHumanViewerProps {
   onModelLoad?: (model: unknown) => void;
 }
 
+// --- Keyboard Controls Component ---
+function KeyboardControls() {
+  const { camera } = useThree();
+  const isVisibleRef = useIsTabVisibleRef();
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      // Only process if tab is visible and not typing in an input
+      if (!isVisibleRef.current) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      const step = 0.1; // Rotation step in radians
+      const zoomStep = 0.5;
+
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          rotateCameraHorizontal(camera, step);
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          rotateCameraHorizontal(camera, -step);
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          camera.position.y = Math.min(camera.position.y + zoomStep, 4);
+          camera.lookAt(0, 0, 0);
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          camera.position.y = Math.max(camera.position.y - zoomStep, -2);
+          camera.lookAt(0, 0, 0);
+          break;
+        case '+':
+        case '=':
+          e.preventDefault();
+          camera.position.multiplyScalar(0.9);
+          break;
+        case '-':
+        case '_':
+          e.preventDefault();
+          camera.position.multiplyScalar(1.1);
+          break;
+        case 'r':
+        case 'R':
+          e.preventDefault();
+          camera.position.set(0, 0, 6);
+          camera.lookAt(0, 0, 0);
+          break;
+      }
+    },
+    [camera, isVisibleRef],
+  );
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
+  return null;
+}
+
+// --- Performance Tracker Component ---
+function PerformanceTracker() {
+  const updateRenderPerformance = useSystemStore((s) => s.updateRenderPerformance);
+  const frameCountRef = useRef(0);
+  const lastTimeRef = useRef(performance.now());
+  const fpsHistoryRef = useRef<number[]>([]);
+  const isVisibleRef = useIsTabVisibleRef();
+
+  useFrame(() => {
+    if (!isVisibleRef.current) return;
+
+    frameCountRef.current++;
+    const now = performance.now();
+    const elapsed = now - lastTimeRef.current;
+
+    // Update FPS every 500ms
+    if (elapsed >= 500) {
+      const fps = (frameCountRef.current * 1000) / elapsed;
+      const frameTime = elapsed / frameCountRef.current;
+
+      fpsHistoryRef.current.push(fps);
+      if (fpsHistoryRef.current.length > 10) {
+        fpsHistoryRef.current.shift();
+      }
+
+      const avgFPS =
+        fpsHistoryRef.current.reduce((a, b) => a + b, 0) / fpsHistoryRef.current.length;
+
+      updateRenderPerformance({
+        currentFPS: Math.round(fps),
+        averageFPS: Math.round(avgFPS),
+        frameTimeMs: Number(frameTime.toFixed(2)),
+      });
+
+      frameCountRef.current = 0;
+      lastTimeRef.current = now;
+    }
+  });
+
+  return null;
+}
+
 // --- Procedural Cyber Avatar Component ---
-function CyberAvatar({ prefersReducedMotion }: { prefersReducedMotion: boolean }) {
+interface CyberAvatarProps {
+  prefersReducedMotion: boolean;
+  deviceCaps: DeviceCapabilities;
+}
+
+function CyberAvatar({ prefersReducedMotion, deviceCaps }: CyberAvatarProps) {
   const group = useRef<THREE.Group>(null);
   const headRef = useRef<THREE.Mesh>(null);
   const leftEyeRef = useRef<THREE.Mesh>(null);
@@ -35,6 +155,7 @@ function CyberAvatar({ prefersReducedMotion }: { prefersReducedMotion: boolean }
   // Use refs to avoid re-renders from store subscription in useFrame
   const storeRef = useRef(useDigitalHumanStore.getState());
   const intensityRef = useRef(storeRef.current.expressionIntensity ?? 0.8);
+  const isVisibleRef = useIsTabVisibleRef();
 
   // Subscribe to store changes and update refs without triggering re-renders
   useEffect(() => {
@@ -45,22 +166,34 @@ function CyberAvatar({ prefersReducedMotion }: { prefersReducedMotion: boolean }
     return unsubscribe;
   }, []);
 
+  // Throttle frame updates on low-end devices
+  const frameSkipRef = useRef(0);
+  const frameSkipTarget = deviceCaps.tier === 'low' ? 2 : 1;
+
   useFrame((state) => {
+    // Skip animation when tab is not visible
+    if (!isVisibleRef.current) return;
+
+    // Frame skipping for low-end devices
+    if (deviceCaps.tier === 'low') {
+      frameSkipRef.current++;
+      if (frameSkipRef.current % frameSkipTarget !== 0) return;
+    }
+
     const t = state.clock.elapsedTime;
     // Read from refs to avoid re-renders in the animation loop
     const { currentExpression, isSpeaking, currentAnimation } = storeRef.current;
     const intensity = Math.max(0, Math.min(1, intensityRef.current));
 
-    // Idle Floating Logic is handled by <Float>, we handle specific animations here
-
-    if (group.current) {
-      // Subtle breathing/idle motion for the whole group if not handled by Float
+    // Early return if reduced motion and not essential animations
+    if (prefersReducedMotion && currentAnimation === 'idle' && !isSpeaking) {
+      return;
     }
 
-    // Head movement based on animation state
-    // Map engine animation names to visual animations
-    const anim = currentAnimation;
+    // Idle Floating Logic is handled by <Float>
     if (group.current) {
+      // Head movement based on animation state
+      const anim = currentAnimation;
       if (anim === 'nod') {
         group.current.rotation.x = Math.sin(t * 5) * 0.2;
         group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, 0, 0.1);
@@ -101,9 +234,9 @@ function CyberAvatar({ prefersReducedMotion }: { prefersReducedMotion: boolean }
 
       // Emotional Logic
       if (currentExpression === 'smile') {
-        targetScaleY = 0.5; // Happy eyes (squint)
+        targetScaleY = 0.5;
       } else if (currentExpression === 'surprise') {
-        targetScaleY = 1.3; // Wide eyes
+        targetScaleY = 1.3;
       }
 
       const scaleY = isBlinking ? 0.1 : THREE.MathUtils.lerp(baseScaleY, targetScaleY, intensity);
@@ -112,27 +245,32 @@ function CyberAvatar({ prefersReducedMotion }: { prefersReducedMotion: boolean }
       rightEyeRef.current.scale.y = THREE.MathUtils.lerp(rightEyeRef.current.scale.y, scaleY, 0.2);
     }
 
-    // Rings Animation (Enhanced for Motion)
-    if (!prefersReducedMotion && ringsRef.current?.rotation) {
+    // Rings Animation (Enhanced for Motion) - Skip on low tier for performance
+    if (
+      !prefersReducedMotion &&
+      ringsRef.current?.rotation &&
+      deviceCaps.tier !== 'low'
+    ) {
+      const anim = currentAnimation;
       let ringSpeed = 0.2;
       let ringTilt = 0;
       let ringWobble = 0;
 
       if (anim === 'waveHand' || anim === 'wave' || anim === 'greet') {
-        ringSpeed = 2.0;
-        ringWobble = 0.5;
+        ringSpeed = deviceCaps.tier === 'high' ? 2.0 : 1.5;
+        ringWobble = deviceCaps.tier === 'high' ? 0.5 : 0.3;
       } else if (anim === 'raiseHand') {
         ringTilt = Math.PI / 6;
         ringSpeed = 0.5;
       } else if (anim === 'excited' || anim === 'dance') {
-        ringSpeed = 3.0;
-        ringWobble = 0.3;
+        ringSpeed = deviceCaps.tier === 'high' ? 3.0 : 2.0;
+        ringWobble = deviceCaps.tier === 'high' ? 0.3 : 0.2;
       } else if (anim === 'think') {
         ringSpeed = 0.5;
         ringTilt = Math.PI / 12;
       }
 
-      ringsRef.current.rotation.y += ringSpeed * 0.05; // Accumulate rotation
+      ringsRef.current.rotation.y += ringSpeed * 0.05;
       ringsRef.current.rotation.z =
         Math.sin(t * 0.5 + ringSpeed) * 0.1 + Math.sin(t * 10) * ringWobble;
       ringsRef.current.rotation.x = THREE.MathUtils.lerp(
@@ -242,11 +380,14 @@ function CyberAvatar({ prefersReducedMotion }: { prefersReducedMotion: boolean }
 function Scene({
   autoRotate,
   modelScene,
+  deviceCaps,
 }: {
   autoRotate?: boolean;
   modelScene?: THREE.Group | null;
+  deviceCaps: DeviceCapabilities;
 }) {
-  const prefersReducedMotion = usePrefersReducedMotion();
+  const prefersReducedMotion =
+    usePrefersReducedMotion() || deviceCaps.prefersReducedMotion;
 
   return (
     <>
@@ -254,22 +395,28 @@ function Scene({
 
       {/* Lighting */}
       <ambientLight intensity={0.5} color="#ffffff" />
-      <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={2} castShadow />
+      <spotLight
+        position={[10, 10, 10]}
+        angle={0.15}
+        penumbra={1}
+        intensity={2}
+        castShadow={deviceCaps.enableShadows}
+      />
       <pointLight position={[-10, -10, -10]} intensity={1} color="#3b82f6" />
 
-      {/* Environment Reflections */}
-      <Environment preset="city" />
+      {/* Environment Reflections - skip on low tier */}
+      {deviceCaps.tier !== 'low' && <Environment preset="city" />}
 
       {/* The Avatar */}
       {modelScene ? (
         <primitive object={modelScene} position={[0, -1.2, 0]} />
       ) : (
-        <CyberAvatar prefersReducedMotion={prefersReducedMotion} />
+        <CyberAvatar prefersReducedMotion={prefersReducedMotion} deviceCaps={deviceCaps} />
       )}
 
-      {/* Particles */}
+      {/* Particles - adaptive count based on device tier */}
       <Sparkles
-        count={prefersReducedMotion ? 0 : 100}
+        count={prefersReducedMotion ? 0 : deviceCaps.particleCount}
         scale={8}
         size={2}
         speed={0.4}
@@ -277,15 +424,17 @@ function Scene({
         color="#bae6fd"
       />
 
-      {/* Shadows */}
-      <ContactShadows
-        resolution={1024}
-        scale={10}
-        blur={2}
-        opacity={0.5}
-        far={10}
-        color="#000000"
-      />
+      {/* Shadows - adaptive quality */}
+      {deviceCaps.enableShadows && (
+        <ContactShadows
+          resolution={deviceCaps.maxShadowMapSize}
+          scale={10}
+          blur={deviceCaps.tier === 'high' ? 2 : 1}
+          opacity={0.5}
+          far={10}
+          color="#000000"
+        />
+      )}
 
       <OrbitControls
         enablePan={false}
@@ -296,7 +445,10 @@ function Scene({
         maxDistance={10}
         autoRotate={autoRotate}
         autoRotateSpeed={0.5}
+        enableDamping={deviceCaps.tier !== 'low'}
+        makeDefault
       />
+      <KeyboardControls />
     </>
   );
 }
@@ -312,6 +464,15 @@ export default function DigitalHumanViewer({
     modelUrl ? 'idle' : 'ready',
   );
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Detect device capabilities for adaptive rendering
+  const deviceCaps = useMemo(() => getDeviceCapabilities(), []);
+
+  // Performance tracking
+  const startModelLoad = useSystemStore((s) => s.startModelLoad);
+  const completeModelLoad = useSystemStore((s) => s.completeModelLoad);
+  const failModelLoad = useSystemStore((s) => s.failModelLoad);
+  const loadStartTimeRef = useRef<number | null>(null);
 
   // Use ref for callback to avoid re-triggering the load effect
   const onModelLoadRef = useRef(onModelLoad);
@@ -330,13 +491,19 @@ export default function DigitalHumanViewer({
 
     setLoadStatus('loading');
     setLoadError(null);
+    startModelLoad(modelUrl);
+    loadStartTimeRef.current = performance.now();
 
     loader.load(
       modelUrl,
       (gltf) => {
         if (cancelled) return;
+        const loadTime = loadStartTimeRef.current
+          ? Math.round(performance.now() - loadStartTimeRef.current)
+          : 0;
         setModelScene(gltf.scene);
         setLoadStatus('ready');
+        completeModelLoad(loadTime);
         onModelLoadRef.current?.(gltf.scene);
       },
       undefined,
@@ -352,6 +519,7 @@ export default function DigitalHumanViewer({
         setModelScene(null);
         setLoadStatus('error');
         setLoadError(message);
+        failModelLoad(message);
         onModelLoadRef.current?.({ type: 'procedural-fallback', error: message });
       },
     );
@@ -359,7 +527,7 @@ export default function DigitalHumanViewer({
     return () => {
       cancelled = true;
     };
-  }, [modelUrl]);
+  }, [modelUrl, startModelLoad, completeModelLoad, failModelLoad]);
 
   // Dispose old GLTF scene resources when modelScene is replaced
   useEffect(() => {
@@ -424,8 +592,24 @@ export default function DigitalHumanViewer({
   }, [modelScene]);
 
   return (
-    <div className="w-full h-full bg-transparent space-y-4" role="img" aria-label="3D数字人模型">
-      <Canvas shadows dpr={[1, 2]}>
+    <div
+      className="w-full h-full bg-transparent space-y-4 focus:outline-none focus:ring-2 focus:ring-blue-500/30 rounded-lg"
+      role="application"
+      aria-label="3D数字人模型查看器"
+      tabIndex={0}
+    >
+      <div className="sr-only">
+        使用方向键旋转视图，加减键缩放，R键重置视角。按Tab键切换到其他控件。
+      </div>
+      <Canvas
+        shadows={deviceCaps.enableShadows}
+        dpr={deviceCaps.recommendedDPR}
+        gl={{
+          antialias: deviceCaps.tier !== 'low',
+          powerPreference: deviceCaps.tier === 'high' ? 'high-performance' : 'default',
+          alpha: true,
+        }}
+      >
         {(loadStatus === 'loading' || loadStatus === 'error') && (
           <Html center>
             <div className="px-4 py-2 rounded-xl bg-black/70 text-white text-sm border border-white/10 shadow-lg">
@@ -433,16 +617,24 @@ export default function DigitalHumanViewer({
             </div>
           </Html>
         )}
-        <Scene autoRotate={autoRotate} modelScene={modelScene} />
+        <Scene autoRotate={autoRotate} modelScene={modelScene} deviceCaps={deviceCaps} />
+        <PerformanceTracker />
       </Canvas>
 
       {showControls && (
-        <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-4 space-y-3 text-white">
+        <div
+          className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-4 space-y-3 text-white"
+          role="complementary"
+          aria-label="3D渲染状态"
+        >
           <h2 className="text-lg font-semibold">数字人控制</h2>
           <div className="grid grid-cols-1 gap-2 text-sm">
             <div className="flex items-center gap-2">
               <span className="text-white/70">模型状态:</span>
-              <span className={loadStatus === 'ready' ? 'text-green-400' : 'text-yellow-300'}>
+              <span
+                className={loadStatus === 'ready' ? 'text-green-400' : 'text-yellow-300'}
+                aria-live="polite"
+              >
                 {loadStatus === 'ready'
                   ? '已加载'
                   : loadStatus === 'loading'
@@ -456,10 +648,18 @@ export default function DigitalHumanViewer({
             </div>
             <div className="flex items-center gap-2">
               <span className="text-white/70">自动旋转:</span>
-              <span className="text-white">{autoRotate ? '开启' : '关闭'}</span>
+              <span className="text-white" aria-live="polite">
+                {autoRotate ? '开启' : '关闭'}
+              </span>
+            </div>
+            <div className="text-xs text-white/50 border-t border-white/10 pt-2 mt-2">
+              快捷键: ←→↑↓ 旋转 | +/- 缩放 | R 重置
             </div>
             {loadError && (
-              <div className="text-xs text-red-200 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+              <div
+                className="text-xs text-red-200 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2"
+                role="alert"
+              >
                 {loadError}
               </div>
             )}

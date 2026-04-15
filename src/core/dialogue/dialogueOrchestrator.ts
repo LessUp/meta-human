@@ -1,6 +1,5 @@
 import {
   ChatResponsePayload,
-  type DialogueServiceResult,
   type StreamCallbacks,
 } from './dialogueService';
 import { getDefaultChatTransport } from './chatTransport';
@@ -30,6 +29,7 @@ export interface DialogueTurnOptions extends DialogueHandleOptions {
 }
 
 let pendingTurn: Promise<ChatResponsePayload | undefined> | null = null;
+let abortController: AbortController | null = null;
 
 /**
  * Reset the dialogue orchestrator state.
@@ -37,22 +37,69 @@ let pendingTurn: Promise<ChatResponsePayload | undefined> | null = null;
  */
 export function resetDialogueOrchestrator(): void {
   pendingTurn = null;
+  abortController = null;
+}
+
+/**
+ * Abort any pending dialogue turn.
+ * This will cancel the current request and clean up state.
+ */
+export function abortPendingTurn(): void {
+  if (abortController) {
+    abortController.abort();
+    abortController = null;
+  }
+  pendingTurn = null;
+}
+
+/**
+ * Check if a dialogue turn is currently pending.
+ */
+export function isDialogueTurnPending(): boolean {
+  return pendingTurn !== null;
+}
+
+/**
+ * Common pre-turn validation and setup
+ */
+function prepareDialogueTurn(
+  userText: string,
+  onAddUserMessage?: (text: string) => void,
+  setLoading?: (loading: boolean) => void,
+): { content: string; abortCtrl: AbortController } | null {
+  const content = userText.trim();
+  if (!content) {
+    return null;
+  }
+
+  if (pendingTurn) {
+    logger.warn('对话请求被忽略：上一轮对话仍在进行中');
+    return null;
+  }
+
+  // Create new abort controller for this turn
+  abortController = new AbortController();
+
+  onAddUserMessage?.(content);
+  setLoading?.(true);
+  digitalHumanEngine.setBehavior('thinking');
+
+  return { content, abortCtrl: abortController };
+}
+
+/**
+ * Common post-turn cleanup
+ */
+function finalizeDialogueTurn(setLoading?: (loading: boolean) => void): void {
+  setLoading?.(false);
+  pendingTurn = null;
+  abortController = null;
 }
 
 export async function runDialogueTurn(
   userText: string,
   options: DialogueTurnOptions = {},
 ): Promise<ChatResponsePayload | undefined> {
-  const content = userText.trim();
-  if (!content) {
-    return undefined;
-  }
-
-  if (pendingTurn) {
-    logger.warn('对话请求被忽略：上一轮对话仍在进行中');
-    return undefined;
-  }
-
   const {
     sessionId,
     meta,
@@ -66,20 +113,31 @@ export async function runDialogueTurn(
     onAddUserMessage,
   } = options;
 
-  onAddUserMessage?.(content);
+  const preparation = prepareDialogueTurn(userText, onAddUserMessage, setLoading);
+  if (!preparation) {
+    return undefined;
+  }
 
-  setLoading?.(true);
-  digitalHumanEngine.setBehavior('thinking');
+  const { content, abortCtrl } = preparation;
 
   const execute = async (): Promise<ChatResponsePayload | undefined> => {
     const chatTransport = getDefaultChatTransport();
 
     try {
-      const result = await chatTransport.send({
-        sessionId,
-        userText: content,
-        meta,
-      });
+      const result = await chatTransport.send(
+        {
+          sessionId,
+          userText: content,
+          meta,
+        },
+        {},
+        abortCtrl.signal,
+      );
+
+      // Check if aborted
+      if (abortCtrl.signal.aborted) {
+        return undefined;
+      }
 
       if (result.connectionStatus === 'connected') {
         onConnectionChange?.('connected');
@@ -99,9 +157,13 @@ export async function runDialogueTurn(
       });
 
       return result.response;
+    } catch (error) {
+      if (!abortCtrl.signal.aborted) {
+        throw error;
+      }
+      return undefined;
     } finally {
-      setLoading?.(false);
-      pendingTurn = null;
+      finalizeDialogueTurn(setLoading);
       onResetBehavior?.();
     }
   };
@@ -115,16 +177,6 @@ export async function runDialogueTurnStream(
   options: DialogueTurnOptions = {},
   streamCallbacks: StreamCallbacks = {},
 ): Promise<ChatResponsePayload | undefined> {
-  const content = userText.trim();
-  if (!content) {
-    return undefined;
-  }
-
-  if (pendingTurn) {
-    logger.warn('对话请求被忽略：上一轮对话仍在进行中');
-    return undefined;
-  }
-
   const {
     sessionId,
     meta,
@@ -140,13 +192,14 @@ export async function runDialogueTurnStream(
     onStreamEnd,
   } = options;
 
-  onAddUserMessage?.(content);
+  const preparation = prepareDialogueTurn(userText, onAddUserMessage, setLoading);
+  if (!preparation) {
+    return undefined;
+  }
 
-  setLoading?.(true);
-  digitalHumanEngine.setBehavior('thinking');
+  const { content, abortCtrl } = preparation;
 
   let didFinishStream = false;
-  let streamLock = 0; // Use counter for synchronization across async boundaries
 
   const finishStream = () => {
     if (didFinishStream) {
@@ -158,24 +211,24 @@ export async function runDialogueTurnStream(
   };
 
   const execute = async (): Promise<ChatResponsePayload | undefined> => {
-    let streamResult: DialogueServiceResult | null = null;
     const chatTransport = getDefaultChatTransport();
-    const currentStreamLock = ++streamLock;
 
     try {
       const generator = chatTransport.stream(
         { sessionId, userText: content, meta },
         {},
         streamCallbacks,
+        abortCtrl.signal,
       );
 
       let accumulatedText = '';
       let step = await generator.next();
 
       while (!step.done) {
-        // Check if this stream is still valid
-        if (currentStreamLock !== streamLock) {
-          logger.warn('Stream invalidated by new request');
+        // Check if aborted
+        if (abortCtrl.signal.aborted) {
+          logger.warn('Stream aborted');
+          finishStream();
           return undefined;
         }
 
@@ -185,12 +238,17 @@ export async function runDialogueTurnStream(
         try {
           step = await generator.next();
         } catch (genError: unknown) {
-          logger.error('Generator error:', genError);
-          throw genError;
+          // Don't throw if aborted
+          if (!abortCtrl.signal.aborted) {
+            logger.error('Generator error:', genError);
+            throw genError;
+          }
+          finishStream();
+          return undefined;
         }
       }
 
-      streamResult = step.value;
+      const streamResult = step.value;
 
       const result = streamResult ?? {
         response: {
@@ -201,6 +259,12 @@ export async function runDialogueTurnStream(
         connectionStatus: 'connected',
         error: null,
       };
+
+      // Check if aborted before processing result
+      if (abortCtrl.signal.aborted) {
+        finishStream();
+        return undefined;
+      }
 
       if (result.connectionStatus === 'connected') {
         onConnectionChange?.('connected');
@@ -222,12 +286,13 @@ export async function runDialogueTurnStream(
       finishStream();
       return result.response;
     } catch (error) {
-      logger.error('流式对话失败:', error);
-      onError?.(error instanceof Error ? error.message : '流式对话失败');
+      if (!abortCtrl.signal.aborted) {
+        logger.error('流式对话失败:', error);
+        onError?.(error instanceof Error ? error.message : '流式对话失败');
+      }
       return undefined;
     } finally {
-      setLoading?.(false);
-      pendingTurn = null;
+      finalizeDialogueTurn(setLoading);
       onResetBehavior?.();
       finishStream();
     }

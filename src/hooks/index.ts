@@ -7,6 +7,7 @@ export {
   useIsTablet,
   useIsDesktop,
   usePrefersReducedMotion,
+  useIsTabVisibleRef,
 } from './useMediaQuery';
 export { useDebounce, useDebouncedCallback } from './useDebounce';
 export { useLocalStorage } from './useLocalStorage';

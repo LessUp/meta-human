@@ -1,5 +1,8 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { loggers } from '../../lib/logger';
+
+const logger = loggers.app;
 
 interface Props {
   children: ReactNode;
@@ -33,8 +36,8 @@ export default class ErrorBoundary extends Component<Props, State> {
     // 调用外部错误处理函数
     this.props.onError?.(error, errorInfo);
 
-    // 记录错误到控制台（生产环境可发送到监控服务）
-    console.error('ErrorBoundary 捕获错误:', error, errorInfo);
+    // 记录错误（生产环境可发送到监控服务）
+    logger.error('ErrorBoundary 捕获错误:', error, errorInfo);
   }
 
   handleReset = () => {

@@ -1,163 +1,120 @@
-# MetaHuman 项目总览
+# Project Overview
 
-## 1. 项目一句话
+## What is MetaHuman Engine?
 
-MetaHuman 是一个基于 Web 的数字人交互 Demo/SDK，用于快速跑通 **3D 数字人 + 语音交互 + 视觉镜像 + LLM 对话** 的演示闭环。
+MetaHuman Engine is a **browser-native 3D digital human engine** that enables real-time interaction between AI and users through an embodied avatar.
 
-## 2. 它解决什么问题
+## The Problem It Solves
 
-很多数字人项目在早期都会遇到同一个问题：
+Building digital human applications typically requires:
 
-- 页面能展示，但交互链路不完整
-- LLM 能返回文本，但无法驱动数字人表现
-- 语音、视觉、3D、后端各自独立，难以形成一个可演示、可验证的整体
-- 没有云端配置时，Demo 很容易直接失效
+- Integrating multiple disconnected systems (3D, voice, vision, LLM)
+- Handling failures gracefully across all layers
+- Maintaining performance across different devices
+- Creating fallbacks when external services are unavailable
 
-这个项目的目标，就是以尽量低的复杂度把这些能力串成一条可运行链路。
+MetaHuman Engine provides a **complete, working reference implementation** that handles all of this out of the box.
 
-## 3. 当前定位
+## Target Users
 
-当前仓库定位不是“完整数字人平台”，而是：
+| User | Use Case |
+|------|----------|
+| **Demo Teams** | Quick proof-of-concept for digital human capabilities |
+| **Product Teams** | Validate use cases before full platform investment |
+| **Developers** | Starting point for custom digital human applications |
+| **Researchers** | Testbed for interaction and avatar research |
 
-> 一个可运行、可展示、可二开、可本地自洽的数字人交互样例工程。
+## Core Capabilities
 
-更准确地说，它是一个 **Demo/SDK**，适合：
-- 售前演示
-- PoC 验证
-- 技术方案打样
-- 业务场景二次开发
+### 1. 3D Avatar Rendering
 
-## 4. 核心能力
+- Real-time Three.js rendering
+- GLB/GLTF model support
+- Procedural fallback avatar
+- Emotion-driven expressions
+- Skeletal animations
 
-### 4.1 3D 数字人渲染
-- 基于 Three.js + React Three Fiber
-- 支持 GLB / GLTF 模型
-- 支持动作、表情、情绪驱动
-- 模型不可用时支持回退头像
+### 2. Voice Interaction
 
-### 4.2 文本与语音交互
-- 文本输入可直接驱动对话
-- ASR 可将语音转为文本
-- TTS 可将回复文本播报出来
-- 支持静音、录音、说话等状态同步
+- Text-to-speech synthesis
+- Speech-to-text recognition
+- Smart muting and interruption
+- Voice activity visualization
 
-### 4.3 视觉镜像
-- 接入摄像头画面
-- 基于 MediaPipe 做视觉推理
-- 将识别结果映射为简化情绪和动作信号
-- 用于驱动数字人状态联动
+### 3. Visual Perception
 
-### 4.4 后端对话能力
-- FastAPI 提供统一对话接口
-- 通过 `/v1/chat` 返回结构化结果
-- 支持 OpenAI 兼容接口
-- 无 key 或异常时自动回退 Mock
+- Facial emotion detection
+- Head motion tracking
+- Gesture recognition
+- Privacy-preserving (all local)
 
-## 5. 为什么这个项目有价值
+### 4. Dialogue System
 
-### 对业务/售前
-- 可以快速展示“数字人交互闭环”
-- 可以在本地或测试环境稳定演示
-- 不依赖完整平台建设就能做方案验证
+- OpenAI-compatible API
+- Streaming responses
+- Graceful degradation to mock
+- Session persistence
 
-### 对研发
-- 前后端边界清晰
-- 模块入口明确
-- 可以直接基于现有代码做扩展
-- 适合作为业务接入的起点工程
+## What It's NOT
 
-### 对团队协作
-- 文档、代码、架构口径一致
-- 有利于新人快速理解项目
-- 降低“文档承诺过度”的风险
+To maintain focus and quality, this project explicitly excludes:
 
-## 6. 典型演示路径
+- User authentication system
+- Model management backend
+- Behavior timeline editor
+- Multi-tenant platform features
+- Production-grade monitoring
 
-### 路径 A：文本对话
-1. 用户输入文本
-2. 前端请求 `/v1/chat`
-3. 后端返回 `replyText / emotion / action`
-4. 前端更新聊天区、数字人动作与语音播报
+These capabilities may be added in separate projects or integrations.
 
-### 路径 B：语音输入
-1. 用户点击录音
-2. ASR 输出文本
-3. 识别结果进入同一条对话链路
-4. 数字人继续响应并播报
+## Success Criteria
 
-### 路径 C：视觉镜像
-1. 用户授权摄像头
-2. 页面显示视觉识别结果
-3. 结果映射到数字人表现层
+The project succeeds when:
 
-## 7. 当前架构概览
+1. ✅ Developers can run it locally with zero configuration
+2. ✅ Demos work even without API keys
+3. ✅ External service failures don't crash the experience
+4. ✅ Code is readable and well-documented
+5. ✅ Architecture supports extension
 
-前端：
-- React + TypeScript + Vite
-- Three.js + React Three Fiber
-- Zustand
-- MediaPipe
-- Web Speech API
+## Technology Choices
 
-后端：
-- FastAPI
-- OpenAI 兼容接口调用
-- 智能 Mock 回退
+| Layer | Technology | Rationale |
+|-------|------------|-----------|
+| Frontend | React + TypeScript | Type safety, ecosystem |
+| Build | Vite | Speed, ESM native |
+| 3D | Three.js + R3F | Industry standard |
+| State | Zustand | Simple, performant |
+| Styling | Tailwind | Rapid development |
+| Vision | MediaPipe | Browser-native ML |
+| Backend | FastAPI | Async Python, auto-docs |
 
-设计原则：
-- 前端负责交互与渲染
-- 后端负责结构化对话结果
-- 接口尽量最小、稳定、可预测
-- 外部能力失败时优先降级而不是崩溃
+## Roadmap
 
-## 8. 当前不做什么
+### Phase 1: Stability (Current)
 
-为了保证项目可信、可控，当前明确不把它定义为完整平台，因此不包含：
-- 用户系统
-- 模型管理后台
-- 行为编排平台
-- 多租户与运营后台
-- 生产级持久化和监控系统
+- [x] Complete interaction loop
+- [x] Graceful fallbacks
+- [x] Device-adaptive performance
+- [x] Comprehensive documentation
 
-## 9. 最适合谁使用
+### Phase 2: SDK-ification
 
-这个项目最适合以下人群：
-- 想快速展示数字人交互能力的团队
-- 想验证方案可行性的 PoC 团队
-- 想基于现有架构继续做业务接入的研发团队
-- 想把多个前沿能力整合进一个样例项目的技术团队
+- [ ] Plugin architecture for avatars
+- [ ] Configurable dialogue providers
+- [ ] Theme system
+- [ ] Event hooks API
 
-## 10. 后续演进方向
+### Phase 3: Platform
 
-建议按下面的顺序演进：
+- [ ] Model hosting
+- [ ] Behavior editor
+- [ ] Analytics dashboard
+- [ ] Multi-tenant support
 
-### P1：增强 Demo 稳定性
-- 更完善的错误与空状态展示
-- 更清晰的多输入源协同策略
-- 更稳定的会话管理
+## Getting Started
 
-### P2：增强 SDK 化能力
-- 更清晰的扩展接口
-- 更灵活的动作/情绪映射
-- 更容易替换模型与能力提供方
-
-### P3：再考虑平台化
-- 后台系统
-- 模型管理
-- 编排系统
-- 多租户能力
-
-## 11. 结论
-
-MetaHuman 当前最适合被理解为：
-
-> 一个围绕数字人交互闭环验证而设计的 Web Demo/SDK。
-
-它的价值不在于“大而全”，而在于：
-
-- 真实可运行
-- 易于演示
-- 容易扩展
-- 文档和代码一致
-
-这正是一个早期样例工程最重要的品质。
+1. [Quick Start](../README.md#quick-start)
+2. [Architecture Guide](architecture.md)
+3. [API Reference](api.md)
+4. [Development Guide](development.md)
