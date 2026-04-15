@@ -13,6 +13,9 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { usePrefersReducedMotion } from '../hooks';
+import { loggers } from '../lib/logger';
+
+const logger = loggers.app;
 
 interface DigitalHumanViewerProps {
   modelUrl?: string;
@@ -339,7 +342,7 @@ export default function DigitalHumanViewer({
       undefined,
       (error) => {
         if (cancelled) return;
-        console.error('模型加载失败', error);
+        logger.error('模型加载失败', error);
         const message =
           error instanceof Error
             ? error.message
@@ -367,7 +370,7 @@ export default function DigitalHumanViewer({
           try {
             mesh.geometry.dispose();
           } catch (error) {
-            console.warn('Failed to dispose geometry:', error);
+            logger.warn('Failed to dispose geometry:', error);
           }
           const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
           materials.forEach((mat) => {
@@ -405,13 +408,13 @@ export default function DigitalHumanViewer({
                       texture.dispose();
                     }
                   } catch (error) {
-                    console.warn(`Failed to dispose texture ${prop}:`, error);
+                    logger.warn(`Failed to dispose texture ${prop}:`, error);
                   }
                 });
 
                 mat.dispose();
               } catch (error) {
-                console.warn('Failed to dispose material:', error);
+                logger.warn('Failed to dispose material:', error);
               }
             }
           });
