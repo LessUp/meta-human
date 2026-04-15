@@ -6,6 +6,9 @@ import { ttsService } from '../core/audio';
 import { digitalHumanEngine } from '../core/avatar';
 import { runDialogueTurnStream } from '../core/dialogue/dialogueOrchestrator';
 import { toast } from 'sonner';
+import { loggers } from '../lib/logger';
+
+const logger = loggers.chat;
 
 export interface UseChatStreamOptions {
   sessionId: string;
@@ -113,7 +116,7 @@ export function useChatStream(options: UseChatStreamOptions) {
           finalizePerformanceTrace('failed');
         }
       } catch (err: unknown) {
-        console.error('发送消息失败:', err);
+        logger.error('发送消息失败:', err);
         toast.error(err instanceof Error ? err.message : '发送失败，请重试');
         finalizeAssistantMessage();
         finalizePerformanceTrace('failed');

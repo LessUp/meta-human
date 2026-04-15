@@ -1,4 +1,5 @@
 import type { EmotionType, ExpressionType, BehaviorType } from '../../store/digitalHumanStore';
+import { loggers } from '../../lib/logger';
 import {
   EMOTION_TO_EXPRESSION,
   ANIMATION_DURATIONS,
@@ -33,6 +34,8 @@ export interface StateAdapter {
   setPlaying(playing: boolean): void;
 }
 
+const logger = loggers.avatar;
+
 export class DigitalHumanEngine {
   private readonly state: StateAdapter;
   private animationTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -59,7 +62,7 @@ export class DigitalHumanEngine {
       try {
         handler({ type: event, value });
       } catch (err) {
-        console.error(`[DigitalHumanEngine] event handler error (${event}):`, err);
+        logger.error(`event handler error (${event}):`, err);
       }
     });
   }
@@ -81,7 +84,7 @@ export class DigitalHumanEngine {
     if (VALID_EXPRESSIONS.includes(expression as ExpressionType)) {
       this.state.setExpression(expression as ExpressionType);
     } else {
-      console.warn(`Unknown expression: ${expression}, falling back to neutral`);
+      logger.warn(`Unknown expression: ${expression}, falling back to neutral`);
       this.state.setExpression('neutral');
     }
     this.emit('expression:change', expression);
@@ -99,7 +102,7 @@ export class DigitalHumanEngine {
         this.state.setExpression(mappedExpression);
       }
     } else {
-      console.warn(`Unknown emotion: ${emotion}, falling back to neutral`);
+      logger.warn(`Unknown emotion: ${emotion}, falling back to neutral`);
       this.state.setEmotion('neutral');
       this.state.setExpression('neutral');
     }
@@ -110,7 +113,7 @@ export class DigitalHumanEngine {
     if (VALID_BEHAVIORS.includes(behavior as BehaviorType)) {
       this.state.setBehavior(behavior as BehaviorType);
     } else {
-      console.warn(`Unknown behavior: ${behavior}, falling back to idle`);
+      logger.warn(`Unknown behavior: ${behavior}, falling back to idle`);
       this.state.setBehavior('idle');
     }
     this.emit('behavior:change', behavior);

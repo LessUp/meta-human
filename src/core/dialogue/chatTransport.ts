@@ -8,6 +8,9 @@ import {
   type StreamCallbacks,
 } from './dialogueService';
 import { MetaHumanWSClient, probeWebSocketEndpoint, type WSServerEvent } from './wsClient';
+import { loggers } from '../../lib/logger';
+
+const logger = loggers.transport;
 
 export type ChatTransportMode = 'auto' | 'http' | 'sse' | 'websocket';
 
@@ -221,7 +224,7 @@ async function* streamOverWebSocket(
       };
     }
 
-    console.warn('WebSocket 请求失败，降级到 HTTP:', error);
+    logger.warn('WebSocket 请求失败，降级到 HTTP:', error);
     const fallback = await sendUserInput(payload, config, signal);
 
     if (fallback.response.replyText) {
@@ -425,7 +428,7 @@ export function getChatTransport(
       return transportRegistry.websocket;
     }
 
-    console.warn('WebSocket 不可用，回退到 SSE transport');
+    logger.warn('WebSocket 不可用，回退到 SSE transport');
   }
 
   return transportRegistry.sse;

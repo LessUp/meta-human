@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { useChatSessionStore } from '../store/chatSessionStore';
@@ -11,16 +11,8 @@ import { useChatStream } from './useChatStream';
 import { useConnectionHealth } from './useConnectionHealth';
 
 export function useAdvancedDigitalHumanController() {
-  const {
-    isPlaying,
-    isRecording,
-    isMuted,
-    autoRotate,
-    setRecording,
-    toggleMute,
-    toggleAutoRotate,
-    initSession,
-  } = useDigitalHumanStore();
+  const { isPlaying, autoRotate, setRecording, toggleMute, toggleAutoRotate, initSession } =
+    useDigitalHumanStore();
   const sessionId = useChatSessionStore((s) => s.sessionId);
   const error = useSystemStore((s) => s.error);
   const clearError = useSystemStore((s) => s.clearError);
@@ -32,7 +24,7 @@ export function useAdvancedDigitalHumanController() {
 
   const { chatInput, setChatInput, isChatLoading, handleChatSend } = useChatStream({
     sessionId,
-    isMuted,
+    isMuted: useDigitalHumanStore.getState().isMuted,
     onConnectionChange: (status) => setConnectionStatus(status),
     onClearError: () => clearError(),
     onError: (msg) => setError(msg),
@@ -71,6 +63,7 @@ export function useAdvancedDigitalHumanController() {
   }, []);
 
   const handleToggleRecording = useCallback(() => {
+    const isRecording = useDigitalHumanStore.getState().isRecording;
     if (isRecording) {
       asrService.stop();
       setRecording(false);
@@ -82,7 +75,7 @@ export function useAdvancedDigitalHumanController() {
     if (started) {
       toast.success('正在聆听...');
     }
-  }, [isRecording, setRecording]);
+  }, [setRecording]);
 
   const handleExpressionChange = useCallback((expression: string, intensity: number) => {
     digitalHumanEngine.setExpression(expression);
@@ -139,6 +132,10 @@ export function useAdvancedDigitalHumanController() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
+      // Get current state values at event time to avoid stale closures
+      const currentIsMuted = useDigitalHumanStore.getState().isMuted;
+      const currentIsRecording = useDigitalHumanStore.getState().isRecording;
+
       switch (e.key.toLowerCase()) {
         case ' ':
           e.preventDefault();
@@ -149,10 +146,20 @@ export function useAdvancedDigitalHumanController() {
           break;
         case 'm':
           toggleMute();
-          toast.info(isMuted ? '已取消静音' : '已静音');
+          // Use the fresh value from getState() for accurate toast
+          toast.info(currentIsMuted ? '已取消静音' : '已静音');
           break;
         case 'v':
-          handleToggleRecording();
+          if (currentIsRecording) {
+            asrService.stop();
+            setRecording(false);
+            toast.info('录音已停止');
+          } else {
+            const started = asrService.start();
+            if (started) {
+              toast.success('正在聆听...');
+            }
+          }
           break;
         case 's':
           if (!e.ctrlKey && !e.metaKey) toggleSettings();
@@ -181,34 +188,58 @@ export function useAdvancedDigitalHumanController() {
     closeSettings,
     handlePlayPause,
     handleReset,
-    handleToggleRecording,
     handleVoiceCommand,
-    isMuted,
+    setRecording,
     toggleMute,
     toggleSettings,
   ]);
 
-  return {
-    activeTab,
-    autoRotate,
-    chatInput,
-    closeSettings,
-    handleBehaviorChange,
-    handleChatSend,
-    handleExpressionChange,
-    handleModelLoad,
-    handleNewSession,
-    handlePlayPause,
-    handleReset,
-    handleToggleRecording,
-    handleVoiceCommand,
-    isChatLoading,
-    reconnect,
-    setActiveTab,
-    setChatInput,
-    showSettings,
-    toggleMute,
-    toggleSettings,
-    toggleAutoRotate,
-  };
+  // Memoize the returned object to prevent unnecessary re-renders of consumers
+  return useMemo(
+    () => ({
+      activeTab,
+      autoRotate,
+      chatInput,
+      closeSettings,
+      handleBehaviorChange,
+      handleChatSend,
+      handleExpressionChange,
+      handleModelLoad,
+      handleNewSession,
+      handlePlayPause,
+      handleReset,
+      handleToggleRecording,
+      handleVoiceCommand,
+      isChatLoading,
+      reconnect,
+      setActiveTab,
+      setChatInput,
+      showSettings,
+      toggleMute,
+      toggleSettings,
+      toggleAutoRotate,
+    }),
+    [
+      activeTab,
+      autoRotate,
+      chatInput,
+      closeSettings,
+      handleBehaviorChange,
+      handleChatSend,
+      handleExpressionChange,
+      handleModelLoad,
+      handleNewSession,
+      handlePlayPause,
+      handleReset,
+      handleToggleRecording,
+      handleVoiceCommand,
+      isChatLoading,
+      reconnect,
+      setChatInput,
+      showSettings,
+      toggleMute,
+      toggleSettings,
+      toggleAutoRotate,
+    ],
+  );
 }

@@ -134,17 +134,22 @@ describe('useAdvancedDigitalHumanController', () => {
   });
 
   it('toggles settings from keyboard shortcuts and ignores input fields', () => {
-    const { result } = renderHook(() => useAdvancedDigitalHumanController());
+    const { result, rerender } = renderHook(() => useAdvancedDigitalHumanController());
 
     act(() => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }));
     });
+
+    // Need to rerender to get the updated memoized value
+    rerender();
 
     expect(result.current.showSettings).toBe(true);
 
     act(() => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     });
+
+    rerender();
 
     expect(result.current.showSettings).toBe(false);
 
@@ -155,6 +160,8 @@ describe('useAdvancedDigitalHumanController', () => {
       act(() => {
         input.dispatchEvent(new KeyboardEvent('keydown', { key: 's', bubbles: true }));
       });
+
+      rerender();
 
       expect(result.current.showSettings).toBe(false);
     } finally {

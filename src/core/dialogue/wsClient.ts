@@ -4,6 +4,10 @@
  * Provides infrastructure for future WebSocket migration.
  */
 
+import { loggers } from '../../lib/logger';
+
+const logger = loggers.ws;
+
 const WS_BASE_URL = (import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:8000').replace(/\/+$/, '');
 
 export function getWebSocketUrl(sessionId: string): string {
@@ -70,6 +74,7 @@ export class MetaHumanWSClient {
   private resolveConnect: (() => void) | null = null;
   private rejectConnect: ((reason?: unknown) => void) | null = null;
   private isManuallyDisconnected = false;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(sessionId: string) {
     this.sessionId = sessionId;
@@ -96,9 +101,7 @@ export class MetaHumanWSClient {
           this.messageHandler?.(data);
         } catch (error) {
           // Log malformed messages in development for debugging
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('[WSClient] Failed to parse message:', event.data, error);
-          }
+          logger.warn('Failed to parse message:', event.data, error);
         }
       };
 
@@ -125,6 +128,11 @@ export class MetaHumanWSClient {
   disconnect(): void {
     this.isManuallyDisconnected = true;
     this.reconnectAttempts = this.maxReconnectAttempts;
+    // Clear any pending reconnect timer
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     if (this.rejectConnect) {
       this.rejectConnect(new Error('WebSocket disconnected'));
       this.rejectConnect = null;
@@ -134,14 +142,29 @@ export class MetaHumanWSClient {
     this.ws = null;
   }
 
+  private clearReconnectTimer(): void {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+  }
+
   private attemptReconnect(): void {
     if (this.isManuallyDisconnected || this.reconnectAttempts >= this.maxReconnectAttempts) return;
     this.reconnectAttempts++;
-    const delay = Math.min(1000 * 2 ** this.reconnectAttempts, 30000);
-    setTimeout(() => {
+    // Add jitter (±10%) to prevent thundering herd
+    const baseDelay = Math.min(1000 * 2 ** this.reconnectAttempts, 30000);
+    const jitter = baseDelay * 0.1 * (Math.random() * 2 - 1);
+    const delay = Math.max(0, baseDelay + jitter);
+
+    this.clearReconnectTimer();
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
       if (this.isManuallyDisconnected) return;
       if (this.messageHandler) {
-        this.connect(this.messageHandler).catch(() => {});
+        this.connect(this.messageHandler).catch((error: unknown) => {
+          logger.warn('Reconnection failed:', error instanceof Error ? error.message : error);
+        });
       }
     }, delay);
   }
