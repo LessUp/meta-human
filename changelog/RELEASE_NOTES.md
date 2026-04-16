@@ -1,104 +1,69 @@
 # Release Notes
 
-## v1.0.0 (2025-04-16)
-
-### 🎉 First Stable Release
-
-MetaHuman Engine reaches its first stable release with a complete feature set and comprehensive documentation.
+Latest release information for MetaHuman Engine.
 
 ---
 
-### ✨ Highlights
+## Current Release: v1.0.0
 
-**Complete Interaction Loop**
+📅 **Release Date:** April 16, 2025
 
-The engine now provides a seamless end-to-end experience:
+🔗 **[Full Release Notes →](./releases/v1.0.0.md)**
 
-```
-User Input → ASR/Text → Dialogue → TTS → Avatar Animation
-                ↑                              ↓
-                └────── Vision Feedback ───────┘
-```
+### 🎉 Highlights
 
-**Zero-Config Demo**
+MetaHuman Engine reaches its first stable release with:
 
-- Works out of the box without any API keys
-- Automatic fallback to local mock mode
-- Graceful degradation on all external services
+- ✅ **Complete Interaction Loop** — Voice, vision, and dialogue seamlessly integrated
+- ✅ **Zero-Config Demo** — Works without any API keys
+- ✅ **Production-Ready** — Clean architecture with proper error handling
+- ✅ **Comprehensive Documentation** — Full API reference and guides
 
-**Production-Ready Architecture**
+### ✨ Key Features
 
-- Clean separation of concerns
-- Proper error handling throughout
-- Memory leak prevention
-- Performance optimization for all device tiers
-
----
-
-### 🚀 New Features
-
-| Feature | Description |
-|---------|-------------|
-| Device Capability Detection | Automatic hardware tier detection for optimal rendering |
-| Abort Controller Support | Cancel in-progress dialogue requests |
-| Performance Metrics | Real-time FPS tracking and display |
-| Unified Transport Layer | Seamless switching between HTTP/SSE/WebSocket |
+| Feature | Status |
+|---------|--------|
+| 3D Avatar Engine | ✅ Available |
+| Voice Interaction (TTS/ASR) | ✅ Available |
+| Visual Perception | ✅ Available |
+| Dialogue System | ✅ Available |
+| WebSocket Support | ✅ Available |
+| Adaptive Performance | ✅ Available |
 
 ---
 
-### 📚 Documentation
+## Release History
 
-Complete rewrite of all documentation:
-
-- **README** - Professional, concise project introduction
-- **docs/architecture.md** - Detailed system design
-- **docs/api.md** - Full API reference
-- **docs/development.md** - Setup and deployment guide
-- **CHANGELOG.md** - Version history
-
----
-
-### 🔧 Breaking Changes
-
-None. This is the first stable release.
+| Version | Date | Description | Release Notes |
+|---------|------|-------------|---------------|
+| v1.0.0 | 2025-04-16 | First stable release | [View →](./releases/v1.0.0.md) |
+| v0.9.0 | 2025-03-18 | Architecture refactor | — |
+| v0.8.0 | 2025-02-25 | SSE streaming | — |
+| v0.7.0 | 2025-01-24 | Voice integration | — |
+| v0.6.0 | 2025-01-23 | UI refactor | — |
 
 ---
 
-### 📦 Upgrade Notes
+## Versioning
 
-If upgrading from pre-release versions:
+This project follows [Semantic Versioning](https://semver.org/):
 
-1. Update state store imports:
-   ```typescript
-   // Chat history moved to chatSessionStore
-   import { useChatSessionStore } from '@/store/chatSessionStore';
-   ```
-
-2. Use new logger:
-   ```typescript
-   import { loggers } from '@/lib/logger';
-   const logger = loggers.app;
-   ```
-
-3. Configure transport (optional):
-   ```bash
-   VITE_CHAT_TRANSPORT=auto
-   ```
+- **MAJOR** — Incompatible API changes
+- **MINOR** — New features, backward compatible  
+- **PATCH** — Bug fixes, backward compatible
 
 ---
 
-### 🙏 Acknowledgments
+## Quick Links
 
-Thanks to all contributors and early adopters who helped shape this release.
+- 📖 [Documentation](../docs/index.md)
+- 🐛 [Issue Tracker](https://github.com/LessUp/meta-human/issues)
+- 💬 [Discussions](https://github.com/LessUp/meta-human/discussions)
+- 🏷️ [All Releases](https://github.com/LessUp/meta-human/releases)
 
 ---
 
-## Previous Releases
-
-| Version | Date | Description |
-|---------|------|-------------|
-| v1.0.0 | 2025-04-16 | First stable release |
-| v0.9.0 | 2025-03-18 | Architecture refactor, state domain split |
-| v0.8.0 | 2025-02-25 | SSE streaming, performance metrics |
-| v0.7.0 | 2025-01-24 | Voice & audio integration |
-| v0.6.0 | 2025-01-23 | UI refactor, component structure |
+<p align="center">
+  <strong>MetaHuman Engine</strong><br>
+  Built with ❤️ to make digital humans accessible to everyone
+</p>

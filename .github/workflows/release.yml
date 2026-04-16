@@ -1,0 +1,72 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.version || github.ref_name }}
+          release_name: MetaHuman Engine ${{ github.event.inputs.version || github.ref_name }}
+          body: |
+            ## MetaHuman Engine ${{ github.event.inputs.version || github.ref_name }}
+
+            ### 🎉 Highlights | 亮点
+            
+            **English:** MetaHuman Engine reaches its first stable release with a complete feature set, production-ready architecture, and comprehensive documentation.
+            
+            **中文：** MetaHuman Engine 首个稳定版本发布，功能完整、架构成熟、文档全面。
+
+            ### 🚀 What's New | 新功能
+
+            - ✅ 3D Avatar Engine | 3D 数字人引擎
+            - ✅ Voice Interaction (TTS/ASR) | 语音交互
+            - ✅ Visual Perception | 视觉感知  
+            - ✅ Dialogue System | 对话系统
+            - ✅ WebSocket Support | WebSocket 支持
+            - ✅ Adaptive Performance | 自适应性能
+
+            ### 📚 Documentation | 文档
+
+            Complete bilingual documentation:
+            - 📖 [Documentation | 文档](./docs/index.md)
+            - 🔌 [API Reference | API 参考](./docs/api/)
+            - 🏗️ [Architecture | 架构](./docs/architecture/)
+            - 🚀 [Quick Start | 快速开始](./docs/guide/)
+
+            ### 🔗 Links | 链接
+
+            - 🌐 **Live Demo | 在线演示:** https://lessup.github.io/meta-human/
+            - 📖 **Full Release Notes | 完整发布说明:** [changelog/releases/v1.0.0.md](./changelog/releases/v1.0.0.md)
+            - 🐛 **Issues | 问题:** https://github.com/LessUp/meta-human/issues
+
+            ---
+
+            <p align="center">
+              <strong>Built with ❤️ | 用 ❤️ 打造</strong><br>
+              to make digital humans accessible to everyone | 让每个人都能拥有自己的数字人
+            </p>
+          draft: false
+          prerelease: false
