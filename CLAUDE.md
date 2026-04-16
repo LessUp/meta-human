@@ -53,22 +53,22 @@ pages/          → Route-level components
 
 ### Core Services
 
-| Service | File | Purpose |
-|---------|------|---------|
-| Avatar | `core/avatar/DigitalHumanEngine.ts` | Imperative façade over store for avatar control |
-| Audio | `core/audio/audioService.ts` | TTS synthesis, ASR recognition via Web Speech API |
-| Dialogue | `core/dialogue/dialogueService.ts` | HTTP client with retry, timeout, fallback |
-| Orchestrator | `core/dialogue/dialogueOrchestrator.ts` | Full dialogue turn orchestration |
-| Vision | `core/vision/visionService.ts` | MediaPipe face/pose inference |
-| Performance | `core/performance/deviceCapability.ts` | Device tier detection |
+| Service      | File                                    | Purpose                                           |
+| ------------ | --------------------------------------- | ------------------------------------------------- |
+| Avatar       | `core/avatar/DigitalHumanEngine.ts`     | Imperative façade over store for avatar control   |
+| Audio        | `core/audio/audioService.ts`            | TTS synthesis, ASR recognition via Web Speech API |
+| Dialogue     | `core/dialogue/dialogueService.ts`      | HTTP client with retry, timeout, fallback         |
+| Orchestrator | `core/dialogue/dialogueOrchestrator.ts` | Full dialogue turn orchestration                  |
+| Vision       | `core/vision/visionService.ts`          | MediaPipe face/pose inference                     |
+| Performance  | `core/performance/deviceCapability.ts`  | Device tier detection                             |
 
 ### State Stores
 
-| Store | Scope |
-|-------|-------|
-| `chatSessionStore` | Messages, sessionId |
-| `systemStore` | Connection, errors, performance metrics |
-| `digitalHumanStore` | Avatar state, audio, behavior |
+| Store               | Scope                                   |
+| ------------------- | --------------------------------------- |
+| `chatSessionStore`  | Messages, sessionId                     |
+| `systemStore`       | Connection, errors, performance metrics |
+| `digitalHumanStore` | Avatar state, audio, behavior           |
 
 ## Key Patterns
 
@@ -88,7 +88,7 @@ Use selectors to minimize re-renders:
 
 ```typescript
 // Good - only subscribes to specific value
-const isPlaying = useDigitalHumanStore(s => s.isPlaying);
+const isPlaying = useDigitalHumanStore((s) => s.isPlaying);
 
 // Avoid - subscribes to entire store
 const { isPlaying, ...rest } = useDigitalHumanStore();
@@ -107,11 +107,11 @@ All external calls have fallbacks:
 
 **Base URL:** `VITE_API_BASE_URL` or `http://localhost:8000`
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/health` | GET | Connectivity check |
-| `/v1/chat` | POST | Dialogue request |
-| `/v1/chat/stream` | POST | SSE streaming dialogue |
+| Endpoint          | Method | Purpose                |
+| ----------------- | ------ | ---------------------- |
+| `/health`         | GET    | Connectivity check     |
+| `/v1/chat`        | POST   | Dialogue request       |
+| `/v1/chat/stream` | POST   | SSE streaming dialogue |
 
 **Chat Response Shape:**
 

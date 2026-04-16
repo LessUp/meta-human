@@ -41,7 +41,9 @@ export function usePrefersReducedMotion(): boolean {
  */
 export function useIsTabVisibleRef(): { readonly current: boolean } {
   // Use a mutable object that persists across renders
-  const ref = useRef(typeof document !== 'undefined' ? document.visibilityState === 'visible' : true);
+  const ref = useRef(
+    typeof document !== 'undefined' ? document.visibilityState === 'visible' : true,
+  );
 
   useEffect(() => {
     const handleVisibilityChange = () => {

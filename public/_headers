@@ -1,0 +1,69 @@
+# Cloudflare Pages / Netlify 安全与性能标头配置
+# 这些标头提供最大化的安全性和性能
+
+/*
+  # 安全标头 - 最严格的安全策略
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';
+  
+  # 跨域策略
+  Cross-Origin-Embedder-Policy: credentialless
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: cross-origin
+  
+  # 内容类型保护
+  X-Content-Type-Options: nosniff
+  
+  # XSS 保护
+  X-Frame-Options: DENY
+  X-XSS-Protection: 1; mode=block
+  
+  # 移除服务器标识
+  X-Powered-By: MetaHuman Engine
+  Server: MetaHuman-Edge
+  
+  # 引用策略
+  Referrer-Policy: strict-origin-when-cross-origin
+  
+  # 权限策略 - 限制浏览器 API 访问
+  Permissions-Policy: camera=(self), microphone=(self), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(self)
+  
+  # HSTS - 强制 HTTPS (生产环境启用)
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+
+# 静态资源缓存策略 - 激进的长期缓存
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+  Vary: Accept-Encoding
+
+/*.js
+  Cache-Control: public, max-age=31536000, immutable
+  Vary: Accept-Encoding
+
+/*.css
+  Cache-Control: public, max-age=31536000, immutable
+  Vary: Accept-Encoding
+
+/*.woff2
+  Cache-Control: public, max-age=31536000, immutable
+  
+# HTML 文件不缓存（确保总是获取最新版本）
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# 图像使用协商缓存
+/*.png
+  Cache-Control: public, max-age=86400
+/*.jpg
+  Cache-Control: public, max-age=86400
+/*.jpeg
+  Cache-Control: public, max-age=86400
+/*.svg
+  Cache-Control: public, max-age=86400
+/*.webp
+  Cache-Control: public, max-age=86400
+/*.avif
+  Cache-Control: public, max-age=86400
+
+# WASM 文件长期缓存
+/*.wasm
+  Cache-Control: public, max-age=31536000, immutable

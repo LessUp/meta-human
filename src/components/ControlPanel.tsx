@@ -72,12 +72,9 @@ export default function ControlPanel({
   // 从 store 获取状态
   const connectionStatus = useSystemStore((s) => s.connectionStatus);
   const { isSpeaking, currentBehavior } = useDigitalHumanStore();
-  
+
   // Memoize status configuration lookup
-  const statusConfig = useMemo(
-    () => connectionStatusConfig[connectionStatus],
-    [connectionStatus]
-  );
+  const statusConfig = useMemo(() => connectionStatusConfig[connectionStatus], [connectionStatus]);
 
   return (
     <div className="space-y-6">
