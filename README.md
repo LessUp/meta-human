@@ -1,7 +1,7 @@
 # MetaHuman Engine
 
 <p align="center">
-  <img src="public/favicon.svg" width="100" alt="MetaHuman Engine" />
+  <img src="public/favicon.svg" width="120" alt="MetaHuman Engine" />
 </p>
 
 <p align="center">
@@ -15,24 +15,44 @@
 </p>
 
 <p align="center">
-  <a href="#quick-start"><strong>Quick Start</strong></a> ·
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#architecture"><strong>Architecture</strong></a> ·
-  <a href="docs/"><strong>Docs</strong></a> ·
-  <a href="README.zh-CN.md"><strong>中文</strong></a>
+  <a href="https://github.com/LessUp/meta-human/actions"><img src="https://img.shields.io/github/actions/workflow/status/LessUp/meta-human/ci.yml?branch=main&label=CI&style=flat-square" alt="CI Status" /></a>
+  <a href="https://lessup.github.io/meta-human/"><img src="https://img.shields.io/badge/Demo-Live-green?style=flat-square&logo=githubpages" alt="Live Demo" /></a>
+  <a href="https://github.com/LessUp/meta-human/releases"><img src="https://img.shields.io/github/v/release/LessUp/meta-human?style=flat-square&label=Version" alt="Version" /></a>
+  <img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=white" alt="React" />
+  <img src="https://img.shields.io/badge/Three.js-r158-000000?style=flat-square&logo=threedotjs&logoColor=white" alt="Three.js" />
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License" /></a>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" alt="React" />
-  <img src="https://img.shields.io/badge/Three.js-r158-000000?logo=threedotjs&logoColor=white" alt="Three.js" />
-  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white" alt="Vite" />
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
+  <a href="#quick-start"><strong>Quick Start</strong></a> ·
+  <a href="#features"><strong>Features</strong></a> ·
+  <a href="#architecture"><strong>Architecture</strong></a> ·
+  <a href="docs/"><strong>Documentation</strong></a> ·
+  <a href="CHANGELOG.md"><strong>Changelog</strong></a> ·
+  <a href="README.zh-CN.md"><strong>中文</strong></a>
 </p>
 
 ---
 
-## Quick Start
+## ✨ Demo
+
+🚀 **[Try it live →](https://lessup.github.io/meta-human/)**
+
+> Experience a fully interactive 3D digital human right in your browser.
+> No installation or API keys required!
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js ≥ 18
+- npm ≥ 9
+
+### Installation
 
 ```bash
 # Clone and install
@@ -46,13 +66,25 @@ npm run dev
 
 Open **http://localhost:5173** — your 3D avatar is ready!
 
-> No API key required. The engine automatically falls back to local mock mode for out-of-the-box demos.
+> 💡 **No API key required.** The engine automatically falls back to local mock mode for out-of-the-box demos.
 
 ---
 
-## Features
+## 📸 Preview
+
+<p align="center">
+  <em>3D Avatar with emotion-driven expressions and real-time dialogue</em>
+</p>
+
+---
+
+## 🎯 Features
 
 ### 🎭 3D Avatar Engine
+
+<table>
+<tr>
+<td width="50%">
 
 | Feature | Description |
 |---------|-------------|
@@ -61,15 +93,22 @@ Open **http://localhost:5173** — your 3D avatar is ready!
 | Skeletal Animation | Wave, greet, nod, dance triggered by dialogue |
 | Adaptive Performance | 60fps rendering with device-based quality scaling |
 
+</td>
+<td>
+
 ```typescript
 import { digitalHumanEngine } from '@core/avatar';
 
 digitalHumanEngine.perform({
   emotion: 'happy',
   expression: 'smile',
-  animation: 'wave'
+  animation: 'wave',
 });
 ```
+
+</td>
+</tr>
+</table>
 
 ### 🗣️ Voice Interaction
 
@@ -86,7 +125,7 @@ import { ttsService, asrService } from '@core/audio';
 await ttsService.speak('Hello! How can I help?');
 
 asrService.start({
-  onResult: (text) => dialogueService.send(text)
+  onResult: (text) => dialogueService.send(text),
 });
 ```
 
@@ -104,7 +143,7 @@ import { dialogueService } from '@core/dialogue';
 
 const response = await dialogueService.send({
   text: 'Tell me a joke',
-  sessionId: 'user-123'
+  sessionId: 'user-123',
 });
 // → { replyText: '...', emotion: 'happy', action: 'laugh' }
 ```
@@ -120,7 +159,7 @@ const response = await dialogueService.send({
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -154,9 +193,11 @@ Three focused domains minimize re-renders:
 | `systemStore` | Connection status, errors, performance metrics |
 | `digitalHumanStore` | Avatar runtime state (expression, animation, audio) |
 
+**[📖 Architecture Docs →](docs/architecture/)**
+
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 src/
@@ -192,7 +233,7 @@ src/
 
 ---
 
-## Deployment
+## 🌐 Deployment
 
 ### GitHub Pages (Frontend)
 
@@ -201,7 +242,7 @@ npm run build:pages
 ```
 
 1. Set `VITE_API_BASE_URL` in GitHub Repository Variables
-2. Push to `master` or run "Deploy Pages" workflow
+2. Push to `main` or run "Deploy Pages" workflow
 3. Live at: `https://lessup.github.io/meta-human/`
 
 ### Render (Backend)
@@ -224,9 +265,11 @@ WebSocket /ws          # Real-time streaming
 | `OPENAI_API_KEY` | AI responses (optional, falls back to mock) |
 | `CORS_ALLOW_ORIGINS` | Frontend domain for CORS |
 
+**[📖 Deployment Guide →](docs/guide/installation.md)**
+
 ---
 
-## Scripts
+## 🛠️ Scripts
 
 ```bash
 # Development
@@ -251,17 +294,29 @@ npm run test:coverage    # Coverage report
 
 ---
 
-## Browser Support
+## 🧰 Browser Support
 
 | Chrome | Edge | Firefox | Safari |
-|:------:|:----:|:-------:|:------:|
+| :----: | :--: | :-----: | :----: |
 | 90+ ✅ | 90+ ✅ | 90+ ✅ | 15+ ✅ |
 
-> Speech Recognition (ASR) requires Chrome or Edge due to Web Speech API limitations.
+> ⚠️ Speech Recognition (ASR) requires Chrome or Edge due to Web Speech API limitations.
 
 ---
 
-## Contributing
+## 📚 Documentation
+
+- **[Quick Start](docs/guide/)** — Get running in 5 minutes
+- **[API Reference](docs/api/)** — Backend API documentation
+- **[Architecture](docs/architecture/)** — System design
+- **[Contributing](docs/contributing/)** — Contribution guidelines
+- **[Changelog](CHANGELOG.md)** — Version history
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](docs/contributing/) for details.
 
 1. Fork the repository
 2. Create feature branch: `git checkout -b feat/amazing-feature`
@@ -273,12 +328,17 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/).
 
 ---
 
-## License
+## 📄 License
 
 [MIT](LICENSE) © LessUp
 
 ---
 
 <p align="center">
-  Built with ❤️ to make digital humans accessible to everyone
+  <strong>Built with ❤️ to make digital humans accessible to everyone</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/LessUp/meta-human/stargazers">⭐ Star us on GitHub</a> ·
+  <a href="https://twitter.com/LessUpHQ">🐦 Follow on Twitter</a>
 </p>

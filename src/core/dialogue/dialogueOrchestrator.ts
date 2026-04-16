@@ -1,7 +1,4 @@
-import {
-  ChatResponsePayload,
-  type StreamCallbacks,
-} from './dialogueService';
+import { ChatResponsePayload, type StreamCallbacks } from './dialogueService';
 import { getDefaultChatTransport } from './chatTransport';
 import { digitalHumanEngine } from '../avatar';
 import { loggers } from '../../lib/logger';

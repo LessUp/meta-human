@@ -95,8 +95,7 @@ function estimateGPUMemory(gl: WebGLRenderingContext): number {
 
   // Mobile GPU detection
   const isMobile =
-    /(Mali|Adreno|PowerVR|Apple GPU)/i.test(renderer) ||
-    /(Qualcomm|ARM|Imagination)/i.test(vendor);
+    /(Mali|Adreno|PowerVR|Apple GPU)/i.test(renderer) || /(Qualcomm|ARM|Imagination)/i.test(vendor);
 
   // Integrated vs Discrete GPU heuristics
   const isIntegrated =

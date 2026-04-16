@@ -1,27 +1,249 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en" dir="ltr">
   <head>
+    <!-- 基础元数据 -->
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="MetaHuman Engine — A modular, real-time 3D digital human interaction engine for the browser." />
-    <meta name="theme-color" content="#000000" />
-    <title>MetaHuman Engine</title>
-    <script type="module">
-      if (import.meta.hot?.on) {
-        import.meta.hot.on('vite:error', (error) => {
-          if (error.err) {
-            console.error(
-              [error.err.message, error.err.frame].filter(Boolean).join('\n'),
-            )
-          }
-        })
-      }
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    
+    <!-- 主题色 -->
+    <meta name="theme-color" content="#6366f1" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1e1b4b" media="(prefers-color-scheme: dark)" />
+    
+    <!-- 描述和关键词 -->
+    <meta name="description" content="MetaHuman Engine - Browser-native 3D digital human engine with voice, vision, and dialogue capabilities. Zero-config, offline-ready, production-grade." />
+    <meta name="keywords" content="digital human, 3D avatar, AI, voice interaction, computer vision, WebGL, Three.js, React, TypeScript" />
+    <meta name="author" content="LessUp" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- 开放图谱 / Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MetaHuman Engine" />
+    <meta property="og:title" content="MetaHuman Engine - 3D Digital Human Platform" />
+    <meta property="og:description" content="Browser-native 3D digital human engine with voice, vision, and dialogue capabilities" />
+    <meta property="og:url" content="https://lessup.github.io/meta-human/" />
+    <meta property="og:image" content="https://lessup.github.io/meta-human/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_CN" />
+    
+    <!-- Twitter 卡片 -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@LessUpHQ" />
+    <meta name="twitter:creator" content="@LessUpHQ" />
+    <meta name="twitter:title" content="MetaHuman Engine - 3D Digital Human Platform" />
+    <meta name="twitter:description" content="Browser-native 3D digital human engine with voice, vision, and dialogue capabilities" />
+    <meta name="twitter:image" content="https://lessup.github.io/meta-human/og-image.png" />
+    
+    <!-- iOS Safari -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="MetaHuman" />
+    
+    <!-- Windows -->
+    <meta name="msapplication-TileColor" content="#6366f1" />
+    <meta name="msapplication-config" content="/meta-human/browserconfig.xml" />
+    <meta name="msapplication-TileImage" content="/meta-human/icons/mstile-144x144.png" />
+    
+    <!-- 移动端优化 -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="apple-touch-fullscreen" content="yes" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/meta-human/manifest.json" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/meta-human/favicon.svg" />
+    <link rel="alternate icon" type="image/png" href="/meta-human/favicon.png" />
+    <link rel="apple-touch-icon" href="/meta-human/icons/apple-touch-icon.png" />
+    <link rel="mask-icon" href="/meta-human/favicon.svg" color="#6366f1" />
+    
+    <!-- DNS 预解析 -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+    <link rel="dns-prefetch" href="https://unpkg.com" />
+    
+    <!-- 预连接 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://api.openai.com" crossorigin />
+    
+    <!-- 字体预加载 -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" /></noscript>
+    
+    <!-- OpenSearch -->
+    <link rel="search" type="application/opensearchdescription+xml" title="MetaHuman" href="/meta-human/opensearch.xml" />
+    
+    <!-- Canonical -->
+    <link rel="canonical" href="https://lessup.github.io/meta-human/" />
+    
+    <!-- 替代语言 -->
+    <link rel="alternate" hreflang="en" href="https://lessup.github.io/meta-human/" />
+    <link rel="alternate" hreflang="zh-CN" href="https://lessup.github.io/meta-human/?lang=zh" />
+    <link rel="alternate" hreflang="x-default" href="https://lessup.github.io/meta-human/" />
+    
+    <!-- 安全性 -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" />
+    
+    <!-- 性能优化脚本 -->
+    <script>
+      // 检测 WebGL 支持
+      (function() {
+        try {
+          var canvas = document.createElement('canvas');
+          var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+          window.__WEBGL_SUPPORTED__ = !!gl;
+        } catch(e) {
+          window.__WEBGL_SUPPORTED__ = false;
+        }
+      })();
+      
+      // 检测触摸设备
+      window.__TOUCH_DEVICE__ = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      
+      // 检测偏好减少动画
+      window.__REDUCE_MOTION__ = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      
+      // 检测深色模式
+      window.__DARK_MODE__ = window.matchMedia('(prefers-color-scheme: dark)').matches;
     </script>
+    
+    <!-- 关键 CSS 内联 -->
+    <style>
+      /* 关键路径 CSS - 首屏渲染必需 */
+      *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      
+      html {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        scroll-behavior: smooth;
+      }
+      
+      body {
+        min-height: 100vh;
+        min-height: 100dvh; /* 动态视口高度 */
+        background: #0a0a0a;
+        color: #fafafa;
+        overflow-x: hidden;
+      }
+      
+      #root {
+        min-height: 100vh;
+        min-height: 100dvh;
+      }
+      
+      /* 加载占位符 */
+      .loading-screen {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+        z-index: 9999;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+      }
+      
+      .loading-screen.hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+      
+      .loading-spinner {
+        width: 48px;
+        height: 48px;
+        border: 3px solid rgba(99, 102, 241, 0.2);
+        border-top-color: #6366f1;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      
+      .loading-text {
+        margin-top: 1rem;
+        color: #a1a1aa;
+        font-size: 0.875rem;
+      }
+      
+      /* WebGL 不支持提示 */
+      .no-webgl {
+        display: none;
+        text-align: center;
+        padding: 2rem;
+      }
+      
+      .no-webgl.visible {
+        display: block;
+      }
+    </style>
+    
+    <title>MetaHuman Engine - 3D Digital Human Platform</title>
   </head>
   <body>
+    <!-- 加载屏幕 -->
+    <div id="loading-screen" class="loading-screen">
+      <div class="loading-spinner"></div>
+      <p class="loading-text">Loading MetaHuman Engine...</p>
+      <div id="no-webgl" class="no-webgl">
+        <h2>WebGL Not Supported</h2>
+        <p>Your browser doesn't support WebGL, which is required for 3D rendering.</p>
+        <p>Please use a modern browser like Chrome, Firefox, or Safari.</p>
+      </div>
+    </div>
+    
+    <!-- React 挂载点 -->
     <div id="root"></div>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    
+    <!-- 隐藏加载屏幕脚本 -->
+    <script>
+      window.addEventListener('load', function() {
+        if (!window.__WEBGL_SUPPORTED__) {
+          document.getElementById('no-webgl').classList.add('visible');
+        }
+        
+        // 延迟隐藏加载屏幕，确保 React 已挂载
+        setTimeout(function() {
+          var loader = document.getElementById('loading-screen');
+          if (loader) {
+            loader.classList.add('hidden');
+            setTimeout(function() {
+              loader.remove();
+            }, 300);
+          }
+        }, 500);
+      });
+      
+      // 加载超时处理
+      setTimeout(function() {
+        var loader = document.getElementById('loading-screen');
+        if (loader && !loader.classList.contains('hidden')) {
+          var text = loader.querySelector('.loading-text');
+          if (text) {
+            text.textContent = 'Taking longer than expected...';
+          }
+        }
+      }, 10000);
+    </script>
+    
+    <!-- 主应用脚本 -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -246,11 +246,7 @@ function CyberAvatar({ prefersReducedMotion, deviceCaps }: CyberAvatarProps) {
     }
 
     // Rings Animation (Enhanced for Motion) - Skip on low tier for performance
-    if (
-      !prefersReducedMotion &&
-      ringsRef.current?.rotation &&
-      deviceCaps.tier !== 'low'
-    ) {
+    if (!prefersReducedMotion && ringsRef.current?.rotation && deviceCaps.tier !== 'low') {
       const anim = currentAnimation;
       let ringSpeed = 0.2;
       let ringTilt = 0;
@@ -386,8 +382,7 @@ function Scene({
   modelScene?: THREE.Group | null;
   deviceCaps: DeviceCapabilities;
 }) {
-  const prefersReducedMotion =
-    usePrefersReducedMotion() || deviceCaps.prefersReducedMotion;
+  const prefersReducedMotion = usePrefersReducedMotion() || deviceCaps.prefersReducedMotion;
 
   return (
     <>

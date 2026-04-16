@@ -1,7 +1,7 @@
 # MetaHuman 数字人引擎
 
 <p align="center">
-  <img src="public/favicon.svg" width="100" alt="MetaHuman Engine" />
+  <img src="public/favicon.svg" width="120" alt="MetaHuman Engine" />
 </p>
 
 <p align="center">
@@ -15,24 +15,44 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/LessUp/meta-human/actions"><img src="https://img.shields.io/github/actions/workflow/status/LessUp/meta-human/ci.yml?branch=main&label=CI&style=flat-square" alt="CI 状态" /></a>
+  <a href="https://lessup.github.io/meta-human/"><img src="https://img.shields.io/badge/Demo-在线-green?style=flat-square&logo=githubpages" alt="在线演示" /></a>
+  <a href="https://github.com/LessUp/meta-human/releases"><img src="https://img.shields.io/github/v/release/LessUp/meta-human?style=flat-square&label=版本" alt="版本" /></a>
+  <img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=white" alt="React" />
+  <img src="https://img.shields.io/badge/Three.js-r158-000000?style=flat-square&logo=threedotjs&logoColor=white" alt="Three.js" />
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="许可证" /></a>
+</p>
+
+<p align="center">
   <a href="#快速开始"><strong>快速开始</strong></a> ·
   <a href="#核心功能"><strong>功能</strong></a> ·
   <a href="#架构"><strong>架构</strong></a> ·
   <a href="docs/"><strong>文档</strong></a> ·
+  <a href="CHANGELOG.zh-CN.md"><strong>更新日志</strong></a> ·
   <a href="README.md"><strong>English</strong></a>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" alt="React" />
-  <img src="https://img.shields.io/badge/Three.js-r158-000000?logo=threedotjs&logoColor=white" alt="Three.js" />
-  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white" alt="Vite" />
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
 </p>
 
 ---
 
-## 快速开始
+## ✨ 在线演示
+
+🚀 **[立即体验 →](https://lessup.github.io/meta-human/)**
+
+> 在浏览器中直接体验完整的交互式 3D 数字人。
+> 无需安装或 API Key！
+
+---
+
+## 🚀 快速开始
+
+### 前提条件
+
+- Node.js ≥ 18
+- npm ≥ 9
+
+### 安装
 
 ```bash
 # 克隆并安装
@@ -44,15 +64,27 @@ npm install
 npm run dev
 ```
 
-打开 **http://localhost:5173** — 你的 3D 数字人已就绪！
+打开 **http://localhost:5173** —— 你的 3D 数字人已就绪！
 
-> 无需 API Key。引擎自动降级到本地 Mock 模式，开箱即用。
+> 💡 **无需 API Key。** 引擎自动降级到本地模拟模式，开箱即用。
 
 ---
 
-## 核心功能
+## 📸 预览
+
+<p align="center">
+  <em>情绪驱动的 3D 数字人和实时对话</em>
+</p>
+
+---
+
+## 🎯 核心功能
 
 ### 🎭 3D 数字人引擎
+
+<table>
+<tr>
+<td width="50%">
 
 | 功能 | 说明 |
 |------|------|
@@ -61,15 +93,22 @@ npm run dev
 | 骨骼动画 | 挥手、问候、点头、跳舞，由对话触发 |
 | 自适应性能 | 60fps 渲染，根据设备能力调节画质 |
 
+</td>
+<td>
+
 ```typescript
 import { digitalHumanEngine } from '@core/avatar';
 
 digitalHumanEngine.perform({
   emotion: 'happy',
   expression: 'smile',
-  animation: 'wave'
+  animation: 'wave',
 });
 ```
+
+</td>
+</tr>
+</table>
 
 ### 🗣️ 语音交互
 
@@ -86,7 +125,7 @@ import { ttsService, asrService } from '@core/audio';
 await ttsService.speak('你好！有什么可以帮您？');
 
 asrService.start({
-  onResult: (text) => dialogueService.send(text)
+  onResult: (text) => dialogueService.send(text),
 });
 ```
 
@@ -104,7 +143,7 @@ import { dialogueService } from '@core/dialogue';
 
 const response = await dialogueService.send({
   text: '讲个笑话',
-  sessionId: 'user-123'
+  sessionId: 'user-123',
 });
 // → { replyText: '...', emotion: 'happy', action: 'laugh' }
 ```
@@ -120,7 +159,7 @@ const response = await dialogueService.send({
 
 ---
 
-## 架构
+## 🏗️ 架构
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -152,11 +191,13 @@ const response = await dialogueService.send({
 |-------|------|
 | `chatSessionStore` | 消息历史、会话生命周期 |
 | `systemStore` | 连接状态、错误、性能指标 |
-| `digitalHumanStore` | 数字人运行时状态 |
+| `digitalHumanStore` | 数字人运行时状态（表情、动画、音频） |
+
+**[📖 架构文档 →](docs/architecture/)**
 
 ---
 
-## 项目结构
+## 📁 项目结构
 
 ```
 src/
@@ -192,7 +233,7 @@ src/
 
 ---
 
-## 部署
+## 🌐 部署
 
 ### GitHub Pages（前端）
 
@@ -201,7 +242,7 @@ npm run build:pages
 ```
 
 1. 在 GitHub 仓库变量中设置 `VITE_API_BASE_URL`
-2. 推送到 `master` 或运行 "Deploy Pages" 工作流
+2. 推送到 `main` 或运行 "Deploy Pages" 工作流
 3. 访问：`https://lessup.github.io/meta-human/`
 
 ### Render（后端）
@@ -224,9 +265,11 @@ WebSocket /ws          # 实时流
 | `OPENAI_API_KEY` | AI 响应（可选，自动降级） |
 | `CORS_ALLOW_ORIGINS` | 前端域名 |
 
+**[📖 部署指南 →](docs/guide/installation.zh-CN.md)**
+
 ---
 
-## 脚本
+## 🛠️ 脚本
 
 ```bash
 # 开发
@@ -251,34 +294,51 @@ npm run test:coverage    # 覆盖率报告
 
 ---
 
-## 浏览器支持
+## 🧰 浏览器支持
 
 | Chrome | Edge | Firefox | Safari |
-|:------:|:----:|:-------:|:------:|
+| :----: | :--: | :-----: | :----: |
 | 90+ ✅ | 90+ ✅ | 90+ ✅ | 15+ ✅ |
 
-> 语音识别（ASR）需要 Chrome 或 Edge 浏览器。
+> ⚠️ 语音识别（ASR）需要 Chrome 或 Edge 浏览器。
 
 ---
 
-## 贡献
+## 📚 文档
+
+- **[快速开始](docs/guide/)** — 5 分钟快速上手
+- **[API 参考](docs/api/)** — 后端 API 文档
+- **[架构设计](docs/architecture/)** — 系统设计
+- **[贡献指南](docs/contributing/)** — 贡献指南
+- **[更新日志](CHANGELOG.zh-CN.md)** — 版本历史
+
+---
+
+## 🤝 贡献
+
+我们欢迎贡献！请查看我们的[贡献指南](docs/contributing/)。
 
 1. Fork 本仓库
-2. 创建特性分支：`git checkout -b feat/your-feature`
-3. 提交变更：`git commit -m 'feat: add feature'`
-4. 推送：`git push origin feat/your-feature`
+2. 创建特性分支：`git checkout -b feat/amazing-feature`
+3. 提交变更：`git commit -m 'feat: add amazing feature'`
+4. 推送：`git push origin feat/amazing-feature`
 5. 发起 Pull Request
 
-遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范。
+遵循 [Conventional Commits](https://www.conventionalcommits.org/lang/zh-CN/) 规范。
 
 ---
 
-## 许可证
+## 📄 许可证
 
 [MIT](LICENSE) © LessUp
 
 ---
 
 <p align="center">
-  用 ❤️ 打造，让每个人都能拥有自己的数字人
+  <strong>用 ❤️ 打造，让每个人都能拥有自己的数字人</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/LessUp/meta-human/stargazers">⭐ 在 GitHub 上星标</a> ·
+  <a href="https://twitter.com/LessUpHQ">🐦 关注 Twitter</a>
 </p>

@@ -97,7 +97,11 @@ export default function TopHUD({ onToggleSettings, onReconnect, onNewSession }: 
         </div>
       </div>
 
-      <div className="pointer-events-auto flex space-x-2 sm:space-x-3" role="toolbar" aria-label="系统控制">
+      <div
+        className="pointer-events-auto flex space-x-2 sm:space-x-3"
+        role="toolbar"
+        aria-label="系统控制"
+      >
         {connectionStatus !== 'connected' && (
           <button
             onClick={onReconnect}
