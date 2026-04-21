@@ -25,8 +25,6 @@
 | Document | Description | Link |
 |----------|-------------|------|
 | **Overview** | System architecture and data flow | [Architecture →](./architecture/) |
-| **Frontend** | React component architecture | [Frontend →](./architecture/frontend.md) |
-| **Backend** | FastAPI backend design | [Backend →](./architecture/backend.md) |
 
 ### 🔌 API Reference
 

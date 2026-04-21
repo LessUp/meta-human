@@ -25,8 +25,6 @@
 | 文档 | 描述 | 链接 |
 |------|------|------|
 | **架构概览** | 系统架构和数据流 | [架构 →](./architecture/README.zh-CN.md) |
-| **前端架构** | React 组件架构 | [前端 →](./architecture/frontend.zh-CN.md) |
-| **后端架构** | FastAPI 后端设计 | [后端 →](./architecture/backend.zh-CN.md) |
 
 ### 🔌 API 参考
 

@@ -392,14 +392,3 @@ const store = useDigitalHumanStore();
 3. 更新自动选择逻辑
 
 ---
-
-## 详细架构文档
-
-- [前端架构](./frontend.zh-CN.md)
-- [后端架构](./backend.zh-CN.md)
-
----
-
-<p align="center">
-  <a href="./frontend.zh-CN.md">下一步：前端架构 →</a>
-</p>

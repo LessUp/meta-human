@@ -392,14 +392,3 @@ const store = useDigitalHumanStore();
 3. Update auto-selection logic
 
 ---
-
-## Detailed Architecture Docs
-
-- [Frontend Architecture](./frontend.md)
-- [Backend Architecture](./backend.md)
-
----
-
-<p align="center">
-  <a href="./frontend.md">Next: Frontend Architecture →</a>
-</p>
