@@ -58,3 +58,9 @@ Thumbs.dbcoverage/
 coverage/
 .DS_Store
 *.log
+
+# OpenSpec
+.openspec/
+
+# Claude local config (personal preferences)
+CLAUDE.local.md
