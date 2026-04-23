@@ -4,6 +4,7 @@ import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 // 懒加载页面组件
+const LandingPage = lazy(() => import('@/pages/LandingPage'));
 const DigitalHumanPage = lazy(() => import('@/pages/DigitalHumanPage'));
 const AdvancedDigitalHumanPage = lazy(() => import('@/pages/AdvancedDigitalHumanPage'));
 
@@ -22,9 +23,13 @@ export default function App() {
       <Router>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/" element={<AdvancedDigitalHumanPage />} />
-            <Route path="/digital-human" element={<DigitalHumanPage />} />
+            {/* Landing Page - 产品落地页 */}
+            <Route path="/" element={<LandingPage />} />
+            
+            {/* App Routes - 数字人应用 */}
+            <Route path="/app" element={<AdvancedDigitalHumanPage />} />
             <Route path="/advanced" element={<AdvancedDigitalHumanPage />} />
+            <Route path="/digital-human" element={<DigitalHumanPage />} />
           </Routes>
         </Suspense>
       </Router>
