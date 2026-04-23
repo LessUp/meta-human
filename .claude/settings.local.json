@@ -2,7 +2,23 @@
   "permissions": {
     "allow": [
       "Bash(npx tsc:*)",
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "Skill(update-config)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; npx prettier --write \"$f\"; } 2>/dev/null || true",
+            "timeout": 30,
+            "statusMessage": "Formatting..."
+          }
+        ]
+      }
     ]
   }
 }
