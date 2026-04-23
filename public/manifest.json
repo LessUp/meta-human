@@ -2,7 +2,7 @@
   "name": "MetaHuman Engine",
   "short_name": "MetaHuman",
   "description": "Browser-native 3D digital human engine with voice, vision, and dialogue capabilities",
-  "start_url": "/meta-human/",
+  "start_url": "/meta-human/#/app",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#6366f1",
