@@ -11,6 +11,33 @@ if (import.meta.env.DEV) {
   logger.info('MetaHuman Engine DEV mode');
 }
 
+// 处理从 404.html 重定向回来的情况
+(function handleRedirect() {
+  try {
+    const redirectData = sessionStorage.getItem('spa_redirect');
+    if (redirectData) {
+      const { path } = JSON.parse(redirectData);
+      sessionStorage.removeItem('spa_redirect');
+
+      // HashRouter 使用 hash 来管理路由
+      // 构建目标 hash 路径
+      let targetHash = path || '/';
+      if (targetHash === '/meta-human/') {
+        targetHash = '/';
+      }
+
+      // 设置 hash 路由
+      if (targetHash !== '/') {
+        window.location.hash = targetHash;
+      }
+
+      logger.info('Restored route from redirect:', targetHash);
+    }
+  } catch (e) {
+    // 忽略解析错误
+  }
+})();
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
