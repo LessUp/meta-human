@@ -1,0 +1,46 @@
+# OpenSpec configuration for MetaHuman Engine
+# https://github.com/Fission-AI/OpenSpec
+
+# Schema defines the workflow profile
+# Options: spec-driven (default), or custom schemas
+schema: spec-driven
+
+# Project context injected into all artifacts
+# This provides background for AI when generating proposals
+context: |
+  MetaHuman Engine is a browser-native 3D digital human interaction engine.
+
+  Tech Stack:
+  - Frontend: React 18, TypeScript, Tailwind CSS
+  - 3D: Three.js, React Three Fiber, Drei
+  - State: Zustand
+  - Build: Vite 5
+  - Testing: Vitest, Testing Library
+
+  Core Modules:
+  - Avatar: 3D rendering, animations, expressions (core/avatar/)
+  - Dialogue: Chat transport, orchestration (core/dialogue/)
+  - Audio: TTS synthesis, ASR recognition (core/audio/)
+  - Vision: MediaPipe face/pose detection (core/vision/)
+  - Performance: Device capability detection (core/performance/)
+
+  Key Patterns:
+  - Service → Store flow: Services use getState() to avoid props drilling
+  - Store selectors: Use specific selectors to minimize re-renders
+  - Fallback strategy: All external calls have graceful fallbacks
+
+  API Contract:
+  - Base URL: VITE_API_BASE_URL or http://localhost:8000
+  - Endpoints: /health, /v1/chat, /v1/chat/stream, /ws
+
+# Artifact rules - define what artifacts are required
+# The schema already defines defaults, but you can override here
+artifacts:
+  proposal:
+    required: true
+  specs:
+    required: true
+  design:
+    required: true
+  tasks:
+    required: true

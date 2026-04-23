@@ -1,18 +1,23 @@
-# CLAUDE.md
+# AGENTS.md
 
-Development guidance for Claude Code when working with this repository.
+Guidance for AI assistants working with this repository.
 
-## OpenSpec Integration
+## Project Overview
 
-This project uses [OpenSpec](https://github.com/Fission-AI/OpenSpec) for spec-driven development. See `AGENTS.md` for detailed workflow and AI assistant guidance.
+MetaHuman Engine is a browser-native 3D digital human interaction engine built with React, TypeScript, Three.js, and Zustand.
 
-### Quick Reference
+## OpenSpec Workflow
+
+This project uses [OpenSpec](https://github.com/Fission-AI/OpenSpec) for spec-driven development. Always follow the spec-driven workflow for new features and changes.
+
+### Commands
 
 | Command | Description |
 |---------|-------------|
-| `/opsx:propose "add feature X"` | Create a new change proposal |
-| `/opsx:apply` | Implement the current change |
-| `/opsx:archive` | Archive completed change |
+| `/opsx:propose "<idea>"` | Create a new change proposal with specs, design, and tasks |
+| `/opsx:explore` | Investigate problems and clarify requirements |
+| `/opsx:apply` | Implement the current change following the task checklist |
+| `/opsx:archive` | Archive completed change and merge specs |
 
 ### Key Directories
 
@@ -24,28 +29,24 @@ This project uses [OpenSpec](https://github.com/Fission-AI/OpenSpec) for spec-dr
 
 ### Workflow
 
-1. Create proposal: `/opsx:propose "your idea"`
-2. Review generated specs, design, and tasks
-3. Implement: `/opsx:apply`
-4. Archive: `/opsx:archive`
+1. **Before implementing new features**, create a proposal using `/opsx:propose`
+2. Review and refine the generated specs, design, and tasks
+3. Implement following the task checklist with `/opsx:apply`
+4. Archive when complete to merge specs with `/opsx:archive`
 
-## Development Commands
+### When to Create a Proposal
 
-```bash
-npm install          # Install dependencies
-npm run dev          # Start dev server (port 5173)
-npm run build        # Production build
-npm run preview      # Preview production build
-npm run lint         # ESLint check
-npm run lint:fix     # Auto-fix ESLint issues
-npm run format       # Prettier formatting
-npm run typecheck    # TypeScript check
-npm run test         # Vitest watch mode
-npm run test:run     # Run tests once
-npm run test:coverage # Coverage report
-```
+Create a proposal when:
+- Adding a new feature or capability
+- Changing existing behavior
+- Refactoring core systems
+- Introducing new dependencies
 
-**Build modes:** `build:mobile`, `build:desktop`, `build:ar`, `build:pages`
+You can skip the proposal process for:
+- Bug fixes with clear cause
+- Documentation updates
+- Configuration changes
+- Test additions
 
 ## Tech Stack
 
@@ -139,6 +140,7 @@ All external calls have fallbacks:
 | `/health`         | GET    | Connectivity check     |
 | `/v1/chat`        | POST   | Dialogue request       |
 | `/v1/chat/stream` | POST   | SSE streaming dialogue |
+| `/ws`             | WS     | WebSocket connection   |
 
 **Chat Response Shape:**
 
@@ -148,6 +150,22 @@ interface ChatResponse {
   emotion: 'neutral' | 'happy' | 'surprised' | 'sad' | 'angry';
   action: 'idle' | 'wave' | 'greet' | 'think' | 'nod' | 'shakeHead' | 'dance' | 'speak';
 }
+```
+
+## Development Commands
+
+```bash
+npm install          # Install dependencies
+npm run dev          # Start dev server (port 5173)
+npm run build        # Production build
+npm run preview      # Preview production build
+npm run lint         # ESLint check
+npm run lint:fix     # Auto-fix ESLint issues
+npm run format       # Prettier formatting
+npm run typecheck    # TypeScript check
+npm run test         # Vitest watch mode
+npm run test:run     # Run tests once
+npm run test:coverage # Coverage report
 ```
 
 ## Testing Notes
