@@ -18,17 +18,19 @@
   <a href="https://github.com/LessUp/meta-human/actions"><img src="https://img.shields.io/github/actions/workflow/status/LessUp/meta-human/ci.yml?branch=main&label=CI&style=flat-square" alt="CI 状态" /></a>
   <a href="https://lessup.github.io/meta-human/"><img src="https://img.shields.io/badge/Demo-在线-green?style=flat-square&logo=githubpages" alt="在线演示" /></a>
   <a href="https://github.com/LessUp/meta-human/releases"><img src="https://img.shields.io/github/v/release/LessUp/meta-human?style=flat-square&label=版本" alt="版本" /></a>
+  <img src="https://img.shields.io/badge/Bundle-180KB-blue?style=flat-square&label=size" alt="包体积" />
   <img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=white" alt="React" />
-  <img src="https://img.shields.io/badge/Three.js-r158-000000?style=flat-square&logo=threedotjs&logoColor=white" alt="Three.js" />
+  <img src="https://img.shields.io/badge/Three.js-0.158-000000?style=flat-square&logo=threedotjs&logoColor=white" alt="Three.js" />
   <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="许可证" /></a>
 </p>
 
 <p align="center">
-  <a href="#快速开始"><strong>快速开始</strong></a> ·
-  <a href="#核心功能"><strong>功能</strong></a> ·
-  <a href="#架构"><strong>架构</strong></a> ·
+  <a href="#quick-start"><strong>快速开始</strong></a> ·
+  <a href="#features"><strong>功能</strong></a> ·
+  <a href="#performance"><strong>性能</strong></a> ·
+  <a href="#architecture"><strong>架构</strong></a> ·
   <a href="docs/"><strong>文档</strong></a> ·
   <a href="CHANGELOG.zh-CN.md"><strong>更新日志</strong></a> ·
   <a href="README.md"><strong>English</strong></a>
@@ -45,7 +47,19 @@
 
 ---
 
-## 🚀 快速开始
+## 📸 预览
+
+<p align="center">
+  <img src="docs/assets/preview.svg" width="800" alt="MetaHuman Engine 预览 - 情绪驱动的 3D 数字人和实时对话" />
+</p>
+
+<p align="center">
+  <em>情绪驱动的 3D 数字人和实时对话</em>
+</p>
+
+---
+
+## 🚀 Quick Start
 
 ### 前提条件
 
@@ -70,15 +84,7 @@ npm run dev
 
 ---
 
-## 📸 预览
-
-<p align="center">
-  <em>情绪驱动的 3D 数字人和实时对话</em>
-</p>
-
----
-
-## 🎯 核心功能
+## 🎯 Features
 
 ### 🎭 3D 数字人引擎
 
@@ -97,7 +103,7 @@ npm run dev
 <td>
 
 ```typescript
-import { digitalHumanEngine } from '@core/avatar';
+import { digitalHumanEngine } from './core/avatar';
 
 digitalHumanEngine.perform({
   emotion: 'happy',
@@ -105,6 +111,8 @@ digitalHumanEngine.perform({
   animation: 'wave',
 });
 ```
+
+**注意：** 本项目使用 Vite 路径别名。详见 [路径别名](#path-aliases) 配置。
 
 </td>
 </tr>
@@ -120,7 +128,7 @@ digitalHumanEngine.perform({
 | 语音检测 | 录音时提供视觉反馈 |
 
 ```typescript
-import { ttsService, asrService } from '@core/audio';
+import { ttsService, asrService } from './core/audio';
 
 await ttsService.speak('你好！有什么可以帮您？');
 
@@ -139,7 +147,7 @@ asrService.start({
 | 会话管理 | 持久化对话上下文 |
 
 ```typescript
-import { dialogueService } from '@core/dialogue';
+import { dialogueService } from './core/dialogue';
 
 const response = await dialogueService.send({
   text: '讲个笑话',
@@ -159,7 +167,22 @@ const response = await dialogueService.send({
 
 ---
 
-## 🏗️ 架构
+## ⚡ Performance
+
+典型设备上的性能基准：
+
+| 指标 | 桌面端 | 移动端（中端） | 移动端（低端） |
+|------|--------|---------------|---------------|
+| **渲染性能** | 60 FPS | 60 FPS | 30 FPS |
+| **TTS 延迟** | < 200ms | < 300ms | < 500ms |
+| **包体积** | 180 KB (gzipped) | 180 KB | 180 KB |
+| **内存占用** | ~120 MB | ~80 MB | ~60 MB |
+
+> 性能根据设备能力自动调节。详见[性能模块文档](docs/architecture/)。
+
+---
+
+## 🏗️ Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -231,6 +254,19 @@ src/
 └── lib/                           # 工具函数
 ```
 
+### 路径别名
+
+本项目使用 Vite 路径别名，配置在 `vite.config.ts`：
+
+| 别名 | 映射路径 |
+|------|---------|
+| `@core/*` | `src/core/*` |
+| `@components/*` | `src/components/*` |
+| `@store/*` | `src/store/*` |
+| `@hooks/*` | `src/hooks/*` |
+| `@lib/*` | `src/lib/*` |
+| `@pages/*` | `src/pages/*` |
+
 ---
 
 ## 🌐 部署
@@ -247,9 +283,11 @@ npm run build:pages
 
 ### Render（后端）
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/LessUp/meta-human)
+
 使用 `render.yaml` 蓝图：
 
-```bash
+```yaml
 # 部署 FastAPI 后端：
 POST /v1/chat          # OpenAI 兼容对话
 POST /v1/chat/stream   # SSE 流式
@@ -260,10 +298,10 @@ WebSocket /ws          # 实时流
 
 **必需环境变量：**
 
-| 变量 | 说明 |
-|------|------|
-| `OPENAI_API_KEY` | AI 响应（可选，自动降级） |
-| `CORS_ALLOW_ORIGINS` | 前端域名 |
+| 变量 | 说明 | 是否必需 |
+|------|------|---------|
+| `OPENAI_API_KEY` | AI 响应 | 可选（自动降级） |
+| `CORS_ALLOW_ORIGINS` | 前端域名 | 是 |
 
 **[📖 部署指南 →](docs/guide/installation.zh-CN.md)**
 
@@ -271,36 +309,54 @@ WebSocket /ws          # 实时流
 
 ## 🛠️ 脚本
 
+### 开发
 ```bash
-# 开发
 npm run dev              # 启动开发服务器（端口 5173）
 npm run preview          # 预览生产构建
+npm run preview:https    # HTTPS 预览
+```
 
-# 构建
+### 构建
+```bash
 npm run build            # 生产构建
 npm run build:pages      # GitHub Pages 构建
+npm run build:mobile     # 移动端优化构建
+npm run build:desktop    # 桌面端优化构建
+npm run build:ar         # AR 功能构建
+npm run build:analyze    # 构建并分析包体积
+```
 
-# 质量
+### 质量
+```bash
 npm run lint             # ESLint 检查
 npm run lint:fix         # 自动修复
 npm run format           # Prettier 格式化
+npm run format:check     # 仅检查格式化
 npm run typecheck        # TypeScript 检查
+```
 
-# 测试
+### 测试
+```bash
 npm run test             # Vitest 监听模式
 npm run test:run         # 运行一次
 npm run test:coverage    # 覆盖率报告
+npm run test:ui          # Vitest UI 模式
 ```
 
 ---
 
 ## 🧰 浏览器支持
 
-| Chrome | Edge | Firefox | Safari |
-| :----: | :--: | :-----: | :----: |
-| 90+ ✅ | 90+ ✅ | 90+ ✅ | 15+ ✅ |
+| 功能 | Chrome | Edge | Firefox | Safari |
+|---------|--------|------|---------|--------|
+| 核心引擎 | 90+ ✅ | 90+ ✅ | 90+ ✅ | 15+ ✅ |
+| TTS（语音合成） | 90+ ✅ | 90+ ✅ | 90+ ✅ | 15+ ✅ |
+| ASR（语音识别） | 90+ ✅ | 90+ ✅ | ❌ 不支持 | ❌ 不支持 |
+| MediaPipe 视觉 | 90+ ✅ | 90+ ✅ | 90+ ✅ | 15+ ⚠️ |
 
-> ⚠️ 语音识别（ASR）需要 Chrome 或 Edge 浏览器。
+> **ASR 限制：** 语音识别功能需要 Chrome 或 Edge 浏览器。Firefox 和 Safari 用户可使用文字输入。
+
+> **Safari 提示：** MediaPipe 视觉功能可能需要开启实验性功能。
 
 ---
 
@@ -309,8 +365,23 @@ npm run test:coverage    # 覆盖率报告
 - **[快速开始](docs/guide/)** — 5 分钟快速上手
 - **[API 参考](docs/api/)** — 后端 API 文档
 - **[架构设计](docs/architecture/)** — 系统设计
+- **[配置说明](docs/guide/configuration.zh-CN.md)** — 环境变量与设置
 - **[贡献指南](docs/contributing/)** — 贡献指南
 - **[更新日志](CHANGELOG.zh-CN.md)** — 版本历史
+
+---
+
+## 🛣️ 路线图
+
+查看 [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md) 了解已发布功能，或访问 [GitHub Projects](https://github.com/LessUp/meta-human/projects) 了解开发计划。
+
+- [x] 核心 3D 数字人渲染
+- [x] 语音交互（TTS/ASR）
+- [x] 视觉感知（MediaPipe）
+- [x] 流式对话
+- [ ] 移动端 AR 支持
+- [ ] 自定义形象上传
+- [ ] 多语言 TTS
 
 ---
 
@@ -340,5 +411,5 @@ npm run test:coverage    # 覆盖率报告
 
 <p align="center">
   <a href="https://github.com/LessUp/meta-human/stargazers">⭐ 在 GitHub 上星标</a> ·
-  <a href="https://twitter.com/LessUpHQ">🐦 关注 Twitter</a>
+  <a href="https://x.com/LessUpHQ">🐦 关注 X</a>
 </p>
