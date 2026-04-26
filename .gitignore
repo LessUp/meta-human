@@ -64,3 +64,4 @@ coverage/
 
 # Claude local config (personal preferences)
 CLAUDE.local.md
+.github/copilot-instructions.md
