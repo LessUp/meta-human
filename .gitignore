@@ -63,6 +63,9 @@ coverage/
 .openspec/
 .worktrees/
 
+# OMC tool state (agent sessions, replays, etc.)
+.omc/
+
 # Claude local config (personal preferences)
 CLAUDE.local.md
 .github/copilot-instructions.md

@@ -76,6 +76,9 @@ jobs:
 
       - run: npm ci --prefer-offline
 
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
       - name: Build for Pages
         run: npm run build:pages
         env:
