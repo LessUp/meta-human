@@ -6,12 +6,12 @@ Get MetaHuman Engine running in 5 minutes.
 
 ## Prerequisites
 
-| Requirement | Version | Check Command |
-|-------------|---------|---------------|
-| Node.js | ≥ 18 | `node --version` |
-| npm | ≥ 9 | `npm --version` |
-| Python | ≥ 3.10 | `python --version` |
-| Git | Any | `git --version` |
+| Requirement | Version | Check Command      |
+| ----------- | ------- | ------------------ |
+| Node.js     | ≥ 20    | `node --version`   |
+| npm         | ≥ 9     | `npm --version`    |
+| Python      | ≥ 3.10  | `python --version` |
+| Git         | Any     | `git --version`    |
 
 ---
 

@@ -18,11 +18,11 @@
   <a href="https://github.com/LessUp/meta-human/actions"><img src="https://img.shields.io/github/actions/workflow/status/LessUp/meta-human/ci.yml?branch=main&label=CI&style=flat-square" alt="CI Status" /></a>
   <a href="https://lessup.github.io/meta-human/"><img src="https://img.shields.io/badge/Demo-Live-green?style=flat-square&logo=githubpages" alt="Live Demo" /></a>
   <a href="https://github.com/LessUp/meta-human/releases"><img src="https://img.shields.io/github/v/release/LessUp/meta-human?style=flat-square&label=Version" alt="Version" /></a>
-  <img src="https://img.shields.io/badge/Bundle-180KB-blue?style=flat-square&label=size" alt="Bundle Size" />
-  <img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=white" alt="React" />
-  <img src="https://img.shields.io/badge/Three.js-0.158-000000?style=flat-square&logo=threedotjs&logoColor=white" alt="Three.js" />
+  <img src="https://img.shields.io/badge/Bundle-~240KB(gzip)-blue?style=flat-square&label=size" alt="Bundle Size" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=white" alt="React" />
+  <img src="https://img.shields.io/badge/Three.js-0.177-000000?style=flat-square&logo=threedotjs&logoColor=white" alt="Three.js" />
   <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" />
+  <img src="https://img.shields.io/badge/Vite-6-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License" /></a>
 </p>
 
@@ -63,8 +63,8 @@
 
 ### Prerequisites
 
-- Node.js ≥ 18
-- npm ≥ 9
+- Node.js ≥ 22
+- npm ≥ 10
 
 ### Installation
 
@@ -92,12 +92,12 @@ Open **http://localhost:5173** — your 3D avatar is ready!
 <tr>
 <td width="50%">
 
-| Feature | Description |
-|---------|-------------|
-| GLB/GLTF Support | Load custom models or use built-in procedural avatar |
-| Emotion-Driven | Happy, surprised, sad, angry moods map to expressions |
-| Skeletal Animation | Wave, greet, nod, dance triggered by dialogue |
-| Adaptive Performance | 60fps rendering with device-based quality scaling |
+| Feature              | Description                                           |
+| -------------------- | ----------------------------------------------------- |
+| GLB/GLTF Support     | Load custom models or use built-in procedural avatar  |
+| Emotion-Driven       | Happy, surprised, sad, angry moods map to expressions |
+| Skeletal Animation   | Wave, greet, nod, dance triggered by dialogue         |
+| Adaptive Performance | 60fps rendering with device-based quality scaling     |
 
 </td>
 <td>
@@ -120,12 +120,12 @@ digitalHumanEngine.perform({
 
 ### 🗣️ Voice Interaction
 
-| Feature | Description |
-|---------|-------------|
-| TTS | Edge TTS for natural voice synthesis |
-| ASR | Browser-native speech recognition |
-| Smart Muting | Auto-pause TTS when user speaks |
-| Voice Detection | Visual feedback during recording |
+| Feature         | Description                          |
+| --------------- | ------------------------------------ |
+| TTS             | Edge TTS for natural voice synthesis |
+| ASR             | Browser-native speech recognition    |
+| Smart Muting    | Auto-pause TTS when user speaks      |
+| Voice Detection | Visual feedback during recording     |
 
 ```typescript
 import { ttsService, asrService } from './core/audio';
@@ -139,12 +139,12 @@ asrService.start({
 
 ### 🧠 Intelligent Dialogue
 
-| Feature | Description |
-|---------|-------------|
-| Multi-Modal Response | Returns `{ replyText, emotion, action }` |
-| Streaming | Real-time token-by-token via SSE |
+| Feature              | Description                                   |
+| -------------------- | --------------------------------------------- |
+| Multi-Modal Response | Returns `{ replyText, emotion, action }`      |
+| Streaming            | Real-time token-by-token via SSE              |
 | Graceful Degradation | Falls back to local mock when API unavailable |
-| Session Management | Persistent conversation context |
+| Session Management   | Persistent conversation context               |
 
 ```typescript
 import { dialogueService } from './core/dialogue';
@@ -158,12 +158,12 @@ const response = await dialogueService.send({
 
 ### 👁️ Visual Perception
 
-| Feature | Description |
-|---------|-------------|
-| Face Mesh | 468 landmarks for micro-expression detection |
-| Pose Estimation | Upper body gesture recognition |
-| Emotion Mapping | Real-time emotion inference |
-| Privacy First | All processing in browser, no data leaves client |
+| Feature         | Description                                      |
+| --------------- | ------------------------------------------------ |
+| Face Mesh       | 468 landmarks for micro-expression detection     |
+| Pose Estimation | Upper body gesture recognition                   |
+| Emotion Mapping | Real-time emotion inference                      |
+| Privacy First   | All processing in browser, no data leaves client |
 
 ---
 
@@ -171,12 +171,12 @@ const response = await dialogueService.send({
 
 Benchmarks measured on typical devices:
 
-| Metric | Desktop | Mobile (Mid-range) | Mobile (Low-end) |
-|--------|---------|-------------------|------------------|
-| **Rendering** | 60 FPS | 60 FPS | 30 FPS |
-| **TTS Latency** | < 200ms | < 300ms | < 500ms |
-| **Bundle Size** | 180 KB (gzipped) | 180 KB | 180 KB |
-| **Memory Usage** | ~120 MB | ~80 MB | ~60 MB |
+| Metric           | Desktop          | Mobile (Mid-range) | Mobile (Low-end) |
+| ---------------- | ---------------- | ------------------ | ---------------- |
+| **Rendering**    | 60 FPS           | 60 FPS             | 30 FPS           |
+| **TTS Latency**  | < 200ms          | < 300ms            | < 500ms          |
+| **Bundle Size**  | 180 KB (gzipped) | 180 KB             | 180 KB           |
+| **Memory Usage** | ~120 MB          | ~80 MB             | ~60 MB           |
 
 > Performance automatically scales based on device capabilities. See [Performance Module](docs/architecture/) for details.
 
@@ -210,10 +210,10 @@ Benchmarks measured on typical devices:
 
 Three focused domains minimize re-renders:
 
-| Store | Responsibility |
-|-------|----------------|
-| `chatSessionStore` | Message history, session lifecycle |
-| `systemStore` | Connection status, errors, performance metrics |
+| Store               | Responsibility                                      |
+| ------------------- | --------------------------------------------------- |
+| `chatSessionStore`  | Message history, session lifecycle                  |
+| `systemStore`       | Connection status, errors, performance metrics      |
 | `digitalHumanStore` | Avatar runtime state (expression, animation, audio) |
 
 **[📖 Architecture Docs →](docs/architecture/)**
@@ -258,14 +258,14 @@ src/
 
 This project uses Vite path aliases configured in `vite.config.ts`:
 
-| Alias | Maps to |
-|-------|---------|
-| `@core/*` | `src/core/*` |
+| Alias           | Maps to            |
+| --------------- | ------------------ |
+| `@core/*`       | `src/core/*`       |
 | `@components/*` | `src/components/*` |
-| `@store/*` | `src/store/*` |
-| `@hooks/*` | `src/hooks/*` |
-| `@lib/*` | `src/lib/*` |
-| `@pages/*` | `src/pages/*` |
+| `@store/*`      | `src/store/*`      |
+| `@hooks/*`      | `src/hooks/*`      |
+| `@lib/*`        | `src/lib/*`        |
+| `@pages/*`      | `src/pages/*`      |
 
 ---
 
@@ -298,10 +298,10 @@ WebSocket /ws          # Real-time streaming
 
 **Required Environment Variables:**
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `OPENAI_API_KEY` | AI responses | Optional (falls back to mock) |
-| `CORS_ALLOW_ORIGINS` | Frontend domain for CORS | Yes |
+| Variable             | Description              | Required                      |
+| -------------------- | ------------------------ | ----------------------------- |
+| `OPENAI_API_KEY`     | AI responses             | Optional (falls back to mock) |
+| `CORS_ALLOW_ORIGINS` | Frontend domain for CORS | Yes                           |
 
 **[📖 Deployment Guide →](docs/guide/installation.md)**
 
@@ -310,6 +310,7 @@ WebSocket /ws          # Real-time streaming
 ## 🛠️ Scripts
 
 ### Development
+
 ```bash
 npm run dev              # Start dev server (port 5173)
 npm run preview          # Preview production build
@@ -317,6 +318,7 @@ npm run preview:https    # Preview with HTTPS
 ```
 
 ### Build
+
 ```bash
 npm run build            # Production build
 npm run build:pages      # GitHub Pages build
@@ -327,6 +329,7 @@ npm run build:analyze    # Build with bundle analyzer
 ```
 
 ### Quality
+
 ```bash
 npm run lint             # ESLint check
 npm run lint:fix         # Auto-fix ESLint issues
@@ -336,6 +339,7 @@ npm run typecheck        # TypeScript check
 ```
 
 ### Testing
+
 ```bash
 npm run test             # Vitest watch mode
 npm run test:run         # Run tests once
@@ -347,12 +351,12 @@ npm run test:ui          # Vitest UI mode
 
 ## 🧰 Browser Support
 
-| Feature | Chrome | Edge | Firefox | Safari |
-|---------|--------|------|---------|--------|
-| Core Engine | 90+ ✅ | 90+ ✅ | 90+ ✅ | 15+ ✅ |
-| TTS (Speech Synthesis) | 90+ ✅ | 90+ ✅ | 90+ ✅ | 15+ ✅ |
+| Feature                  | Chrome | Edge   | Firefox          | Safari           |
+| ------------------------ | ------ | ------ | ---------------- | ---------------- |
+| Core Engine              | 90+ ✅ | 90+ ✅ | 90+ ✅           | 15+ ✅           |
+| TTS (Speech Synthesis)   | 90+ ✅ | 90+ ✅ | 90+ ✅           | 15+ ✅           |
 | ASR (Speech Recognition) | 90+ ✅ | 90+ ✅ | ❌ Not supported | ❌ Not supported |
-| MediaPipe Vision | 90+ ✅ | 90+ ✅ | 90+ ✅ | 15+ ⚠️ |
+| MediaPipe Vision         | 90+ ✅ | 90+ ✅ | 90+ ✅           | 15+ ⚠️           |
 
 > **ASR Limitations:** Speech recognition requires Chrome or Edge due to Web Speech API limitations. Firefox and Safari users can use text input instead.
 

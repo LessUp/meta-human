@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Activity, Brain, Zap, Target, Clock, TrendingUp } from 'lucide-react';
 
 interface BehaviorState {

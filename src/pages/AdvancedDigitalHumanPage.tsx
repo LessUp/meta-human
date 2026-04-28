@@ -1,4 +1,3 @@
-import React from 'react';
 import DigitalHumanViewer from '../components/DigitalHumanViewer';
 import TopHUD from '../components/TopHUD';
 import SettingsDrawer from '../components/SettingsDrawer';

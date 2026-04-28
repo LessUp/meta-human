@@ -1,19 +1,21 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react-swc'
-import path from 'path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react-swc';
+import tailwindcss from '@tailwindcss/vite';
+import path from 'path';
 
 export default defineConfig(({ mode }) => {
-  const isProduction = mode === 'production' || mode === 'pages'
-  const isPages = mode === 'pages'
+  const isProduction = mode === 'production' || mode === 'pages';
+  const isPages = mode === 'pages';
 
   return {
     base: isPages ? '/meta-human/' : '/',
-    
+
     plugins: [
       react({
         jsxImportSource: 'react',
         removeConsole: isProduction,
       }),
+      tailwindcss(),
     ].filter(Boolean),
 
     resolve: {
@@ -69,5 +71,5 @@ export default defineConfig(({ mode }) => {
       __PAGES__: isPages,
       __PROD__: isProduction,
     },
-  }
-})
+  };
+});

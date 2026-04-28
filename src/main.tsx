@@ -33,7 +33,7 @@ if (import.meta.env.DEV) {
 
       logger.info('Restored route from redirect:', targetHash);
     }
-  } catch (e) {
+  } catch (_e) {
     // 忽略解析错误
   }
 })();

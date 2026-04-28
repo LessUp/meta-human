@@ -1,6 +1,6 @@
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react-swc';
+import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
@@ -15,20 +15,20 @@ export default defineConfig({
         'src/__tests__/setup.ts',
         '**/*.d.ts',
         '**/*.config.ts',
-        '**/*.config.js'
+        '**/*.config.js',
       ],
       include: ['src/**/*.{ts,tsx}'],
       thresholds: {
         lines: 40,
         functions: 34,
         branches: 30,
-        statements: 40
-      }
-    }
+        statements: 40,
+      },
+    },
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
-    }
-  }
-})
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+});

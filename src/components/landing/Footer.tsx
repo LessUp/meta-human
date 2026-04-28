@@ -1,6 +1,14 @@
 import { Activity, Github, Twitter, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+type FooterLink = {
+  label: string;
+  href: string;
+  external?: boolean;
+  isRoute?: boolean;
+  isAnchor?: boolean;
+};
+
 const footerLinks = {
   product: {
     title: '产品',
@@ -9,7 +17,7 @@ const footerLinks = {
       { label: '功能特性', href: '#features', isAnchor: true },
       { label: '技术架构', href: '#tech-stack', isAnchor: true },
       { label: '更新日志', href: 'CHANGELOG.md' },
-    ],
+    ] as FooterLink[],
   },
   resources: {
     title: '资源',
@@ -18,7 +26,7 @@ const footerLinks = {
       { label: 'API 文档', href: 'docs/api/' },
       { label: '架构设计', href: 'docs/architecture/' },
       { label: '贡献指南', href: 'docs/contributing/' },
-    ],
+    ] as FooterLink[],
   },
   community: {
     title: '社区',
@@ -27,7 +35,7 @@ const footerLinks = {
       { label: '讨论区', href: 'https://github.com/LessUp/meta-human/discussions', external: true },
       { label: '问题反馈', href: 'https://github.com/LessUp/meta-human/issues', external: true },
       { label: 'Twitter', href: 'https://x.com/LessUpHQ', external: true },
-    ],
+    ] as FooterLink[],
   },
 };
 
@@ -52,9 +60,7 @@ export default function Footer() {
               <Activity className="w-6 h-6 text-blue-400" />
               <span className="text-lg font-semibold text-white">MetaHuman</span>
             </Link>
-            <p className="text-sm text-gray-500 mb-4">
-              浏览器原生的 3D 数字人交互引擎
-            </p>
+            <p className="text-sm text-gray-500 mb-4">浏览器原生的 3D 数字人交互引擎</p>
             <div className="flex items-center gap-3">
               <a
                 href="https://github.com/LessUp/meta-human"
@@ -129,7 +135,8 @@ export default function Footer() {
             © {currentYear} LessUp. Open source under MIT License.
           </p>
           <p className="text-sm text-gray-600 flex items-center gap-1">
-            Built with <Heart className="w-4 h-4 text-red-500 fill-red-500" /> to make digital humans accessible
+            Built with <Heart className="w-4 h-4 text-red-500 fill-red-500" /> to make digital
+            humans accessible
           </p>
         </div>
       </div>

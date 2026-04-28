@@ -1,0 +1,10 @@
+# Python dependencies lock file
+# Generated from requirements.txt with fixed versions
+# Install with: pip install -r requirements.lock
+
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+httpx==0.28.0
+python-multipart==0.0.12
+edge-tts==6.1.12
+pydantic==2.10.0
