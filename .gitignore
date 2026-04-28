@@ -61,6 +61,7 @@ coverage/
 
 # OpenSpec
 .openspec/
+.worktrees/
 
 # Claude local config (personal preferences)
 CLAUDE.local.md
