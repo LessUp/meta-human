@@ -18,7 +18,7 @@
   <a href="https://github.com/LessUp/meta-human/actions"><img src="https://img.shields.io/github/actions/workflow/status/LessUp/meta-human/ci.yml?branch=main&label=CI&style=flat-square" alt="CI 状态" /></a>
   <a href="https://lessup.github.io/meta-human/"><img src="https://img.shields.io/badge/Demo-在线-green?style=flat-square&logo=githubpages" alt="在线演示" /></a>
   <a href="https://github.com/LessUp/meta-human/releases"><img src="https://img.shields.io/github/v/release/LessUp/meta-human?style=flat-square&label=版本" alt="版本" /></a>
-  <img src="https://img.shields.io/badge/Bundle-180KB-blue?style=flat-square&label=size" alt="包体积" />
+  <img src="https://img.shields.io/badge/Bundle-~240KB(gzip)-blue?style=flat-square&label=size" alt="包体积" />
   <img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=white" alt="React" />
   <img src="https://img.shields.io/badge/Three.js-0.158-000000?style=flat-square&logo=threedotjs&logoColor=white" alt="Three.js" />
   <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
@@ -63,7 +63,7 @@
 
 ### 前提条件
 
-- Node.js ≥ 18
+- Node.js ≥ 20
 - npm ≥ 9
 
 ### 安装
@@ -92,12 +92,12 @@ npm run dev
 <tr>
 <td width="50%">
 
-| 功能 | 说明 |
-|------|------|
+| 功能          | 说明                               |
+| ------------- | ---------------------------------- |
 | GLB/GLTF 支持 | 加载自定义模型或使用内置程序化形象 |
-| 情绪驱动 | 高兴、惊讶、悲伤、愤怒自动映射表情 |
-| 骨骼动画 | 挥手、问候、点头、跳舞，由对话触发 |
-| 自适应性能 | 60fps 渲染，根据设备能力调节画质 |
+| 情绪驱动      | 高兴、惊讶、悲伤、愤怒自动映射表情 |
+| 骨骼动画      | 挥手、问候、点头、跳舞，由对话触发 |
+| 自适应性能    | 60fps 渲染，根据设备能力调节画质   |
 
 </td>
 <td>
@@ -120,12 +120,12 @@ digitalHumanEngine.perform({
 
 ### 🗣️ 语音交互
 
-| 功能 | 说明 |
-|------|------|
+| 功能         | 说明                        |
+| ------------ | --------------------------- |
 | TTS 语音合成 | Edge TTS 提供自然流畅的语音 |
-| ASR 语音识别 | 浏览器原生语音转文字 |
-| 智能静音 | 用户说话时自动暂停播报 |
-| 语音检测 | 录音时提供视觉反馈 |
+| ASR 语音识别 | 浏览器原生语音转文字        |
+| 智能静音     | 用户说话时自动暂停播报      |
+| 语音检测     | 录音时提供视觉反馈          |
 
 ```typescript
 import { ttsService, asrService } from './core/audio';
@@ -139,12 +139,12 @@ asrService.start({
 
 ### 🧠 智能对话
 
-| 功能 | 说明 |
-|------|------|
+| 功能       | 说明                                  |
+| ---------- | ------------------------------------- |
 | 多模态响应 | 返回 `{ replyText, emotion, action }` |
-| 流式输出 | 通过 SSE 实时逐字响应 |
-| 优雅降级 | API 不可用时自动回退 Mock |
-| 会话管理 | 持久化对话上下文 |
+| 流式输出   | 通过 SSE 实时逐字响应                 |
+| 优雅降级   | API 不可用时自动回退 Mock             |
+| 会话管理   | 持久化对话上下文                      |
 
 ```typescript
 import { dialogueService } from './core/dialogue';
@@ -158,11 +158,11 @@ const response = await dialogueService.send({
 
 ### 👁️ 视觉感知
 
-| 功能 | 说明 |
-|------|------|
-| 人脸网格 | 468 个关键点捕捉微表情 |
-| 姿态估计 | 上半身手势识别 |
-| 情绪映射 | 实时情绪推断 |
+| 功能     | 说明                         |
+| -------- | ---------------------------- |
+| 人脸网格 | 468 个关键点捕捉微表情       |
+| 姿态估计 | 上半身手势识别               |
+| 情绪映射 | 实时情绪推断                 |
 | 隐私优先 | 全部在浏览器处理，数据不上传 |
 
 ---
@@ -171,12 +171,12 @@ const response = await dialogueService.send({
 
 典型设备上的性能基准：
 
-| 指标 | 桌面端 | 移动端（中端） | 移动端（低端） |
-|------|--------|---------------|---------------|
-| **渲染性能** | 60 FPS | 60 FPS | 30 FPS |
-| **TTS 延迟** | < 200ms | < 300ms | < 500ms |
-| **包体积** | 180 KB (gzipped) | 180 KB | 180 KB |
-| **内存占用** | ~120 MB | ~80 MB | ~60 MB |
+| 指标         | 桌面端           | 移动端（中端） | 移动端（低端） |
+| ------------ | ---------------- | -------------- | -------------- |
+| **渲染性能** | 60 FPS           | 60 FPS         | 30 FPS         |
+| **TTS 延迟** | < 200ms          | < 300ms        | < 500ms        |
+| **包体积**   | 180 KB (gzipped) | 180 KB         | 180 KB         |
+| **内存占用** | ~120 MB          | ~80 MB         | ~60 MB         |
 
 > 性能根据设备能力自动调节。详见[性能模块文档](docs/architecture/)。
 
@@ -210,10 +210,10 @@ const response = await dialogueService.send({
 
 三个独立域，最小化重渲染：
 
-| Store | 职责 |
-|-------|------|
-| `chatSessionStore` | 消息历史、会话生命周期 |
-| `systemStore` | 连接状态、错误、性能指标 |
+| Store               | 职责                                 |
+| ------------------- | ------------------------------------ |
+| `chatSessionStore`  | 消息历史、会话生命周期               |
+| `systemStore`       | 连接状态、错误、性能指标             |
 | `digitalHumanStore` | 数字人运行时状态（表情、动画、音频） |
 
 **[📖 架构文档 →](docs/architecture/)**
@@ -258,14 +258,14 @@ src/
 
 本项目使用 Vite 路径别名，配置在 `vite.config.ts`：
 
-| 别名 | 映射路径 |
-|------|---------|
-| `@core/*` | `src/core/*` |
+| 别名            | 映射路径           |
+| --------------- | ------------------ |
+| `@core/*`       | `src/core/*`       |
 | `@components/*` | `src/components/*` |
-| `@store/*` | `src/store/*` |
-| `@hooks/*` | `src/hooks/*` |
-| `@lib/*` | `src/lib/*` |
-| `@pages/*` | `src/pages/*` |
+| `@store/*`      | `src/store/*`      |
+| `@hooks/*`      | `src/hooks/*`      |
+| `@lib/*`        | `src/lib/*`        |
+| `@pages/*`      | `src/pages/*`      |
 
 ---
 
@@ -298,10 +298,10 @@ WebSocket /ws          # 实时流
 
 **必需环境变量：**
 
-| 变量 | 说明 | 是否必需 |
-|------|------|---------|
-| `OPENAI_API_KEY` | AI 响应 | 可选（自动降级） |
-| `CORS_ALLOW_ORIGINS` | 前端域名 | 是 |
+| 变量                 | 说明     | 是否必需         |
+| -------------------- | -------- | ---------------- |
+| `OPENAI_API_KEY`     | AI 响应  | 可选（自动降级） |
+| `CORS_ALLOW_ORIGINS` | 前端域名 | 是               |
 
 **[📖 部署指南 →](docs/guide/installation.zh-CN.md)**
 
@@ -310,6 +310,7 @@ WebSocket /ws          # 实时流
 ## 🛠️ 脚本
 
 ### 开发
+
 ```bash
 npm run dev              # 启动开发服务器（端口 5173）
 npm run preview          # 预览生产构建
@@ -317,6 +318,7 @@ npm run preview:https    # HTTPS 预览
 ```
 
 ### 构建
+
 ```bash
 npm run build            # 生产构建
 npm run build:pages      # GitHub Pages 构建
@@ -327,6 +329,7 @@ npm run build:analyze    # 构建并分析包体积
 ```
 
 ### 质量
+
 ```bash
 npm run lint             # ESLint 检查
 npm run lint:fix         # 自动修复
@@ -336,6 +339,7 @@ npm run typecheck        # TypeScript 检查
 ```
 
 ### 测试
+
 ```bash
 npm run test             # Vitest 监听模式
 npm run test:run         # 运行一次
@@ -347,12 +351,12 @@ npm run test:ui          # Vitest UI 模式
 
 ## 🧰 浏览器支持
 
-| 功能 | Chrome | Edge | Firefox | Safari |
-|---------|--------|------|---------|--------|
-| 核心引擎 | 90+ ✅ | 90+ ✅ | 90+ ✅ | 15+ ✅ |
-| TTS（语音合成） | 90+ ✅ | 90+ ✅ | 90+ ✅ | 15+ ✅ |
+| 功能            | Chrome | Edge   | Firefox   | Safari    |
+| --------------- | ------ | ------ | --------- | --------- |
+| 核心引擎        | 90+ ✅ | 90+ ✅ | 90+ ✅    | 15+ ✅    |
+| TTS（语音合成） | 90+ ✅ | 90+ ✅ | 90+ ✅    | 15+ ✅    |
 | ASR（语音识别） | 90+ ✅ | 90+ ✅ | ❌ 不支持 | ❌ 不支持 |
-| MediaPipe 视觉 | 90+ ✅ | 90+ ✅ | 90+ ✅ | 15+ ⚠️ |
+| MediaPipe 视觉  | 90+ ✅ | 90+ ✅ | 90+ ✅    | 15+ ⚠️    |
 
 > **ASR 限制：** 语音识别功能需要 Chrome 或 Edge 浏览器。Firefox 和 Safari 用户可使用文字输入。
 

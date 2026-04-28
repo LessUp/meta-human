@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-04-27
+
+### 🔧 Changed
+
+#### Code Quality
+
+- **TypeScript Strict Mode** — Enabled `strict`, `noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`
+- Fixed 31 type errors across the codebase
+- Removed unused React imports from component files
+- Fixed type safety issues in `chatTransport.ts` and `wsClient.ts`
+
+#### Code Deduplication
+
+- Unified `buildEmptyResponse` function between `dialogueService.ts` and `chatTransport.ts`
+- Exported `buildEmptyResponse` from `dialogueService.ts` for reuse
+
+### 📚 Documentation
+
+- Unified Node.js version requirement to ≥ 20 across all documentation
+- Updated Bundle Size badge to reflect actual gzipped size (~240KB)
+- Added `.nvmrc` file for Node.js version management
+- Created `server/requirements.lock` for Python dependency pinning
+- Enhanced `AGENTS.md` with testing guidelines and refactoring standards
+
+---
+
 ## [1.0.0] - 2025-04-22
 
 ### 🎉 First Stable Release

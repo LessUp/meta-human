@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Mic, MicOff, Volume2, VolumeX, Play } from 'lucide-react';
 import { ttsService, asrService } from '../core/audio';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';

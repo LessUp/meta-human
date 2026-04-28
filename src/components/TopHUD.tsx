@@ -1,4 +1,3 @@
-import React from 'react';
 import { Activity, Wifi, WifiOff, RefreshCw, Settings, RotateCcw } from 'lucide-react';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { useChatSessionStore } from '../store/chatSessionStore';

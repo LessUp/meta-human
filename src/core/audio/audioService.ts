@@ -312,6 +312,14 @@ export interface ASRConfig {
   maxAlternatives?: number;
 }
 
+// 内部使用的已填充配置类型
+type FilledASRConfig = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+};
+
 type ASRStartOptions = {
   onResult?: (text: string) => void;
   mode?: 'command' | 'dictation';
@@ -322,7 +330,7 @@ export class ASRService {
   private recognition: SpeechRecognitionLike | null = null;
   private isSupportedFlag: boolean;
   private callbacks: ASRCallbacks = {};
-  private config: ASRConfig;
+  private config: FilledASRConfig;
   private sendToBackend: boolean = true;
   private tts: TTSService;
   private state: ASRStateAdapter;
@@ -523,7 +531,7 @@ export class ASRService {
     if (this.recognition && this.isSupportedFlag) {
       try {
         this.recognition.stop();
-      } catch (e) {
+      } catch (_e) {
         // 忽略停止错误
       }
     }
@@ -569,7 +577,7 @@ export class ASRService {
     if (this.recognition && this.isSupportedFlag) {
       try {
         this.recognition.abort();
-      } catch (e) {
+      } catch (_e) {
         // 忽略中断错误
       }
     }

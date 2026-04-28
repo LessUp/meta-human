@@ -157,6 +157,8 @@ function buildEmptyResponse(): ChatResponsePayload {
   return { replyText: '', emotion: 'neutral', action: 'idle' };
 }
 
+export { buildEmptyResponse };
+
 // 检查服务器连接状态
 export async function checkServerHealth(): Promise<boolean> {
   try {

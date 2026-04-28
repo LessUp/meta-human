@@ -1,183 +1,111 @@
 # AGENTS.md
 
-Guidance for AI assistants working with this repository.
+AI 助手工作规范。
 
-## Project Overview
+## OpenSpec 工作流
 
-MetaHuman Engine is a browser-native 3D digital human interaction engine built with React, TypeScript, Three.js, and Zustand.
+新功能开发必须遵循 OpenSpec 驱动流程：
 
-## OpenSpec Workflow
+| 命令                     | 用途               |
+| ------------------------ | ------------------ |
+| `/opsx:propose "<idea>"` | 创建变更提案       |
+| `/opsx:explore`          | 探索问题、明确需求 |
+| `/opsx:apply`            | 按任务清单实施     |
+| `/opsx:archive`          | 归档已完成的变更   |
 
-This project uses [OpenSpec](https://github.com/Fission-AI/OpenSpec) for spec-driven development. Always follow the spec-driven workflow for new features and changes.
+**关键目录：**
 
-### Commands
+- `openspec/specs/` — 系统行为规范（真相来源）
+- `openspec/changes/` — 活跃的变更提案
+- `openspec/changes/archive/` — 已完成变更
 
-| Command | Description |
-|---------|-------------|
-| `/opsx:propose "<idea>"` | Create a new change proposal with specs, design, and tasks |
-| `/opsx:explore` | Investigate problems and clarify requirements |
-| `/opsx:apply` | Implement the current change following the task checklist |
-| `/opsx:archive` | Archive completed change and merge specs |
+**何时需要提案：** 新功能、行为变更、核心重构、新依赖。  
+**可跳过：** 明确的 bug 修复、文档更新、配置调整、测试补充。
 
-### Key Directories
+## 技术栈
 
-| Directory | Purpose |
-|-----------|---------|
-| `openspec/specs/` | Source of truth for system behavior |
-| `openspec/changes/` | Active change proposals |
-| `openspec/changes/archive/` | Completed changes |
+- **框架：** React 19 + TypeScript
+- **构建：** Vite 6
+- **3D：** Three.js + React Three Fiber v9 + Drei
+- **状态：** Zustand 5
+- **样式：** Tailwind CSS 4
+- **测试：** Vitest + Testing Library
 
-### Workflow
+**路径别名：** `@/*` → `src/*`
 
-1. **Before implementing new features**, create a proposal using `/opsx:propose`
-2. Review and refine the generated specs, design, and tasks
-3. Implement following the task checklist with `/opsx:apply`
-4. Archive when complete to merge specs with `/opsx:archive`
-
-### When to Create a Proposal
-
-Create a proposal when:
-- Adding a new feature or capability
-- Changing existing behavior
-- Refactoring core systems
-- Introducing new dependencies
-
-You can skip the proposal process for:
-- Bug fixes with clear cause
-- Documentation updates
-- Configuration changes
-- Test additions
-
-## Tech Stack
-
-- **Framework:** React 18 + TypeScript
-- **Build:** Vite 5
-- **3D:** Three.js + React Three Fiber + Drei
-- **State:** Zustand
-- **Styling:** Tailwind CSS
-- **Testing:** Vitest + Testing Library
-
-**Path alias:** `@/*` → `src/*`
-
-## Architecture
-
-### App Shell
+## 核心架构
 
 ```
-src/main.tsx → src/App.tsx
-  └── Routes:
-      /, /advanced → AdvancedDigitalHumanPage (main)
-      /digital-human → DigitalHumanPage (simple demo)
+pages/          → 路由级组件
+  └── hooks/    → 业务逻辑 hooks
+       └── core/ → 引擎服务
+            └── store/ → Zustand 状态
 ```
 
-### Layer Structure
+**核心服务：**
 
-```
-pages/          → Route-level components
-  └── hooks/    → Business logic hooks
-       └── core/ → Engine services
-            └── store/ → Zustand state
-```
+| 服务         | 文件                                    | 职责                          |
+| ------------ | --------------------------------------- | ----------------------------- |
+| Avatar       | `core/avatar/DigitalHumanEngine.ts`     | 数字人控制门面                |
+| Audio        | `core/audio/audioService.ts`            | TTS 合成、语音识别            |
+| Dialogue     | `core/dialogue/dialogueService.ts`      | HTTP 客户端（重试/超时/降级） |
+| Orchestrator | `core/dialogue/dialogueOrchestrator.ts` | 对话轮次编排                  |
+| Vision       | `core/vision/visionService.ts`          | MediaPipe 面部/姿态推理       |
 
-### Core Services
+**状态存储：**
 
-| Service      | File                                    | Purpose                                           |
-| ------------ | --------------------------------------- | ------------------------------------------------- |
-| Avatar       | `core/avatar/DigitalHumanEngine.ts`     | Imperative façade over store for avatar control   |
-| Audio        | `core/audio/audioService.ts`            | TTS synthesis, ASR recognition via Web Speech API |
-| Dialogue     | `core/dialogue/dialogueService.ts`      | HTTP client with retry, timeout, fallback         |
-| Orchestrator | `core/dialogue/dialogueOrchestrator.ts` | Full dialogue turn orchestration                  |
-| Vision       | `core/vision/visionService.ts`          | MediaPipe face/pose inference                     |
-| Performance  | `core/performance/deviceCapability.ts`  | Device tier detection                             |
+| Store               | 范围                   |
+| ------------------- | ---------------------- |
+| `chatSessionStore`  | 消息、会话 ID          |
+| `systemStore`       | 连接、错误、性能指标   |
+| `digitalHumanStore` | 数字人状态、音频、行为 |
 
-### State Stores
+## 关键模式
 
-| Store               | Scope                                   |
-| ------------------- | --------------------------------------- |
-| `chatSessionStore`  | Messages, sessionId                     |
-| `systemStore`       | Connection, errors, performance metrics |
-| `digitalHumanStore` | Avatar state, audio, behavior           |
+### Service → Store
 
-## Key Patterns
-
-### Service → Store Flow
-
-Services read/write store via `useXStore.getState()` to avoid props drilling:
+服务通过 `useXStore.getState()` 读写 store，避免 props 传递：
 
 ```typescript
-// In service
-const { setSpeaking, setBehavior } = useDigitalHumanStore.getState();
-setBehavior('thinking');
+const { setSpeaking } = useDigitalHumanStore.getState();
+setSpeaking(true);
 ```
 
-### Store Selector Pattern
+### Store Selector
 
-Use selectors to minimize re-renders:
+使用选择器最小化重渲染：
 
 ```typescript
-// Good - only subscribes to specific value
+// 推荐
 const isPlaying = useDigitalHumanStore((s) => s.isPlaying);
 
-// Avoid - subscribes to entire store
+// 避免
 const { isPlaying, ...rest } = useDigitalHumanStore();
 ```
 
-### Fallback Strategy
+### 降级策略
 
-All external calls have fallbacks:
+所有外部调用必须有降级方案：
 
-- Model load fails → procedural CyberAvatar
-- API unavailable → local mock response
-- TTS fails → text-only display
-- Vision fails → disable panel gracefully
+- 模型加载失败 → 程序化 CyberAvatar
+- API 不可用 → 本地 mock 响应
+- TTS 失败 → 纯文本显示
+- Vision 失败 → 优雅禁用面板
 
-## Backend Contract
-
-**Base URL:** `VITE_API_BASE_URL` or `http://localhost:8000`
-
-| Endpoint          | Method | Purpose                |
-| ----------------- | ------ | ---------------------- |
-| `/health`         | GET    | Connectivity check     |
-| `/v1/chat`        | POST   | Dialogue request       |
-| `/v1/chat/stream` | POST   | SSE streaming dialogue |
-| `/ws`             | WS     | WebSocket connection   |
-
-**Chat Response Shape:**
-
-```typescript
-interface ChatResponse {
-  replyText: string;
-  emotion: 'neutral' | 'happy' | 'surprised' | 'sad' | 'angry';
-  action: 'idle' | 'wave' | 'greet' | 'think' | 'nod' | 'shakeHead' | 'dance' | 'speak';
-}
-```
-
-## Development Commands
+## 开发命令
 
 ```bash
-npm install          # Install dependencies
-npm run dev          # Start dev server (port 5173)
-npm run build        # Production build
-npm run preview      # Preview production build
-npm run lint         # ESLint check
-npm run lint:fix     # Auto-fix ESLint issues
-npm run format       # Prettier formatting
-npm run typecheck    # TypeScript check
-npm run test         # Vitest watch mode
-npm run test:run     # Run tests once
-npm run test:coverage # Coverage report
+npm run dev          # 启动开发服务器 (端口 5173)
+npm run build        # 生产构建
+npm run typecheck    # TypeScript 检查
+npm run lint         # ESLint 检查
+npm run test:run     # 运行测试
+npm run test:coverage # 覆盖率报告 (目标 ≥50%)
 ```
 
-## Testing Notes
+## 实施提示
 
-- Tests mock Three.js, R3F, and browser APIs
-- Main test file: `src/__tests__/digitalHuman.test.tsx`
-- Browser APIs (speech, media) require mocking
-
-## Implementation Tips
-
-- Prefer `AdvancedDigitalHumanPage` for changes (main experience)
-- Avatar reactions: check `DigitalHumanEngine.ts` + `dialogueOrchestrator.ts`
-- Chat issues: check `dialogueService.ts` retry/fallback + health check
-- Speech: verify if logic belongs in `audioService.ts` or page orchestration
-- Event listeners: always clean up in `useEffect` return
+- 主要修改 `AdvancedDigitalHumanPage`
+- 数字人反应：检查 `DigitalHumanEngine.ts` + `dialogueOrchestrator.ts`
+- 对话问题：检查 `dialogueService.ts` 重试/降级逻辑
+- 事件监听器：必须在 `useEffect` 返回中清理

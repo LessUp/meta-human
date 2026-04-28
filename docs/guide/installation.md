@@ -8,20 +8,20 @@ Complete installation instructions for MetaHuman Engine.
 
 ### Minimum Requirements
 
-| Component | Specification |
-|-----------|--------------|
-| OS | Windows 10+, macOS 11+, or Linux (Ubuntu 20.04+) |
-| RAM | 4 GB |
-| Disk | 2 GB free space |
-| Browser | Chrome 90+, Edge 90+, Firefox 90+, Safari 15+ |
+| Component | Specification                                    |
+| --------- | ------------------------------------------------ |
+| OS        | Windows 10+, macOS 11+, or Linux (Ubuntu 20.04+) |
+| RAM       | 4 GB                                             |
+| Disk      | 2 GB free space                                  |
+| Browser   | Chrome 90+, Edge 90+, Firefox 90+, Safari 15+    |
 
 ### Recommended Requirements
 
-| Component | Specification |
-|-----------|--------------|
-| RAM | 8 GB |
-| GPU | WebGL 2.0 compatible *(for optimal 3D performance)* |
-| Network | Broadband *(for streaming responses)* |
+| Component | Specification                                       |
+| --------- | --------------------------------------------------- |
+| RAM       | 8 GB                                                |
+| GPU       | WebGL 2.0 compatible _(for optimal 3D performance)_ |
+| Network   | Broadband _(for streaming responses)_               |
 
 ---
 
@@ -30,13 +30,15 @@ Complete installation instructions for MetaHuman Engine.
 ### Step 1: Install Node.js
 
 **macOS (Homebrew):**
+
 ```bash
-brew install node@18
+brew install node@20
 ```
 
 **Ubuntu/Debian:**
+
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
@@ -44,8 +46,9 @@ sudo apt-get install -y nodejs
 Download from [nodejs.org](https://nodejs.org/) (LTS version)
 
 **Verify installation:**
+
 ```bash
-node --version  # Should show v18.x.x
+node --version  # Should show v20.x.x
 npm --version   # Should show 9.x.x or higher
 ```
 
@@ -92,11 +95,13 @@ Access at **http://localhost:5173**
 **Step 1: Install Python 3.10+**
 
 **macOS:**
+
 ```bash
 brew install python@3.10
 ```
 
 **Ubuntu:**
+
 ```bash
 sudo apt-get update
 sudo apt-get install python3.10 python3.10-venv
@@ -106,6 +111,7 @@ sudo apt-get install python3.10 python3.10-venv
 Download from [python.org](https://python.org/)
 
 **Verify:**
+
 ```bash
 python --version  # Should show 3.10.x or higher
 ```
@@ -186,7 +192,7 @@ services:
   backend:
     build: ./server
     ports:
-      - "8000:8000"
+      - '8000:8000'
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - CORS_ALLOW_ORIGINS=http://localhost:5173
@@ -213,8 +219,8 @@ npm run build:pages
 
 Go to Settings → Secrets and variables → Actions:
 
-| Variable | Value |
-|----------|-------|
+| Variable            | Value            |
+| ------------------- | ---------------- |
 | `VITE_API_BASE_URL` | Your backend URL |
 
 **Step 4: Deploy**
@@ -235,12 +241,12 @@ Import from GitHub using `render.yaml` in project root.
 
 **Step 2: Configure Service**
 
-| Setting | Value |
-|---------|-------|
-| Root Directory | `server` |
-| Build Command | `pip install -r requirements.txt` |
-| Start Command | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
-| Health Check | `/health` |
+| Setting        | Value                                              |
+| -------------- | -------------------------------------------------- |
+| Root Directory | `server`                                           |
+| Build Command  | `pip install -r requirements.txt`                  |
+| Start Command  | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
+| Health Check   | `/health`                                          |
 
 **Step 3: Set Environment Variables**
 
@@ -302,6 +308,7 @@ curl -X POST http://localhost:8000/v1/chat \
 ### npm install fails
 
 **Clear cache and retry:**
+
 ```bash
 npm cache clean --force
 rm -rf node_modules package-lock.json
@@ -311,6 +318,7 @@ npm install
 ### Python packages fail to install
 
 **Upgrade pip:**
+
 ```bash
 pip install --upgrade pip setuptools
 pip install -r requirements.txt
@@ -319,6 +327,7 @@ pip install -r requirements.txt
 ### Port conflicts
 
 **Frontend (port 5173):**
+
 ```bash
 # Find process
 lsof -ti:5173
@@ -328,6 +337,7 @@ lsof -ti:5173 | xargs kill -9
 ```
 
 **Backend (port 8000):**
+
 ```bash
 lsof -ti:8000 | xargs kill -9
 ```

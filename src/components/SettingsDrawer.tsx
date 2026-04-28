@@ -1,4 +1,3 @@
-import React from 'react';
 import { Settings, X, Sun, Moon } from 'lucide-react';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { digitalHumanEngine } from '../core/avatar';

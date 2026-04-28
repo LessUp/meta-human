@@ -1,6 +1,7 @@
 import {
   sendUserInput,
   streamUserInput,
+  buildEmptyResponse,
   type ChatRequestPayload,
   type ChatResponsePayload,
   type DialogueServiceConfig,
@@ -39,12 +40,6 @@ export interface ChatTransportCapabilities {
 }
 
 const DEFAULT_TIMEOUT_MS = 15000;
-
-const buildEmptyResponse = (): ChatResponsePayload => ({
-  replyText: '',
-  emotion: 'neutral',
-  action: 'idle',
-});
 
 export const httpChatTransport: ChatTransport = {
   mode: 'http',
@@ -182,12 +177,18 @@ async function* streamOverWebSocket(
     }
 
     // Build return value from terminal event or accumulated text
-    if (terminalEvent?.type === 'done') {
+    const doneEvent = terminalEvent as {
+      type: 'done';
+      replyText: string;
+      emotion: string;
+      action: string;
+    } | null;
+    if (doneEvent?.type === 'done') {
       return {
         response: {
-          replyText: terminalEvent.replyText,
-          emotion: terminalEvent.emotion as ChatResponsePayload['emotion'],
-          action: terminalEvent.action,
+          replyText: doneEvent.replyText,
+          emotion: doneEvent.emotion as ChatResponsePayload['emotion'],
+          action: doneEvent.action,
         },
         connectionStatus: 'connected',
         error: null,
@@ -195,6 +196,7 @@ async function* streamOverWebSocket(
     }
 
     if (accumulatedText) {
+      const errorEvent = terminalEvent as { type: 'error'; message: string } | null;
       return {
         response: {
           replyText: accumulatedText,
@@ -202,7 +204,7 @@ async function* streamOverWebSocket(
           action: 'idle',
         },
         connectionStatus: 'error',
-        error: terminalEvent?.type === 'error' ? terminalEvent.message : 'WebSocket 流中断',
+        error: errorEvent?.type === 'error' ? errorEvent.message : 'WebSocket 流中断',
       };
     }
 
@@ -270,7 +272,9 @@ export const webSocketChatTransport: ChatTransport = {
     })();
 
     try {
-      finalResult = await Promise.race([iterationPromise, timeoutPromise]);
+      finalResult = (await Promise.race([iterationPromise, timeoutPromise])) as
+        | DialogueServiceResult
+        | undefined;
     } catch (error) {
       if (error instanceof Error && error.message === 'WebSocket send timeout') {
         return {

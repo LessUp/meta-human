@@ -12,16 +12,16 @@ import React from 'react';
 // Mock React's useRef before Three.js mocks
 vi.spyOn(React, 'useRef').mockImplementation(() => {
   const groupMock = {
-    children: [],
+    children: [] as unknown[],
     position: { x: 0, y: 0, z: 0 },
     rotation: { x: 0, y: 0, z: 0 },
     scale: { x: 1, y: 1, z: 1 },
-    add: vi.fn((object) => {
+    add: vi.fn((object: unknown) => {
       if (object && typeof object === 'object') {
         groupMock.children.push(object);
       }
     }),
-    remove: vi.fn((object) => {
+    remove: vi.fn((object: unknown) => {
       const index = groupMock.children.indexOf(object);
       if (index > -1) {
         groupMock.children.splice(index, 1);
