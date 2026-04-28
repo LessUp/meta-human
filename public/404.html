@@ -9,11 +9,14 @@
       // 保存当前 URL 到 sessionStorage，应用加载后重定向到正确路由
       (function() {
         var path = window.location.pathname;
-        var repo = '/meta-human/';
+        var repo = '/meta-human';
         
-        // 移除仓库前缀获取实际路径
+        // 移除仓库前缀获取实际路径（兼容带/不带尾部斜杠）
         if (path.indexOf(repo) === 0) {
-          path = path.substring(repo.length - 1);
+          path = path.substring(repo.length);
+          if (path === '' || path === '/') {
+            path = '/';
+          }
         }
         
         // 保存重定向信息
@@ -23,8 +26,8 @@
           hash: window.location.hash
         }));
         
-        // 重定向到首页
-        window.location.replace(repo);
+        // 重定向到首页（使用带尾部斜杠的标准路径）
+        window.location.replace('/meta-human/');
       })();
     </script>
     <style>

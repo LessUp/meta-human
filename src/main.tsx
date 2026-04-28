@@ -21,10 +21,7 @@ if (import.meta.env.DEV) {
 
       // HashRouter 使用 hash 来管理路由
       // 构建目标 hash 路径
-      let targetHash = path || '/';
-      if (targetHash === '/meta-human/') {
-        targetHash = '/';
-      }
+      const targetHash = path || '/';
 
       // 设置 hash 路由
       if (targetHash !== '/') {

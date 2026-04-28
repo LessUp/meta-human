@@ -42,12 +42,14 @@ export default defineConfig(({ mode }) => {
       minify: 'esbuild',
       rollupOptions: {
         output: {
-          manualChunks: {
-            'react-vendor': ['react', 'react-dom', 'react-dom/client'],
-            'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
-            'state-vendor': ['zustand'],
-            'ui-vendor': ['lucide-react', 'sonner', 'clsx', 'tailwind-merge'],
-            'router-vendor': ['react-router-dom'],
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (/[\\/]node_modules[\\/](react|react-dom)[\\/]/.test(id)) return 'react-vendor';
+              if (/[\\/]node_modules[\\/](three|@react-three)[\\/]/.test(id)) return 'three-vendor';
+              if (/[\\/]node_modules[\\/]zustand[\\/]/.test(id)) return 'state-vendor';
+              if (/[\\/]node_modules[\\/](lucide-react|sonner|clsx|tailwind-merge)[\\/]/.test(id)) return 'ui-vendor';
+              if (/[\\/]node_modules[\\/]react-router-dom[\\/]/.test(id)) return 'router-vendor';
+            }
           },
           entryFileNames: 'assets/[name]-[hash].js',
           chunkFileNames: 'assets/[name]-[hash].js',
@@ -67,9 +69,6 @@ export default defineConfig(({ mode }) => {
       port: 4173,
     },
 
-    define: {
-      __PAGES__: isPages,
-      __PROD__: isProduction,
-    },
   };
+
 });
