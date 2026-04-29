@@ -82,6 +82,8 @@ npm run dev
 
 > 💡 **无需 API Key。** 引擎自动降级到本地模拟模式，开箱即用。
 
+> 🐍 **可选后端：** 如需自定义集成，可参考 `examples/backend-python/` 中的 FastAPI 示例。
+
 ---
 
 ## 🎯 Features

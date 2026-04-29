@@ -82,6 +82,8 @@ Open **http://localhost:5173** — your 3D avatar is ready!
 
 > 💡 **No API key required.** The engine automatically falls back to local mock mode for out-of-the-box demos.
 
+> 🐍 **Optional Backend:** A FastAPI backend example is available in `examples/backend-python/` for custom integrations.
+
 ---
 
 ## 🎯 Features

@@ -106,7 +106,7 @@ MetaHuman Engine is a **browser-native 3D digital human engine** that provides a
 
 ## 📋 Version Information
 
-**Current Version:** `v1.0.0`
+**Current Version:** `v2.1.0`
 
 See [CHANGELOG](../CHANGELOG.md) for version history.
 

@@ -8,10 +8,11 @@ Get MetaHuman Engine running in 5 minutes.
 
 | Requirement | Version | Check Command      |
 | ----------- | ------- | ------------------ |
-| Node.js     | ≥ 20    | `node --version`   |
-| npm         | ≥ 9     | `npm --version`    |
-| Python      | ≥ 3.10  | `python --version` |
+| Node.js     | ≥ 22    | `node --version`   |
+| npm         | ≥ 10    | `npm --version`    |
 | Git         | Any     | `git --version`    |
+
+> 🐍 **Optional Backend:** A FastAPI backend example is available in `examples/backend-python/` for custom integrations. See backend setup instructions below.
 
 ---
 
@@ -55,7 +56,8 @@ meta-human/
 │   │   └── vision/        # Face tracking
 │   ├── store/             # Zustand stores
 │   └── hooks/             # Custom hooks
-├── server/                 # FastAPI backend
+├── examples/              # Optional backend examples
+│   └── backend-python/    # FastAPI reference implementation
 ├── docs/                   # Documentation
 ├── public/                 # Static assets
 └── dist/                   # Build output
@@ -155,10 +157,12 @@ npm run build
 npm run test
 ```
 
-### Backend Development
+### Backend Development (Optional)
+
+If you want to use a custom backend instead of the mock mode:
 
 ```bash
-cd server
+cd examples/backend-python
 
 # Create virtual environment (recommended)
 python -m venv venv
