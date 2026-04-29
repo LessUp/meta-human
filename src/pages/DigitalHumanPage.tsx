@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
-import DigitalHumanViewer from '../components/DigitalHumanViewer';
-import ControlPanel from '../components/ControlPanel';
-import { useDigitalHumanStore } from '../store/digitalHumanStore';
-import { useSystemStore } from '../store/systemStore';
-import { ttsService, asrService } from '../core/audio';
-import { digitalHumanEngine } from '../core/avatar';
-import { executeVoiceCommand, getDefaultVoiceCommandHandlers } from '../lib/voiceCommands';
+import DigitalHumanViewer from '@/components/DigitalHumanViewer';
+import ControlPanel from '@/components/ControlPanel';
+import { useDigitalHumanStore } from '@/store/digitalHumanStore';
+import { useSystemStore } from '@/store/systemStore';
+import { ttsService, asrService } from '@/core/audio';
+import { digitalHumanEngine } from '@/core/avatar';
+import { executeVoiceCommand, getDefaultVoiceCommandHandlers } from '@/lib/voiceCommands';
 import { Toaster, toast } from 'sonner';
 import { Wifi, WifiOff } from 'lucide-react';
 

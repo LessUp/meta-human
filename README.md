@@ -289,7 +289,6 @@ npm run build:pages
 ```bash
 npm run dev              # Start dev server (port 5173)
 npm run preview          # Preview production build
-npm run preview:https    # Preview with HTTPS
 ```
 
 ### Build
@@ -297,9 +296,6 @@ npm run preview:https    # Preview with HTTPS
 ```bash
 npm run build            # Production build
 npm run build:pages      # GitHub Pages build
-npm run build:mobile     # Mobile-optimized build
-npm run build:desktop    # Desktop-optimized build
-npm run build:ar         # AR-enabled build
 npm run build:analyze    # Build with bundle analyzer
 ```
 

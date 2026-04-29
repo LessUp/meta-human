@@ -1,8 +1,8 @@
-import DigitalHumanViewer from '../components/DigitalHumanViewer';
-import TopHUD from '../components/TopHUD';
-import SettingsDrawer from '../components/SettingsDrawer';
-import ChatDock from '../components/ChatDock';
-import { useAdvancedDigitalHumanController } from '../hooks/useAdvancedDigitalHumanController';
+import DigitalHumanViewer from '@/components/DigitalHumanViewer';
+import TopHUD from '@/components/TopHUD';
+import SettingsDrawer from '@/components/SettingsDrawer';
+import ChatDock from '@/components/ChatDock';
+import { useAdvancedDigitalHumanController } from '@/hooks/useAdvancedDigitalHumanController';
 
 export default function AdvancedDigitalHumanPage() {
   const {
