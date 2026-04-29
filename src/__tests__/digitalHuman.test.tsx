@@ -552,6 +552,8 @@ describe('Dialogue orchestration', () => {
     );
 
     expect(speakWith).toHaveBeenCalledWith('你好，我仍然可以继续回答。');
+    // speakWith is fire-and-forget, flush microtasks
+    await new Promise((r) => setTimeout(r, 0));
     expect(onError).toHaveBeenCalledWith('tts failed');
   });
 });

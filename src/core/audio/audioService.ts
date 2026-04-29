@@ -312,14 +312,6 @@ export interface ASRConfig {
   maxAlternatives?: number;
 }
 
-// 内部使用的已填充配置类型
-type FilledASRConfig = {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  maxAlternatives: number;
-};
-
 type ASRStartOptions = {
   onResult?: (text: string) => void;
   mode?: 'command' | 'dictation';
@@ -330,7 +322,7 @@ export class ASRService {
   private recognition: SpeechRecognitionLike | null = null;
   private isSupportedFlag: boolean;
   private callbacks: ASRCallbacks = {};
-  private config: FilledASRConfig;
+  private config: ASRConfig;
   private sendToBackend: boolean = true;
   private tts: TTSService;
   private state: ASRStateAdapter;
@@ -387,10 +379,10 @@ export class ASRService {
 
     this.recognition = new SpeechRecognition();
 
-    this.recognition.continuous = this.config.continuous;
-    this.recognition.interimResults = this.config.interimResults;
-    this.recognition.lang = this.config.lang;
-    this.recognition.maxAlternatives = this.config.maxAlternatives;
+    this.recognition.continuous = this.config.continuous!;
+    this.recognition.interimResults = this.config.interimResults!;
+    this.recognition.lang = this.config.lang!;
+    this.recognition.maxAlternatives = this.config.maxAlternatives!;
 
     this.recognition.onstart = () => {
       // Only process if this is still the current generation

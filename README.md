@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/LessUp/meta-human/actions"><img src="https://img.shields.io/github/actions/workflow/status/LessUp/meta-human/ci.yml?branch=main&label=CI&style=flat-square" alt="CI Status" /></a>
+  <a href="https://github.com/LessUp/meta-human/actions"><img src="https://img.shields.io/github/actions/workflow/status/LessUp/meta-human/ci.yml?branch=master&label=CI&style=flat-square" alt="CI Status" /></a>
   <a href="https://lessup.github.io/meta-human/"><img src="https://img.shields.io/badge/Demo-Live-green?style=flat-square&logo=githubpages" alt="Live Demo" /></a>
   <a href="https://github.com/LessUp/meta-human/releases"><img src="https://img.shields.io/github/v/release/LessUp/meta-human?style=flat-square&label=Version" alt="Version" /></a>
   <img src="https://img.shields.io/badge/Bundle-~240KB(gzip)-blue?style=flat-square&label=size" alt="Bundle Size" />
@@ -256,16 +256,11 @@ src/
 
 ### Path Aliases
 
-This project uses Vite path aliases configured in `vite.config.ts`:
+This project uses Vite path aliases configured in `vite.config.ts` and `tsconfig.json`:
 
-| Alias           | Maps to            |
-| --------------- | ------------------ |
-| `@core/*`       | `src/core/*`       |
-| `@components/*` | `src/components/*` |
-| `@store/*`      | `src/store/*`      |
-| `@hooks/*`      | `src/hooks/*`      |
-| `@lib/*`        | `src/lib/*`        |
-| `@pages/*`      | `src/pages/*`      |
+| Alias  | Maps to  |
+| ------ | -------- |
+| `@/*`  | `src/*`  |
 
 ---
 
@@ -278,30 +273,8 @@ npm run build:pages
 ```
 
 1. Set `VITE_API_BASE_URL` in GitHub Repository Variables
-2. Push to `main` or run "Deploy Pages" workflow
+2. Push to `master` — CI auto-deploys
 3. Live at: `https://lessup.github.io/meta-human/`
-
-### Render (Backend)
-
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/LessUp/meta-human)
-
-Use `render.yaml` blueprint:
-
-```yaml
-# Deploys FastAPI backend with:
-POST /v1/chat          # OpenAI-compatible chat
-POST /v1/chat/stream   # SSE streaming
-POST /v1/tts           # Text-to-speech
-POST /v1/asr           # Speech-to-text
-WebSocket /ws          # Real-time streaming
-```
-
-**Required Environment Variables:**
-
-| Variable             | Description              | Required                      |
-| -------------------- | ------------------------ | ----------------------------- |
-| `OPENAI_API_KEY`     | AI responses             | Optional (falls back to mock) |
-| `CORS_ALLOW_ORIGINS` | Frontend domain for CORS | Yes                           |
 
 **[📖 Deployment Guide →](docs/guide/installation.md)**
 

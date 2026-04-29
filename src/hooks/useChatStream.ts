@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { useChatSessionStore } from '../store/chatSessionStore';
 import { useSystemStore } from '../store/systemStore';
@@ -28,6 +28,7 @@ export function useChatStream(options: UseChatStreamOptions) {
   const setLoading = useSystemStore((s) => s.setLoading);
   const isLoading = useSystemStore((s) => s.isLoading);
   const [chatInput, setChatInput] = useState('');
+  const activeTurnRef = useRef<symbol | null>(null);
   const { sessionId, isMuted, onConnectionChange, onClearError, onError } = options;
 
   const handleChatSend = useCallback(
@@ -40,9 +41,18 @@ export function useChatStream(options: UseChatStreamOptions) {
 
       let assistantMessageId: number | null = null;
       let didFinalizePerformanceTrace = false;
+      const turnConnection = { status: 'connected' as 'connected' | 'error' };
+      const turnSessionId = sessionId;
+      const turnToken = Symbol('chat-stream-turn');
+
+      activeTurnRef.current = turnToken;
+
+      const ownsCurrentTurn = () =>
+        activeTurnRef.current === turnToken &&
+        useChatSessionStore.getState().sessionId === turnSessionId;
 
       const finalizePerformanceTrace = (status: 'completed' | 'failed' = 'completed') => {
-        if (didFinalizePerformanceTrace) {
+        if (didFinalizePerformanceTrace || !ownsCurrentTurn()) {
           return;
         }
 
@@ -50,8 +60,8 @@ export function useChatStream(options: UseChatStreamOptions) {
         finalizeChatPerformanceTrace(status);
       };
 
-      const finalizeAssistantMessage = () => {
-        if (!assistantMessageId) {
+      const finalizeAssistantMessage = (discardEmpty = false) => {
+        if (!ownsCurrentTurn() || !assistantMessageId) {
           return;
         }
 
@@ -63,11 +73,38 @@ export function useChatStream(options: UseChatStreamOptions) {
           return;
         }
 
-        if (currentMessage.text.trim()) {
+        if (currentMessage.text.trim() || !discardEmpty) {
           updateChatMessage(assistantMessageId, { isStreaming: false });
         } else {
           removeChatMessage(assistantMessageId);
         }
+      };
+
+      const syncAssistantMessageWithResult = (replyText: string) => {
+        if (!ownsCurrentTurn() || !assistantMessageId) {
+          return;
+        }
+
+        const currentMessage = useChatSessionStore
+          .getState()
+          .chatHistory.find((msg) => msg.id === assistantMessageId);
+
+        if (!replyText.trim()) {
+          if (currentMessage) {
+            removeChatMessage(assistantMessageId);
+          }
+          return;
+        }
+
+        if (currentMessage) {
+          updateChatMessage(assistantMessageId, {
+            text: replyText,
+            isStreaming: false,
+          });
+          return;
+        }
+
+        addChatMessage('assistant', replyText);
       };
 
       try {
@@ -83,28 +120,65 @@ export function useChatStream(options: UseChatStreamOptions) {
           // 此处显式设为 undefined 以避免 handleDialogueResponse 再次添加完整消息导致重复
           onAddAssistantMessage: undefined,
           onAddUserMessage: (t) => {
+            if (!ownsCurrentTurn()) {
+              return;
+            }
+
             addChatMessage('user', t);
             assistantMessageId = addChatMessage('assistant', '', true);
           },
           onStreamToken: (accumulatedText) => {
+            if (!ownsCurrentTurn()) {
+              return;
+            }
+
             markChatFirstToken();
 
             if (assistantMessageId) {
-              updateChatMessage(assistantMessageId, { text: accumulatedText });
+              updateChatMessage(assistantMessageId, { text: accumulatedText, isStreaming: true });
             }
           },
-          onStreamEnd: () => {
-            finalizeAssistantMessage();
-            finalizePerformanceTrace('completed');
+          onTurnResponse: (response) => {
+            if (!ownsCurrentTurn()) {
+              return;
+            }
+
+            syncAssistantMessageWithResult(response.replyText);
           },
-          onConnectionChange,
-          onClearError,
-          onError: (msg) => {
-            onError(msg);
+          onStreamEnd: () => {
+            if (!ownsCurrentTurn()) {
+              return;
+            }
+
             finalizeAssistantMessage();
-            finalizePerformanceTrace('failed');
+          },
+          onConnectionChange: (status) => {
+            if (!ownsCurrentTurn()) {
+              return;
+            }
+
+            turnConnection.status = status;
+            onConnectionChange(status);
+          },
+          onClearError: () => {
+            if (!ownsCurrentTurn()) {
+              return;
+            }
+
+            onClearError();
+          },
+          onError: (msg) => {
+            if (!ownsCurrentTurn()) {
+              return;
+            }
+
+            onError(msg);
           },
           onResetBehavior: () => {
+            if (!ownsCurrentTurn()) {
+              return;
+            }
+
             if (useDigitalHumanStore.getState().currentBehavior === 'thinking') {
               digitalHumanEngine.setBehavior('idle');
             }
@@ -112,13 +186,17 @@ export function useChatStream(options: UseChatStreamOptions) {
         });
 
         if (!result) {
-          finalizeAssistantMessage();
+          finalizeAssistantMessage(true);
           finalizePerformanceTrace('failed');
+          return;
         }
+
+        syncAssistantMessageWithResult(result.replyText);
+        finalizePerformanceTrace(turnConnection.status === 'error' ? 'failed' : 'completed');
       } catch (err: unknown) {
         logger.error('发送消息失败:', err);
         toast.error(err instanceof Error ? err.message : '发送失败，请重试');
-        finalizeAssistantMessage();
+        finalizeAssistantMessage(true);
         finalizePerformanceTrace('failed');
       }
     },

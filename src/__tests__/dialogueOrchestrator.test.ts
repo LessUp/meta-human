@@ -246,6 +246,9 @@ describe('handleDialogueResponse', () => {
       { isMuted: false, speakWith, onError },
     );
 
+    // speakWith is fire-and-forget, flush microtasks
+    await new Promise((r) => setTimeout(r, 0));
+
     expect(onError).toHaveBeenCalledWith('TTS failed');
   });
 });

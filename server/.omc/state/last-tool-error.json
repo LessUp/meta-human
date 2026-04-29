@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"cat > /home/shane/dev/meta-human/scripts/refactor-checklist.md << 'EOF'\\n# MetaHuman Engine 重构执行清单\\n\\n## 执行摘要\\n\\n本文档记录了项目的重构执行清单，用于验证和追踪所有已完成的改进。\\n\\n---\\n\\n## Phase 1: 代码规范化 ✅\\n\\n### P1-1:...",
-  "error": "Exit code 1\n/bin/bash: line 82: /home/shane/dev/meta-human/scripts/refactor-checklist.md: No such file or directory",
-  "timestamp": "2026-04-27T03:00:42.660Z",
-  "retry_count": 1
-}

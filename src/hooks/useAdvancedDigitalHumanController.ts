@@ -6,6 +6,7 @@ import { useSystemStore } from '../store/systemStore';
 import { asrService } from '../core/audio';
 import { digitalHumanEngine } from '../core/avatar';
 import { clearRemoteSession } from '../core/dialogue/dialogueService';
+import { abortPendingTurn } from '../core/dialogue/dialogueOrchestrator';
 import { executeVoiceCommand } from '../lib/voiceCommands';
 import { useChatStream } from './useChatStream';
 import { useConnectionHealth } from './useConnectionHealth';
@@ -114,6 +115,7 @@ export function useAdvancedDigitalHumanController() {
 
   const handleNewSession = useCallback(() => {
     const oldSessionId = sessionId;
+    abortPendingTurn();
     initSession();
     setChatInput('');
     toast.success('已开启新会话');

@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.0] - 2026-04-29
+
+### 🏗️ Architecture Overhaul
+
+#### Observability & Turn Ownership (from p0-foundation-observability)
+
+- **Dialogue Orchestrator** — Introduced `turnId`-based ownership isolation; `finalizeDialogueTurn` only executes cleanup when the current turnId matches, preventing cross-turn state corruption
+- **Chat Session Store** — Added local persistence (sessionId + chat history), message limit enforcement (100 max), transient streaming placeholder filtering, and robust deserialization with type guards
+- **System Store** — Added `ConnectionDiagnostics` (health check latency, degraded state tracking), `recordConnectionHealth()` action, and factory functions for initial metric state
+- **Audio Service** — Fixed optional property assignments for ASR config (non-null assertions for constructor-initialized defaults)
+- **Chat Transport** — Fixed TypeScript union type narrowing for `WSServerEvent` after while-loop guard; added `as const` assertions for literal types
+- **WS Client** — Removed unused `resolveConnect` field
+
+#### Project Cleanup
+
+- **Removed 20+ dead files**: `.omc/`, `Dockerfile`, `docker/`, `docker-compose.yml`, `render.yaml`, `lighthouserc.json`, `docs/superpowers/`, `docs/portal.html`, `RELEASE_NOTES.md`, `CHANGELOG.zh-CN.md`, `CLAUDE.local.md`, and more
+- **Removed 3 worktrees**: `final-terminal-state`, `p0-foundation-observability`, `fix/ci-tests`
+- **Removed 4 stale branches**: Only `master` remains
+- **Rewrote `.gitignore`**: Clean categorized structure, removed duplicates
+
+#### Documentation
+
+- **AGENTS.md** — Deep rewrite with file change impact matrix, debug decision tree, and prohibited actions checklist
+- **CLAUDE.md** — Streamlined for Claude Code-specific workflow; added Zustand 5 and TW4 gotchas
+- **copilot-instructions.md** — Reduced to essential quick-reference index
+- **README.md / README.zh-CN.md** — Fixed CI badges (main→master), updated version badges (React 19, Vite 6, Three.js 0.177), removed Render deployment section, corrected path alias table (`@/*` → `src/*`)
+- **CHANGELOG.md** — Fixed broken migration guide link
+
+#### CI/CD
+
+- **ci.yml** — Replaced hardcoded release body with `generate_release_notes: true`
+- **build-pages.sh** — Removed portal.html copy; React LandingPage is now the Pages entry point
+- **OpenSpec** — Updated config.yaml tech stack versions; archived p0 change proposal
+
+### 🐛 Fixed
+
+- Fixed 2 test failures caused by `speakWith` becoming fire-and-forget (microtask flush needed before assertion)
+- Fixed ESLint errors from unused catch variables in audioService.ts
+
+---
+
 ## [1.1.0] - 2026-04-27
 
 ### 🔧 Changed
@@ -155,10 +196,12 @@ This project follows [Semantic Versioning](https://semver.org/):
 
 ## Migration Guide
 
-See [releases/v1.0.0.md](./changelog/releases/v1.0.0.md) for detailed migration instructions.
+See release notes in each version's GitHub Release page.
 
 ---
 
+[2.1.0]: https://github.com/LessUp/meta-human/releases/tag/v2.1.0
+[1.1.0]: https://github.com/LessUp/meta-human/releases/tag/v1.1.0
 [1.0.0]: https://github.com/LessUp/meta-human/releases/tag/v1.0.0
 [0.9.0]: https://github.com/LessUp/meta-human/releases/tag/v0.9.0
 [0.8.0]: https://github.com/LessUp/meta-human/releases/tag/v0.8.0

@@ -27,6 +27,17 @@ export interface RenderPerformanceMetrics {
   lastUpdatedAt: number;
 }
 
+export interface ConnectionDiagnostics {
+  /** Timestamp of the latest health probe */
+  lastHealthCheckAt: number | null;
+  /** Health probe latency in milliseconds */
+  lastHealthCheckLatencyMs: number | null;
+  /** Timestamp when the runtime last entered a degraded state */
+  lastDegradedAt: number | null;
+  /** Latest degraded reason surfaced to the operator */
+  lastDegradedReason: string | null;
+}
+
 export interface ModelLoadMetrics {
   /** URL of the loaded model */
   modelUrl: string | null;
@@ -51,6 +62,7 @@ interface SystemState {
   error: string | null;
   lastErrorTime: number | null;
   chatTransportMode: Exclude<ChatTransportMode, 'auto'>;
+  connectionDiagnostics: ConnectionDiagnostics;
   chatPerformance: ChatPerformanceMetrics;
   renderPerformance: RenderPerformanceMetrics;
   modelLoadMetrics: ModelLoadMetrics;
@@ -59,6 +71,12 @@ interface SystemState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setChatTransportMode: (mode: Exclude<ChatTransportMode, 'auto'>) => void;
+  recordConnectionHealth: (input: {
+    status: ConnectionStatus;
+    checkedAt?: number;
+    latencyMs?: number | null;
+    degradedReason?: string | null;
+  }) => void;
   startChatPerformanceTrace: () => void;
   markChatFirstToken: () => void;
   finalizeChatPerformanceTrace: (status?: 'completed' | 'failed') => void;
@@ -75,6 +93,40 @@ interface SystemState {
 const ERROR_THROTTLE_MS = 2000;
 const ENABLE_DEVTOOLS = import.meta.env.DEV && import.meta.env.MODE !== 'test';
 
+const createInitialConnectionDiagnostics = (): ConnectionDiagnostics => ({
+  lastHealthCheckAt: null,
+  lastHealthCheckLatencyMs: null,
+  lastDegradedAt: null,
+  lastDegradedReason: null,
+});
+
+const createInitialRenderPerformance = (): RenderPerformanceMetrics => ({
+  currentFPS: 0,
+  averageFPS: 0,
+  frameTimeMs: 0,
+  drawCalls: null,
+  triangleCount: null,
+  lastUpdatedAt: 0,
+});
+
+const createInitialModelLoadMetrics = (): ModelLoadMetrics => ({
+  modelUrl: null,
+  loadTimeMs: null,
+  modelSizeBytes: null,
+  fromCache: false,
+  error: null,
+  startedAt: null,
+  completedAt: null,
+});
+
+const createInitialChatPerformance = (): ChatPerformanceMetrics => ({
+  status: 'idle',
+  firstTokenMs: null,
+  responseCompleteMs: null,
+  startedAt: null,
+  completedAt: null,
+});
+
 export const useSystemStore = create<SystemState>()(
   devtools(
     (set, get) => ({
@@ -84,30 +136,10 @@ export const useSystemStore = create<SystemState>()(
       error: null,
       lastErrorTime: null,
       chatTransportMode: 'sse',
-      chatPerformance: {
-        status: 'idle',
-        firstTokenMs: null,
-        responseCompleteMs: null,
-        startedAt: null,
-        completedAt: null,
-      },
-      renderPerformance: {
-        currentFPS: 60,
-        averageFPS: 60,
-        frameTimeMs: 16.67,
-        drawCalls: null,
-        triangleCount: null,
-        lastUpdatedAt: Date.now(),
-      },
-      modelLoadMetrics: {
-        modelUrl: null,
-        loadTimeMs: null,
-        modelSizeBytes: null,
-        fromCache: false,
-        error: null,
-        startedAt: null,
-        completedAt: null,
-      },
+      connectionDiagnostics: createInitialConnectionDiagnostics(),
+      chatPerformance: createInitialChatPerformance(),
+      renderPerformance: createInitialRenderPerformance(),
+      modelLoadMetrics: createInitialModelLoadMetrics(),
 
       setConnected: (connected) => set({ isConnected: connected }),
 
@@ -120,6 +152,26 @@ export const useSystemStore = create<SystemState>()(
       setLoading: (loading) => set({ isLoading: loading }),
 
       setChatTransportMode: (chatTransportMode) => set({ chatTransportMode }),
+
+      recordConnectionHealth: ({ status, checkedAt = Date.now(), latencyMs = null, degradedReason }) =>
+        set((state) => {
+          const isDegraded = status === 'disconnected' || status === 'error';
+
+          return {
+            connectionStatus: status,
+            isConnected: status === 'connected',
+            connectionDiagnostics: {
+              lastHealthCheckAt: checkedAt,
+              lastHealthCheckLatencyMs: latencyMs,
+              lastDegradedAt: isDegraded
+                ? checkedAt
+                : state.connectionDiagnostics.lastDegradedAt,
+              lastDegradedReason: isDegraded
+                ? degradedReason ?? state.connectionDiagnostics.lastDegradedReason
+                : state.connectionDiagnostics.lastDegradedReason,
+            },
+          };
+        }),
 
       startChatPerformanceTrace: () =>
         set({
@@ -236,23 +288,11 @@ export const useSystemStore = create<SystemState>()(
           connectionStatus: 'connected',
           isConnected: true,
           isLoading: false,
-          renderPerformance: {
-            currentFPS: 60,
-            averageFPS: 60,
-            frameTimeMs: 16.67,
-            drawCalls: null,
-            triangleCount: null,
-            lastUpdatedAt: Date.now(),
-          },
-          modelLoadMetrics: {
-            modelUrl: null,
-            loadTimeMs: null,
-            modelSizeBytes: null,
-            fromCache: false,
-            error: null,
-            startedAt: null,
-            completedAt: null,
-          },
+          chatTransportMode: 'sse',
+          connectionDiagnostics: createInitialConnectionDiagnostics(),
+          chatPerformance: createInitialChatPerformance(),
+          renderPerformance: createInitialRenderPerformance(),
+          modelLoadMetrics: createInitialModelLoadMetrics(),
         }),
     }),
     { name: 'system-store', enabled: ENABLE_DEVTOOLS },
@@ -260,5 +300,9 @@ export const useSystemStore = create<SystemState>()(
 );
 
 export const selectConnectionStatus = (s: SystemState) => s.connectionStatus;
+export const selectConnectionDiagnostics = (s: SystemState) => s.connectionDiagnostics;
 export const selectIsLoading = (s: SystemState) => s.isLoading;
 export const selectError = (s: SystemState) => s.error;
+export const selectChatPerformance = (s: SystemState) => s.chatPerformance;
+export const selectRenderPerformance = (s: SystemState) => s.renderPerformance;
+export const selectModelLoadMetrics = (s: SystemState) => s.modelLoadMetrics;

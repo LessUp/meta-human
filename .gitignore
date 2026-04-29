@@ -1,71 +1,48 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Dependencies
+node_modules/
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-.venv/
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-.pytest_cache/
-.mypy_cache/
-.dmypy.json
-dmypy.json
-*.egg-info/
+# Build outputs
 dist/
+dist-ssr/
 build/
+coverage/
 
 # Environment variables
 .env
 .env.local
 .env.*.local
 
-# IDE
-*.swp
-*.swo
-*~
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
 # OS
-Thumbs.dbcoverage/
-coverage/
 .DS_Store
+Thumbs.db
+
+# Logs
 *.log
 
-# OpenSpec
+# Python (server/)
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+*.egg-info/
+
+# AI tool state
+.omc/
+CLAUDE.local.md
+
+# OpenSpec local state
 .openspec/
 .worktrees/
 
-# OMC tool state (agent sessions, replays, etc.)
-.omc/
-
-# Claude local config (personal preferences)
-CLAUDE.local.md
-.github/copilot-instructions.md
+# Local config
+*.local

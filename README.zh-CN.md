@@ -15,14 +15,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/LessUp/meta-human/actions"><img src="https://img.shields.io/github/actions/workflow/status/LessUp/meta-human/ci.yml?branch=main&label=CI&style=flat-square" alt="CI 状态" /></a>
+  <a href="https://github.com/LessUp/meta-human/actions"><img src="https://img.shields.io/github/actions/workflow/status/LessUp/meta-human/ci.yml?branch=master&label=CI&style=flat-square" alt="CI 状态" /></a>
   <a href="https://lessup.github.io/meta-human/"><img src="https://img.shields.io/badge/Demo-在线-green?style=flat-square&logo=githubpages" alt="在线演示" /></a>
   <a href="https://github.com/LessUp/meta-human/releases"><img src="https://img.shields.io/github/v/release/LessUp/meta-human?style=flat-square&label=版本" alt="版本" /></a>
   <img src="https://img.shields.io/badge/Bundle-~240KB(gzip)-blue?style=flat-square&label=size" alt="包体积" />
-  <img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=white" alt="React" />
-  <img src="https://img.shields.io/badge/Three.js-0.158-000000?style=flat-square&logo=threedotjs&logoColor=white" alt="Three.js" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=white" alt="React" />
+  <img src="https://img.shields.io/badge/Three.js-0.177-000000?style=flat-square&logo=threedotjs&logoColor=white" alt="Three.js" />
   <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" />
+  <img src="https://img.shields.io/badge/Vite-6-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="许可证" /></a>
 </p>
 
@@ -32,7 +32,7 @@
   <a href="#performance"><strong>性能</strong></a> ·
   <a href="#architecture"><strong>架构</strong></a> ·
   <a href="docs/"><strong>文档</strong></a> ·
-  <a href="CHANGELOG.zh-CN.md"><strong>更新日志</strong></a> ·
+  <a href="CHANGELOG.md"><strong>更新日志</strong></a> ·
   <a href="README.md"><strong>English</strong></a>
 </p>
 
@@ -63,8 +63,8 @@
 
 ### 前提条件
 
-- Node.js ≥ 20
-- npm ≥ 9
+- Node.js ≥ 22
+- npm ≥ 10
 
 ### 安装
 
@@ -256,16 +256,11 @@ src/
 
 ### 路径别名
 
-本项目使用 Vite 路径别名，配置在 `vite.config.ts`：
+本项目使用 Vite 路径别名，配置在 `vite.config.ts` 和 `tsconfig.json`：
 
-| 别名            | 映射路径           |
-| --------------- | ------------------ |
-| `@core/*`       | `src/core/*`       |
-| `@components/*` | `src/components/*` |
-| `@store/*`      | `src/store/*`      |
-| `@hooks/*`      | `src/hooks/*`      |
-| `@lib/*`        | `src/lib/*`        |
-| `@pages/*`      | `src/pages/*`      |
+| 别名   | 映射路径 |
+| ------ | -------- |
+| `@/*`  | `src/*`  |
 
 ---
 
@@ -278,30 +273,8 @@ npm run build:pages
 ```
 
 1. 在 GitHub 仓库变量中设置 `VITE_API_BASE_URL`
-2. 推送到 `main` 或运行 "Deploy Pages" 工作流
+2. 推送到 `master` — CI 自动部署
 3. 访问：`https://lessup.github.io/meta-human/`
-
-### Render（后端）
-
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/LessUp/meta-human)
-
-使用 `render.yaml` 蓝图：
-
-```yaml
-# 部署 FastAPI 后端：
-POST /v1/chat          # OpenAI 兼容对话
-POST /v1/chat/stream   # SSE 流式
-POST /v1/tts           # 语音合成
-POST /v1/asr           # 语音识别
-WebSocket /ws          # 实时流
-```
-
-**必需环境变量：**
-
-| 变量                 | 说明     | 是否必需         |
-| -------------------- | -------- | ---------------- |
-| `OPENAI_API_KEY`     | AI 响应  | 可选（自动降级） |
-| `CORS_ALLOW_ORIGINS` | 前端域名 | 是               |
 
 **[📖 部署指南 →](docs/guide/installation.zh-CN.md)**
 
@@ -371,13 +344,13 @@ npm run test:ui          # Vitest UI 模式
 - **[架构设计](docs/architecture/)** — 系统设计
 - **[配置说明](docs/guide/configuration.zh-CN.md)** — 环境变量与设置
 - **[贡献指南](docs/contributing/)** — 贡献指南
-- **[更新日志](CHANGELOG.zh-CN.md)** — 版本历史
+- **[更新日志](CHANGELOG.md)** — 版本历史
 
 ---
 
 ## 🛣️ 路线图
 
-查看 [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md) 了解已发布功能，或访问 [GitHub Projects](https://github.com/LessUp/meta-human/projects) 了解开发计划。
+查看 [CHANGELOG.md](CHANGELOG.md) 了解已发布功能，或访问 [GitHub Projects](https://github.com/LessUp/meta-human/projects) 了解开发计划。
 
 - [x] 核心 3D 数字人渲染
 - [x] 语音交互（TTS/ASR）
