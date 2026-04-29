@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MetaHuman Engine - Browser-native 3D digital human platform with voice, vision, and dialogue capabilities.">
+    <meta name="keywords" content="digital human, 3D avatar, AI, voice interaction, computer vision, WebGL, React, TypeScript">
+    <meta property="og:title" content="MetaHuman Engine - 3D Digital Human Platform">
+    <meta property="og:description" content="Zero-config, offline-ready, production-grade 3D digital human engine">
+    <meta property="og:url" content="https://lessup.github.io/meta-human/">
+    <meta property="og:type" content="website">
+    <title>MetaHuman Engine - 3D Digital Human Platform</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --surface-dark: #0a0a0a;
+            --surface-light: #1a1a1a;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --border: #27272a;
+            --accent-blue: #3b82f6;
+            --accent-purple: #a855f7;
+            --accent-pink: #ec4899;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: var(--surface-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* 导航栏 */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 0;
+        }
+
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        nav ul {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        nav a:hover {
+            color: var(--primary);
+        }
+
+        /* 容器 */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 90vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1530 50%, #0a0a0a 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+            top: -200px;
+            right: -200px;
+            border-radius: 50%;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.1) 0%, transparent 70%);
+            bottom: -100px;
+            left: -100px;
+            border-radius: 50%;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            max-width: 800px;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+            background: linear-gradient(135deg, var(--primary), var(--accent-purple), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            margin-bottom: 2.5rem;
+            line-height: 1.8;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 3rem;
+        }
+
+        .btn {
+            padding: 0.875rem 2rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .hero-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-top: 4rem;
+        }
+
+        .feature-item {
+            text-align: center;
+        }
+
+        .feature-item .icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-item h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .feature-item p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Section 通用 */
+        section {
+            padding: 5rem 0;
+            border-top: 1px solid var(--border);
+        }
+
+        section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        section .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            max-width: 600px;
+        }
+
+        /* Why MetaHuman */
+        .why-section {
+            background: linear-gradient(180deg, var(--surface-light) 0%, var(--surface-dark) 100%);
+        }
+
+        .why-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .why-card {
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            padding: 2rem;
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .why-card:hover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+            transform: translateY(-4px);
+        }
+
+        .why-card .icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .why-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .why-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Capabilities */
+        .capabilities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .capability-card {
+            background: linear-gradient(135deg, var(--surface-light) 0%, rgba(99, 102, 241, 0.1) 100%);
+            border: 1px solid var(--border);
+            padding: 2.5rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .capability-card:hover {
+            border-color: var(--primary);
+            transform: scale(1.05);
+        }
+
+        .capability-card .emoji {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .capability-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .capability-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+
+        .tech-stack {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Use Cases */
+        .use-cases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .use-case-card {
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            padding: 2rem;
+            border-radius: 0.75rem;
+            border-left: 4px solid var(--primary);
+            transition: all 0.3s ease;
+        }
+
+        .use-case-card:nth-child(2) {
+            border-left-color: var(--accent-blue);
+        }
+
+        .use-case-card:nth-child(3) {
+            border-left-color: var(--accent-purple);
+        }
+
+        .use-case-card:nth-child(4) {
+            border-left-color: var(--accent-pink);
+        }
+
+        .use-case-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .use-case-card .emoji {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .use-case-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .use-case-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* Architecture */
+        .architecture-section {
+            background: linear-gradient(180deg, var(--surface-dark) 0%, var(--surface-light) 100%);
+        }
+
+        .architecture-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+            background: var(--surface-light);
+            padding: 2rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+        }
+
+        .arch-component {
+            text-align: center;
+        }
+
+        .arch-component .icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .arch-component h4 {
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .arch-component p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Quick Start */
+        .quick-start-section {
+            background: linear-gradient(180deg, var(--surface-light) 0%, var(--surface-dark) 100%);
+        }
+
+        .quick-start-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            margin-top: 2rem;
+            align-items: center;
+        }
+
+        .quick-start-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .step {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .step-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-content h4 {
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .step-content p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .code-block {
+            background: var(--surface-dark);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            line-height: 1.5;
+        }
+
+        .code-block code {
+            color: #e0e0e0;
+        }
+
+        /* Community Section */
+        .community-section {
+            text-align: center;
+            padding: 4rem 0;
+        }
+
+        .community-links {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+
+        .community-links a {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--surface-light);
+            color: var(--text-primary);
+            text-decoration: none;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .community-links a:hover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--surface-light);
+            border-top: 1px solid var(--border);
+            padding: 3rem 0 2rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h4 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-section a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: var(--primary);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            nav ul {
+                gap: 1rem;
+            }
+
+            nav a {
+                font-size: 0.85rem;
+            }
+
+            section h2 {
+                font-size: 2rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+
+            .quick-start-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="container">
+            <a href="#" class="logo">🤖 MetaHuman Engine</a>
+            <ul>
+                <li><a href="#why">Why</a></li>
+                <li><a href="#capabilities">Capabilities</a></li>
+                <li><a href="#use-cases">Use Cases</a></li>
+                <li><a href="#quick-start">Quick Start</a></li>
+                <li><a href="https://github.com/LessUp/meta-human" target="_blank">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Browser-Native 3D Digital Human Platform</h1>
+            <p>Zero-config, offline-ready, production-grade AI companions with voice, vision, and dialogue — all running in your browser.</p>
+            
+            <div class="cta-buttons">
+                <a href="../index.html" class="btn btn-primary">
+                    🚀 Try Live Demo
+                </a>
+                <a href="https://github.com/LessUp/meta-human" class="btn btn-secondary" target="_blank">
+                    ⭐ GitHub Repository
+                </a>
+            </div>
+
+            <div class="hero-features">
+                <div class="feature-item">
+                    <div class="icon">⚡</div>
+                    <h3>Zero Config</h3>
+                    <p>Works out of the box with smart defaults</p>
+                </div>
+                <div class="feature-item">
+                    <div class="icon">🔒</div>
+                    <h3>Privacy First</h3>
+                    <p>Face data stays in your browser</p>
+                </div>
+                <div class="feature-item">
+                    <div class="icon">🧩</div>
+                    <h3>Modular</h3>
+                    <p>Mix and match components freely</p>
+                </div>
+                <div class="feature-item">
+                    <div class="icon">📦</div>
+                    <h3>Production Ready</h3>
+                    <p>Battle-tested at scale</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why MetaHuman -->
+    <section class="why-section" id="why">
+        <div class="container">
+            <h2>Why MetaHuman Engine?</h2>
+            <p class="subtitle">The complete solution for building conversational AI experiences in the browser</p>
+
+            <div class="why-grid">
+                <div class="why-card">
+                    <div class="icon">🎯</div>
+                    <h3>End-to-End Loop</h3>
+                    <p>Complete interaction pipeline: voice input → dialogue → visual feedback → voice output. No middleware needed.</p>
+                </div>
+                <div class="why-card">
+                    <div class="icon">🚀</div>
+                    <h3>Instant Deployment</h3>
+                    <p>Deploy anywhere. Works on servers, desktop, mobile, and edge devices. No special infrastructure required.</p>
+                </div>
+                <div class="why-card">
+                    <div class="icon">💪</div>
+                    <h3>Enterprise Grade</h3>
+                    <p>Production-tested observability, error handling, graceful degradation, and comprehensive test coverage.</p>
+                </div>
+                <div class="why-card">
+                    <div class="icon">🧠</div>
+                    <h3>AI-Agnostic</h3>
+                    <p>Bring your own LLM, TTS, ASR. Supports OpenAI, Azure, local models, and custom endpoints.</p>
+                </div>
+                <div class="why-card">
+                    <div class="icon">⚙️</div>
+                    <h3>Highly Customizable</h3>
+                    <p>Configure everything from animations to backend contracts. Extend with custom components and hooks.</p>
+                </div>
+                <div class="why-card">
+                    <div class="icon">📊</div>
+                    <h3>Observable</h3>
+                    <p>Deep metrics: latency, quality, user sentiment tracking. Built-in performance diagnostics.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Capabilities -->
+    <section id="capabilities">
+        <div class="container">
+            <h2>Core Capabilities</h2>
+            <p class="subtitle">Everything you need to build intelligent conversational avatars</p>
+
+            <div class="capabilities-grid">
+                <div class="capability-card">
+                    <div class="emoji">🎭</div>
+                    <h3>3D Avatar Engine</h3>
+                    <p>Emotion-driven expressions, lip-sync animation, custom models with Three.js + React Three Fiber</p>
+                    <div class="tech-stack">Three.js • React Three Fiber • Drei</div>
+                </div>
+                <div class="capability-card">
+                    <div class="emoji">🗣️</div>
+                    <h3>Voice Interaction</h3>
+                    <p>TTS (Text-to-Speech) with natural prosody, ASR (Automatic Speech Recognition), real-time synthesis</p>
+                    <div class="tech-stack">Web Speech API • Edge TTS • Custom Services</div>
+                </div>
+                <div class="capability-card">
+                    <div class="emoji">👁️</div>
+                    <h3>Computer Vision</h3>
+                    <p>Real-time face detection, pose estimation, sentiment analysis with on-device MediaPipe</p>
+                    <div class="tech-stack">MediaPipe • Face Mesh • Pose Detection</div>
+                </div>
+                <div class="capability-card">
+                    <div class="emoji">🧠</div>
+                    <h3>Dialogue Engine</h3>
+                    <p>Streaming LLM responses, turn orchestration, context management, multi-session support</p>
+                    <div class="tech-stack">OpenAI API • Streaming SSE • Session Persistence</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Use Cases -->
+    <section id="use-cases">
+        <div class="container">
+            <h2>Real-World Applications</h2>
+            <p class="subtitle">Where MetaHuman Engine creates value</p>
+
+            <div class="use-cases-grid">
+                <div class="use-case-card">
+                    <div class="emoji">🤖</div>
+                    <h3>Customer Service</h3>
+                    <p>24/7 virtual agents handling FAQs, sales inquiries, and support tickets with emotional intelligence and seamless handoff to humans.</p>
+                </div>
+                <div class="use-case-card">
+                    <div class="emoji">🎓</div>
+                    <h3>Education & Training</h3>
+                    <p>Interactive tutors and learning companions that adapt to student pace, provide real-time feedback, and engage through conversation.</p>
+                </div>
+                <div class="use-case-card">
+                    <div class="emoji">🎬</div>
+                    <h3>Entertainment</h3>
+                    <p>Immersive storytelling, interactive characters, virtual hosts, and game NPCs with natural dialogue and personality.</p>
+                </div>
+                <div class="use-case-card">
+                    <div class="emoji">🏥</div>
+                    <h3>Healthcare & Wellness</h3>
+                    <p>Mental health companions, patient education agents, appointment scheduling, and symptom assessment with empathetic interactions.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture -->
+    <section class="architecture-section">
+        <div class="container">
+            <h2>Architecture at a Glance</h2>
+            <p class="subtitle">Modular, scalable, and built for production</p>
+
+            <div class="architecture-grid">
+                <div class="arch-component">
+                    <div class="icon">🎨</div>
+                    <h4>3D Renderer</h4>
+                    <p>Three.js + R3F</p>
+                </div>
+                <div class="arch-component">
+                    <div class="icon">🎤</div>
+                    <h4>Audio Pipeline</h4>
+                    <p>TTS/ASR Processing</p>
+                </div>
+                <div class="arch-component">
+                    <div class="icon">📹</div>
+                    <h4>Vision Module</h4>
+                    <p>MediaPipe Analysis</p>
+                </div>
+                <div class="arch-component">
+                    <div class="icon">💬</div>
+                    <h4>Dialogue Engine</h4>
+                    <p>LLM Orchestration</p>
+                </div>
+                <div class="arch-component">
+                    <div class="icon">🔗</div>
+                    <h4>Transport Layer</h4>
+                    <p>HTTP/SSE/WebSocket</p>
+                </div>
+                <div class="arch-component">
+                    <div class="icon">💾</div>
+                    <h4>State Management</h4>
+                    <p>Zustand + Local Cache</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Start -->
+    <section class="quick-start-section" id="quick-start">
+        <div class="container">
+            <h2>Get Started in 5 Minutes</h2>
+            <p class="subtitle">From installation to your first interactive avatar</p>
+
+            <div class="quick-start-grid">
+                <div class="quick-start-steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Install Package</h4>
+                            <p>Add MetaHuman to your project</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>Set Environment</h4>
+                            <p>Configure your API keys and model preferences</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>Initialize Engine</h4>
+                            <p>Create your digital human instance</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h4>Start Conversation</h4>
+                            <p>Begin interacting with your AI companion</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="code-block"><code>// Install
+npm install @lessup/meta-human
+
+// Configure
+import { DigitalHumanEngine } from '@lessup/meta-human';
+
+// Initialize
+const engine = new DigitalHumanEngine({
+  model: 'gpt-4',
+  voice: 'neural',
+  avatar: 'default'
+});
+
+// Interact
+await engine.chat("Hello, how are you?");
+                    </code></div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 3rem;">
+                <a href="https://github.com/LessUp/meta-human#readme" class="btn btn-primary">
+                    📖 Read Full Documentation
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Community -->
+    <section class="community-section">
+        <div class="container">
+            <h2>Join Our Community</h2>
+            <p class="subtitle">Connect with developers, share ideas, and contribute</p>
+
+            <div class="community-links">
+                <a href="https://github.com/LessUp/meta-human" target="_blank">
+                    ⭐ GitHub Repository
+                </a>
+                <a href="https://github.com/LessUp/meta-human/issues" target="_blank">
+                    🐛 Report Issues
+                </a>
+                <a href="https://github.com/LessUp/meta-human/discussions" target="_blank">
+                    💬 Discussions
+                </a>
+                <a href="https://github.com/LessUp/meta-human/blob/master/CONTRIBUTING.md" target="_blank">
+                    🤝 Contribute
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <h4>Product</h4>
+                    <ul>
+                        <li><a href="../index.html">Live Demo</a></li>
+                        <li><a href="./guide/" target="_blank">Documentation</a></li>
+                        <li><a href="./api/" target="_blank">API Reference</a></li>
+                        <li><a href="./architecture/" target="_blank">Architecture</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Community</h4>
+                    <ul>
+                        <li><a href="https://github.com/LessUp/meta-human" target="_blank">GitHub</a></li>
+                        <li><a href="https://github.com/LessUp/meta-human/discussions" target="_blank">Discussions</a></li>
+                        <li><a href="https://github.com/LessUp/meta-human/issues" target="_blank">Issues</a></li>
+                        <li><a href="https://github.com/LessUp/meta-human/blob/master/CONTRIBUTING.md" target="_blank">Contributing</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="./guide/installation.md" target="_blank">Installation</a></li>
+                        <li><a href="./guide/configuration.md" target="_blank">Configuration</a></li>
+                        <li><a href="https://github.com/LessUp/meta-human/releases" target="_blank">Releases</a></li>
+                        <li><a href="./guide/" target="_blank">Getting Started</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="https://github.com/LessUp/meta-human/blob/master/LICENSE" target="_blank">License (MIT)</a></li>
+                        <li><a href="https://github.com/LessUp/meta-human/blob/master/CODE_OF_CONDUCT.md" target="_blank">Code of Conduct</a></li>
+                        <li><a href="https://github.com/LessUp" target="_blank">LessUp Organization</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2024-2026 LessUp. MetaHuman Engine is open source under the MIT License.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
