@@ -3,11 +3,11 @@ import { Play, Github, ArrowRight, Download, Code2, Terminal } from 'lucide-reac
 
 export default function CTASection() {
   return (
-    <section id="quickstart" className="relative py-24 bg-black">
+    <section id="quickstart" className="relative overflow-hidden py-24 bg-black">
       {/* Background */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-black via-indigo-950/20 to-black" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(600px,80vw)] h-[min(600px,80vh)] bg-blue-600/10 rounded-full blur-[100px]" />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
