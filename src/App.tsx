@@ -1,4 +1,4 @@
-import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -30,6 +30,9 @@ export default function App() {
             <Route path="/app" element={<AdvancedDigitalHumanPage />} />
             <Route path="/advanced" element={<AdvancedDigitalHumanPage />} />
             <Route path="/digital-human" element={<DigitalHumanPage />} />
+
+            {/* Fallback - 防止未知 hash 路径导致空白页 */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </Router>

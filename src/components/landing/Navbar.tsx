@@ -39,7 +39,7 @@ export default function Navbar() {
           : 'bg-transparent'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="landing-shell">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
@@ -116,7 +116,7 @@ export default function Navbar() {
           isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
-        <div className="mx-auto max-w-7xl space-y-3 border-t border-white/10 bg-black/95 px-4 py-4 backdrop-blur-lg">
+        <div className="landing-shell space-y-3 border-t border-white/10 bg-black/95 py-4 backdrop-blur-lg">
           {navLinks.map((link) =>
             link.external ? (
               <a

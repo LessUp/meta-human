@@ -74,7 +74,7 @@ export default function FeaturesSection() {
         }}
       />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="landing-shell relative z-10">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
@@ -92,7 +92,7 @@ export default function FeaturesSection() {
           {features.map((feature, index) => (
             <div
               key={feature.title}
-              className={`group relative flex h-full flex-col rounded-2xl border p-6 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${feature.borderColor} ${feature.bgColor}`}
+              className={`group relative flex flex-col rounded-2xl border p-6 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${feature.borderColor} ${feature.bgColor}`}
               style={{
                 animationDelay: `${index * 100}ms`,
               }}
@@ -130,7 +130,7 @@ export default function FeaturesSection() {
             { value: '60+', label: 'FPS 流畅渲染' },
             { value: '468', label: '面部关键点' },
             { value: '<100ms', label: '首字响应延迟' },
-            { value: '0', label: '配置即开即用' },
+            { value: '0 配置', label: '开箱即用' },
           ].map((stat) => (
             <div key={stat.label} className="text-center">
               <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">

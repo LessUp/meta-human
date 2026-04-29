@@ -57,7 +57,7 @@ export default function TechStackSection() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[min(1000px,100vw)] h-[500px] bg-indigo-600/5 rounded-full blur-[100px]" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="landing-shell relative z-10">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
@@ -69,30 +69,30 @@ export default function TechStackSection() {
         </div>
 
         {/* Architecture Diagram */}
-        <div className="mb-20">
+        <div className="landing-center mb-20 max-w-5xl">
           <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.02] to-transparent p-6 sm:p-8">
             {/* Layers */}
-            <div className="grid gap-6">
+            <div className="grid gap-5">
               {techLayers.map((layer, index) => (
                 <div key={layer.title} className="relative">
                   {/* Connection Line */}
                   {index < techLayers.length - 1 && (
-                    <div className="absolute left-8 top-full w-px h-6 bg-gradient-to-b from-white/20 to-transparent" />
+                    <div className="absolute left-8 top-full w-px h-5 bg-gradient-to-b from-white/20 to-transparent" />
                   )}
                   
-                  <div className="flex flex-col gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-colors hover:border-white/10 sm:flex-row sm:items-center sm:gap-6">
+                  <div className="flex flex-col gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-colors hover:border-white/10 sm:flex-row sm:items-center sm:gap-8">
                     {/* Layer Title */}
-                    <div className="sm:w-32 flex-shrink-0">
+                    <div className="sm:w-56 flex-shrink-0">
                       <h3 className="text-white font-semibold">{layer.title}</h3>
-                      <p className="text-xs text-gray-500">{layer.description}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{layer.description}</p>
                     </div>
                     
                     {/* Tech Items */}
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-1 flex-wrap gap-3">
                       {layer.items.map((item) => (
                         <div
                           key={item.name}
-                          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
                         >
                           <item.icon className="w-5 h-5" style={{ color: item.color }} />
                           <span className="text-sm text-gray-300">{item.name}</span>
@@ -114,7 +114,7 @@ export default function TechStackSection() {
         </div>
 
         {/* Browser APIs */}
-        <div className="grid gap-8 lg:grid-cols-2 lg:items-start [&>*]:min-w-0">
+        <div className="landing-center max-w-5xl grid gap-8 lg:grid-cols-2 lg:items-start [&>*]:min-w-0">
           <div>
             <h3 className="text-xl font-semibold text-white mb-6">
               浏览器原生 API
