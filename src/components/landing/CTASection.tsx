@@ -11,7 +11,7 @@ export default function CTASection() {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-start">
           {/* Left: CTA Content */}
           <div>
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
@@ -31,7 +31,7 @@ export default function CTASection() {
                   <div className="w-2 h-2 rounded-full bg-green-500/80" />
                 </div>
               </div>
-              <code className="block text-sm font-mono text-gray-300">
+              <code className="block overflow-x-auto whitespace-pre-wrap break-words text-sm font-mono text-gray-300">
                 <span className="text-gray-500">$</span> git clone https://github.com/LessUp/meta-human.git
                 <br />
                 <span className="text-gray-500">$</span> cd meta-human && npm install
@@ -88,7 +88,7 @@ export default function CTASection() {
             ].map((item) => (
               <div
                 key={item.title}
-                className="p-5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors"
+                className="h-full rounded-xl border border-white/5 bg-white/[0.02] p-5 transition-colors hover:border-white/10"
               >
                 <item.icon className="w-8 h-8 text-blue-400 mb-3" />
                 <h3 className="text-white font-semibold mb-1">{item.title}</h3>
@@ -100,7 +100,7 @@ export default function CTASection() {
 
         {/* Bottom: Links */}
         <div className="mt-16 pt-8 border-t border-white/10">
-          <div className="flex flex-wrap justify-center gap-8 text-sm">
+          <div className="flex flex-wrap justify-center gap-4 text-sm sm:gap-8">
             <a href="docs/" className="text-gray-400 hover:text-white transition-colors">
               文档
             </a>

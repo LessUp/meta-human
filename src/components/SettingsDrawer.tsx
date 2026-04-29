@@ -14,7 +14,6 @@ interface SettingsDrawerProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   onClose: () => void;
-  // Callbacks forwarded from parent
   onPlayPause: () => void;
   onReset: () => void;
   onToggleRecording: () => void;
@@ -55,67 +54,69 @@ export default function SettingsDrawer({
 
   return (
     <>
-      {/* Mobile backdrop */}
-      {show && <div className="fixed inset-0 bg-black/50 z-40 sm:hidden" onClick={onClose} />}
+      {show && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-[2px]"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
       <div
         ref={drawerRef}
         role="dialog"
         aria-modal="true"
         aria-label="设置面板"
-        className={`absolute top-0 right-0 h-full w-full sm:w-80 md:w-96 bg-black/80 backdrop-blur-xl border-l border-white/10 z-30 transform transition-transform duration-500 ease-out ${show ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed inset-y-0 right-0 z-40 h-[100dvh] w-full max-w-full border-l border-white/10 bg-black/85 backdrop-blur-xl transition-transform duration-500 ease-out sm:w-80 md:w-96 ${show ? 'translate-x-0' : 'pointer-events-none translate-x-full'}`}
       >
-        <div className="p-6 h-full flex flex-col">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-lg font-medium text-white/90 flex items-center gap-2">
-              <Settings className="w-4 h-4" /> Control Systems
+        <div className="flex h-full flex-col p-5 sm:p-6">
+          <div className="mb-6 flex items-center justify-between gap-3">
+            <h2 className="flex items-center gap-2 text-lg font-medium text-white/90">
+              <Settings className="h-4 w-4" /> Control Systems
             </h2>
-            <button
-              onClick={toggleTheme}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              aria-label={isDark ? '切换到浅色模式' : '切换到深色模式'}
-            >
-              {isDark ? (
-                <Sun className="w-5 h-5 text-gray-400" />
-              ) : (
-                <Moon className="w-5 h-5 text-gray-400" />
-              )}
-            </button>
-            <button
-              onClick={onClose}
-              aria-label="关闭设置"
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-400" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleTheme}
+                className="rounded-lg p-2 transition-colors hover:bg-white/10"
+                aria-label={isDark ? '切换到浅色模式' : '切换到深色模式'}
+              >
+                {isDark ? (
+                  <Sun className="h-5 w-5 text-gray-400" />
+                ) : (
+                  <Moon className="h-5 w-5 text-gray-400" />
+                )}
+              </button>
+              <button
+                onClick={onClose}
+                aria-label="关闭设置"
+                className="rounded-lg p-2 transition-colors hover:bg-white/10"
+              >
+                <X className="h-5 w-5 text-gray-400" />
+              </button>
+            </div>
           </div>
 
-          {/* Navigation Tabs */}
-          <div
-            role="tablist"
-            className="flex space-x-1 bg-white/5 p-1 rounded-lg mb-6 overflow-x-auto"
-          >
+          <div role="tablist" className="mb-6 flex gap-1 overflow-x-auto rounded-lg bg-white/5 p-1">
             {TABS.map((tab) => (
               <button
                 key={tab}
                 role="tab"
                 aria-selected={activeTab === tab}
                 onClick={() => onTabChange(tab)}
-                className={`flex-1 py-2 text-xs font-medium rounded-md transition-all capitalize ${activeTab === tab ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                className={`min-w-[4.5rem] flex-1 rounded-md px-2 py-2 text-xs font-medium capitalize transition-all ${activeTab === tab ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
               >
                 {tab}
               </button>
             ))}
           </div>
 
-          {/* Content Area */}
           <div
             role="tabpanel"
             aria-label={activeTab}
-            className="flex-1 overflow-y-auto pr-2 space-y-6 custom-scrollbar"
+            className="custom-scrollbar flex-1 space-y-6 overflow-y-auto pr-1 sm:pr-2"
           >
             {activeTab === 'basic' && (
               <div className="space-y-4">
-                <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+                <div className="rounded-xl border border-white/5 bg-white/5 p-4">
                   <ControlPanel
                     isPlaying={isPlaying}
                     isRecording={isRecording}
@@ -144,11 +145,10 @@ export default function SettingsDrawer({
               />
             )}
             {activeTab === 'vision' && (
-              <div className="text-sm text-gray-400 p-4 border border-white/10 rounded-xl bg-white/5">
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-gray-400">
                 Vision Mirror Module requires camera access.
                 <VisionMirrorPanel
                   onEmotionChange={(emotion) => {
-                    // setEmotion 内部通过 EMOTION_TO_EXPRESSION 映射自动设置对应表情
                     digitalHumanEngine.setEmotion(emotion);
                   }}
                   onHeadMotion={(motion) => {

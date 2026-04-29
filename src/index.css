@@ -50,12 +50,34 @@
 
   html {
     scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+    background-color: #000;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100%;
   }
 
   body {
     margin: 0;
     min-height: 100vh;
     overflow-x: hidden;
+    background-color: #000;
+    color: #fff;
+  }
+
+  #root {
+    min-height: 100vh;
+    min-height: 100dvh;
+    isolation: isolate;
+  }
+
+  @media (min-width: 640px) {
+    html {
+      scroll-padding-top: 6rem;
+    }
   }
 
   ::selection {

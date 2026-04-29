@@ -3,7 +3,6 @@ import TopHUD from '../components/TopHUD';
 import SettingsDrawer from '../components/SettingsDrawer';
 import ChatDock from '../components/ChatDock';
 import { useAdvancedDigitalHumanController } from '../hooks/useAdvancedDigitalHumanController';
-import { Toaster } from 'sonner';
 
 export default function AdvancedDigitalHumanPage() {
   const {
@@ -31,9 +30,7 @@ export default function AdvancedDigitalHumanPage() {
   } = useAdvancedDigitalHumanController();
 
   return (
-    <div className="relative w-screen h-screen bg-black overflow-hidden font-sans text-white selection:bg-blue-500/30">
-      <Toaster position="top-center" theme="dark" />
-
+    <div className="relative isolate h-[100dvh] min-h-screen w-full overflow-hidden bg-black font-sans text-white selection:bg-blue-500/30">
       {/* Background 3D Viewer */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80 z-10 pointer-events-none" />

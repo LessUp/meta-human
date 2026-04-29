@@ -44,18 +44,20 @@ export default function Footer() {
 
   const handleAnchorClick = (e: React.MouseEvent, href: string) => {
     e.preventDefault();
-    const element = document.querySelector(href);
+    const element = document.querySelector<HTMLElement>(href);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+      const offset = 88;
+      const top = element.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top, behavior: 'smooth' });
     }
   };
 
   return (
     <footer className="relative bg-[#050508] border-t border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+        <div className="mb-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
-          <div className="col-span-2 md:col-span-1">
+          <div className="sm:col-span-2 lg:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4">
               <Activity className="w-6 h-6 text-blue-400" />
               <span className="text-lg font-semibold text-white">MetaHuman</span>
@@ -131,10 +133,10 @@ export default function Footer() {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-center text-sm text-gray-600 sm:text-left">
             © {currentYear} LessUp. Open source under MIT License.
           </p>
-          <p className="text-sm text-gray-600 flex items-center gap-1">
+          <p className="flex items-center justify-center gap-1 text-center text-sm text-gray-600 sm:justify-end sm:text-right">
             Built with <Heart className="w-4 h-4 text-red-500 fill-red-500" /> to make digital
             humans accessible
           </p>

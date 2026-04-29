@@ -44,10 +44,10 @@ export default function HeroSection() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 pt-28 pb-20 sm:px-6 lg:px-8 lg:pt-24 lg:pb-16">
+        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
           {/* Left: Text Content */}
-          <div className="text-center lg:text-left">
+          <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:max-w-none lg:text-left">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm mb-6">
               <Sparkles className="w-4 h-4" />
@@ -64,7 +64,7 @@ export default function HeroSection() {
             </h1>
 
             {/* Subtitle */}
-            <p className="text-lg sm:text-xl text-gray-400 mb-8 max-w-xl mx-auto lg:mx-0">
+            <p className="mx-auto mb-8 max-w-2xl text-lg text-gray-400 sm:text-xl lg:mx-0 lg:max-w-xl">
               浏览器原生的 3D 数字人交互引擎，支持语音、视觉、对话能力。
               <span className="text-gray-300">零配置启动，离线可用，生产级品质。</span>
             </p>
@@ -100,9 +100,9 @@ export default function HeroSection() {
           </div>
 
           {/* Right: Visual Preview */}
-          <div className="relative">
+          <div className="relative w-full lg:justify-self-end">
             {/* Main Preview Card */}
-            <div className="relative aspect-square max-w-lg mx-auto">
+            <div className="relative mx-auto aspect-square w-full max-w-[22rem] sm:max-w-lg">
               {/* Outer Glow Ring */}
               <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 blur-2xl" />
               
@@ -168,14 +168,14 @@ export default function HeroSection() {
             </div>
 
             {/* Floating Stats Cards */}
-            <div className="absolute -left-8 top-1/4 hidden lg:block">
+            <div className="absolute -left-8 top-1/4 hidden xl:block">
               <div className="p-3 rounded-xl bg-black/60 backdrop-blur border border-white/10">
                 <div className="text-2xl font-bold text-white">60<span className="text-blue-400">fps</span></div>
                 <div className="text-xs text-gray-400">流畅渲染</div>
               </div>
             </div>
             
-            <div className="absolute -right-4 bottom-1/3 hidden lg:block">
+            <div className="absolute -right-4 bottom-1/3 hidden xl:block">
               <div className="p-3 rounded-xl bg-black/60 backdrop-blur border border-white/10">
                 <div className="text-2xl font-bold text-white">468</div>
                 <div className="text-xs text-gray-400">面部关键点</div>
@@ -186,7 +186,7 @@ export default function HeroSection() {
       </div>
 
       {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-gray-500">
+      <div className="absolute bottom-8 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 text-gray-500 md:flex">
         <span className="text-xs">向下滚动了解更多</span>
         <div className="w-6 h-10 rounded-full border-2 border-white/20 flex items-start justify-center p-1">
           <div className="w-1.5 h-3 bg-blue-400 rounded-full animate-bounce" />

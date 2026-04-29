@@ -88,11 +88,11 @@ export default function FeaturesSection() {
         </div>
 
         {/* Features Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {features.map((feature, index) => (
             <div
               key={feature.title}
-              className={`group relative p-6 rounded-2xl border ${feature.borderColor} ${feature.bgColor} backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-xl`}
+              className={`group relative flex h-full flex-col rounded-2xl border p-6 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${feature.borderColor} ${feature.bgColor}`}
               style={{
                 animationDelay: `${index * 100}ms`,
               }}
@@ -108,7 +108,7 @@ export default function FeaturesSection() {
               <h3 className="text-xl font-semibold text-white mb-2">
                 {feature.title}
               </h3>
-              <p className="text-gray-400 text-sm leading-relaxed">
+              <p className="flex-1 text-sm leading-relaxed text-gray-400">
                 {feature.description}
               </p>
 
