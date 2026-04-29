@@ -24,8 +24,8 @@ export default function HeroSection() {
       />
       
       {/* Radial Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-600/10 rounded-full blur-[120px]" />
-      <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px]" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(800px,100vw)] h-[min(800px,100vh)] bg-blue-600/10 rounded-full blur-[120px]" />
+      <div className="absolute top-1/4 right-1/4 w-[min(400px,50vw)] h-[min(400px,50vh)] bg-purple-600/10 rounded-full blur-[100px]" />
       
       {/* Floating Particles */}
       <div className="absolute inset-0 overflow-hidden">
@@ -168,14 +168,14 @@ export default function HeroSection() {
             </div>
 
             {/* Floating Stats Cards */}
-            <div className="absolute -left-8 top-1/4 hidden xl:block">
+            <div className="absolute left-0 top-1/4 hidden xl:block">
               <div className="p-3 rounded-xl bg-black/60 backdrop-blur border border-white/10">
                 <div className="text-2xl font-bold text-white">60<span className="text-blue-400">fps</span></div>
                 <div className="text-xs text-gray-400">流畅渲染</div>
               </div>
             </div>
             
-            <div className="absolute -right-4 bottom-1/3 hidden xl:block">
+            <div className="absolute right-0 bottom-1/3 hidden xl:block">
               <div className="p-3 rounded-xl bg-black/60 backdrop-blur border border-white/10">
                 <div className="text-2xl font-bold text-white">468</div>
                 <div className="text-xs text-gray-400">面部关键点</div>

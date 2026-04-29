@@ -51,10 +51,10 @@ const browserApis = [
 
 export default function TechStackSection() {
   return (
-    <section id="tech-stack" className="relative py-24 bg-[#050508]">
+    <section id="tech-stack" className="relative overflow-hidden py-24 bg-[#050508]">
       {/* Background Gradient */}
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-indigo-600/5 rounded-full blur-[100px]" />
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[min(1000px,100vw)] h-[500px] bg-indigo-600/5 rounded-full blur-[100px]" />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -114,7 +114,7 @@ export default function TechStackSection() {
         </div>
 
         {/* Browser APIs */}
-        <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
+        <div className="grid gap-8 lg:grid-cols-2 lg:items-start [&>*]:min-w-0">
           <div>
             <h3 className="text-xl font-semibold text-white mb-6">
               浏览器原生 API
@@ -137,7 +137,7 @@ export default function TechStackSection() {
             <h3 className="text-xl font-semibold text-white mb-6">
               极简 API 设计
             </h3>
-            <div className="rounded-xl overflow-hidden bg-[#0d1117] border border-white/10">
+            <div className="rounded-xl overflow-hidden bg-[#0d1117] border border-white/10 max-w-full">
               <div className="flex items-center gap-2 px-4 py-2 bg-[#161b22] border-b border-white/5">
                 <div className="w-3 h-3 rounded-full bg-red-500/80" />
                 <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
