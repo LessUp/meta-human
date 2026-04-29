@@ -19,14 +19,21 @@ export interface DialogueTurnOptions extends DialogueHandleOptions {
   streaming?: boolean;
   onStreamToken?: (text: string) => void;
   onStreamEnd?: () => void;
+  onTurnResponse?: (response: ChatResponsePayload) => void;
   setLoading?: (loading: boolean) => void;
   onConnectionChange?: (status: 'connected' | 'error') => void;
   onClearError?: () => void;
   onResetBehavior?: () => void;
 }
 
-let pendingTurn: Promise<ChatResponsePayload | undefined> | null = null;
-let abortController: AbortController | null = null;
+interface PendingDialogueTurn {
+  id: number;
+  promise: Promise<ChatResponsePayload | undefined>;
+  abortController: AbortController;
+}
+
+let pendingTurn: PendingDialogueTurn | null = null;
+let nextTurnId = 0;
 
 /**
  * Reset the dialogue orchestrator state.
@@ -34,7 +41,7 @@ let abortController: AbortController | null = null;
  */
 export function resetDialogueOrchestrator(): void {
   pendingTurn = null;
-  abortController = null;
+  nextTurnId = 0;
 }
 
 /**
@@ -42,11 +49,10 @@ export function resetDialogueOrchestrator(): void {
  * This will cancel the current request and clean up state.
  */
 export function abortPendingTurn(): void {
-  if (abortController) {
-    abortController.abort();
-    abortController = null;
+  if (pendingTurn) {
+    pendingTurn.abortController.abort();
+    pendingTurn = null;
   }
-  pendingTurn = null;
 }
 
 /**
@@ -63,7 +69,7 @@ function prepareDialogueTurn(
   userText: string,
   onAddUserMessage?: (text: string) => void,
   setLoading?: (loading: boolean) => void,
-): { content: string; abortCtrl: AbortController } | null {
+): { content: string; turnId: number; abortCtrl: AbortController } | null {
   const content = userText.trim();
   if (!content) {
     return null;
@@ -75,22 +81,31 @@ function prepareDialogueTurn(
   }
 
   // Create new abort controller for this turn
-  abortController = new AbortController();
+  const abortCtrl = new AbortController();
+  const turnId = ++nextTurnId;
 
   onAddUserMessage?.(content);
   setLoading?.(true);
   digitalHumanEngine.setBehavior('thinking');
 
-  return { content, abortCtrl: abortController };
+  return { content, turnId, abortCtrl };
 }
 
 /**
  * Common post-turn cleanup
  */
-function finalizeDialogueTurn(setLoading?: (loading: boolean) => void): void {
+function finalizeDialogueTurn(
+  turnId: number,
+  setLoading?: (loading: boolean) => void,
+  onResetBehavior?: () => void,
+): void {
+  if (pendingTurn?.id !== turnId) {
+    return;
+  }
+
   setLoading?.(false);
   pendingTurn = null;
-  abortController = null;
+  onResetBehavior?.();
 }
 
 export async function runDialogueTurn(
@@ -115,7 +130,7 @@ export async function runDialogueTurn(
     return undefined;
   }
 
-  const { content, abortCtrl } = preparation;
+  const { content, turnId, abortCtrl } = preparation;
 
   const execute = async (): Promise<ChatResponsePayload | undefined> => {
     const chatTransport = getDefaultChatTransport();
@@ -146,6 +161,8 @@ export async function runDialogueTurn(
         }
       }
 
+      options.onTurnResponse?.(result.response);
+
       await handleDialogueResponse(result.response, {
         isMuted,
         speakWith,
@@ -160,13 +177,13 @@ export async function runDialogueTurn(
       }
       return undefined;
     } finally {
-      finalizeDialogueTurn(setLoading);
-      onResetBehavior?.();
+      finalizeDialogueTurn(turnId, setLoading, onResetBehavior);
     }
   };
 
-  pendingTurn = execute();
-  return pendingTurn;
+  const promise = execute();
+  pendingTurn = { id: turnId, promise, abortController: abortCtrl };
+  return promise;
 }
 
 export async function runDialogueTurnStream(
@@ -194,7 +211,7 @@ export async function runDialogueTurnStream(
     return undefined;
   }
 
-  const { content, abortCtrl } = preparation;
+  const { content, turnId, abortCtrl } = preparation;
 
   let didFinishStream = false;
 
@@ -253,7 +270,7 @@ export async function runDialogueTurnStream(
           emotion: 'neutral',
           action: 'idle',
         },
-        connectionStatus: 'connected',
+        connectionStatus: 'connected' as const,
         error: null,
       };
 
@@ -273,6 +290,8 @@ export async function runDialogueTurnStream(
         }
       }
 
+      options.onTurnResponse?.(result.response);
+
       await handleDialogueResponse(result.response, {
         isMuted,
         speakWith,
@@ -289,14 +308,14 @@ export async function runDialogueTurnStream(
       }
       return undefined;
     } finally {
-      finalizeDialogueTurn(setLoading);
-      onResetBehavior?.();
+      finalizeDialogueTurn(turnId, setLoading, onResetBehavior);
       finishStream();
     }
   };
 
-  pendingTurn = execute();
-  return pendingTurn;
+  const promise = execute();
+  pendingTurn = { id: turnId, promise, abortController: abortCtrl };
+  return promise;
 }
 
 export async function handleDialogueResponse(
@@ -318,11 +337,11 @@ export async function handleDialogueResponse(
   }
 
   if (res.replyText && !isMuted && speakWith) {
-    try {
-      await speakWith(res.replyText);
-    } catch (error: unknown) {
-      logger.warn('语音播报失败，但对话文本已返回:', error);
-      onError?.(error instanceof Error ? error.message : '语音播报失败');
-    }
+    void Promise.resolve()
+      .then(() => speakWith(res.replyText))
+      .catch((error: unknown) => {
+        logger.warn('语音播报失败，但对话文本已返回:', error);
+        onError?.(error instanceof Error ? error.message : '语音播报失败');
+      });
   }
 }

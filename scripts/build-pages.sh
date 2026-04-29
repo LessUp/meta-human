@@ -3,14 +3,10 @@ set -e
 
 echo "🔨 Building MetaHuman Engine for GitHub Pages..."
 
-# 构建应用
-npm run build -- --mode pages
+# 注意: build:pages 已在 package.json 中调用了 tsc && vite build --mode pages
+# 此脚本作为 post-build 步骤执行
 
-# 将门户 HTML 复制到 dist 根目录
-echo "📄 Adding portal landing page..."
-cp docs/portal.html dist/index.html
-
-# 确保 docs 目录结构完整
+# 确保 docs 目录结构复制到 dist
 echo "📚 Setting up documentation..."
 mkdir -p dist/docs
 cp -r docs/guide dist/docs/ 2>/dev/null || true

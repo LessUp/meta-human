@@ -1,7 +1,6 @@
 import {
   sendUserInput,
   streamUserInput,
-  buildEmptyResponse,
   type ChatRequestPayload,
   type ChatResponsePayload,
   type DialogueServiceConfig,
@@ -40,6 +39,12 @@ export interface ChatTransportCapabilities {
 }
 
 const DEFAULT_TIMEOUT_MS = 15000;
+
+const buildEmptyResponse = (): ChatResponsePayload => ({
+  replyText: '',
+  emotion: 'neutral',
+  action: 'idle',
+});
 
 export const httpChatTransport: ChatTransport = {
   mode: 'http',
@@ -153,9 +158,9 @@ async function* streamOverWebSocket(
       if (signal?.aborted) {
         return {
           response: accumulatedText
-            ? { replyText: accumulatedText, emotion: 'neutral', action: 'idle' }
+            ? { replyText: accumulatedText, emotion: 'neutral' as const, action: 'idle' }
             : buildEmptyResponse(),
-          connectionStatus: 'error',
+          connectionStatus: 'error' as const,
           error: '请求被取消',
         };
       }
@@ -177,34 +182,28 @@ async function* streamOverWebSocket(
     }
 
     // Build return value from terminal event or accumulated text
-    const doneEvent = terminalEvent as {
-      type: 'done';
-      replyText: string;
-      emotion: string;
-      action: string;
-    } | null;
-    if (doneEvent?.type === 'done') {
+    const terminal = terminalEvent as WSServerEvent | null;
+    if (terminal?.type === 'done') {
       return {
         response: {
-          replyText: doneEvent.replyText,
-          emotion: doneEvent.emotion as ChatResponsePayload['emotion'],
-          action: doneEvent.action,
+          replyText: terminal.replyText,
+          emotion: terminal.emotion as ChatResponsePayload['emotion'],
+          action: terminal.action,
         },
-        connectionStatus: 'connected',
+        connectionStatus: 'connected' as const,
         error: null,
       };
     }
 
     if (accumulatedText) {
-      const errorEvent = terminalEvent as { type: 'error'; message: string } | null;
       return {
         response: {
           replyText: accumulatedText,
-          emotion: 'neutral',
+          emotion: 'neutral' as const,
           action: 'idle',
         },
-        connectionStatus: 'error',
-        error: errorEvent?.type === 'error' ? errorEvent.message : 'WebSocket 流中断',
+        connectionStatus: 'error' as const,
+        error: terminal?.type === 'error' ? terminal.message : 'WebSocket 流中断',
       };
     }
 
@@ -262,7 +261,7 @@ export const webSocketChatTransport: ChatTransport = {
         if (signal?.aborted) {
           return {
             response: buildEmptyResponse(),
-            connectionStatus: 'error',
+            connectionStatus: 'error' as const,
             error: '请求被取消',
           };
         }
@@ -272,9 +271,7 @@ export const webSocketChatTransport: ChatTransport = {
     })();
 
     try {
-      finalResult = (await Promise.race([iterationPromise, timeoutPromise])) as
-        | DialogueServiceResult
-        | undefined;
+      finalResult = await Promise.race([iterationPromise, timeoutPromise]);
     } catch (error) {
       if (error instanceof Error && error.message === 'WebSocket send timeout') {
         return {

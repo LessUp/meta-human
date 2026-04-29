@@ -103,17 +103,6 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           name: MetaHuman Engine ${{ github.ref_name }}
-          body: |
-            ## MetaHuman Engine ${{ github.ref_name }}
-
-            ### 🚀 Features
-            - 🎭 3D Avatar Engine with emotion-driven expressions
-            - 🗣️ Voice Interaction (TTS/ASR)
-            - 👁️ Visual Perception (MediaPipe)
-            - 🧠 Streaming Dialogue
-
-            ### 🔗 Links
-            - 🌐 Demo: https://lessup.github.io/meta-human/
-            - 📖 Docs: https://github.com/LessUp/meta-human/tree/main/docs
+          generate_release_notes: true
           draft: false
           prerelease: false
