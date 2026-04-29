@@ -22,9 +22,10 @@ if (import.meta.env.DEV) {
       // HashRouter 使用 hash 来管理路由
       // 构建目标 hash 路径
       const targetHash = path || '/';
+      const allowedRoutes = new Set(['/', '/app', '/advanced', '/digital-human']);
 
       // 设置 hash 路由
-      if (targetHash !== '/') {
+      if (targetHash !== '/' && allowedRoutes.has(targetHash)) {
         window.location.hash = targetHash;
       }
 

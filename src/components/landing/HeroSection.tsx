@@ -7,6 +7,30 @@ const highlights = [
   { icon: Shield, label: '生产级品质' },
 ];
 
+// 预计算粒子位置，避免 Math.random() 导致每次渲染不一致（hydration 抖动）
+const PARTICLES = [
+  { left: '8%',  top: '12%', delay: '0s',    duration: '2.8s' },
+  { left: '23%', top: '5%',  delay: '0.4s',  duration: '3.5s' },
+  { left: '41%', top: '18%', delay: '1.1s',  duration: '2.2s' },
+  { left: '67%', top: '8%',  delay: '0.7s',  duration: '4.0s' },
+  { left: '85%', top: '22%', delay: '1.8s',  duration: '3.1s' },
+  { left: '92%', top: '45%', delay: '0.3s',  duration: '2.5s' },
+  { left: '78%', top: '62%', delay: '2.2s',  duration: '3.8s' },
+  { left: '55%', top: '78%', delay: '0.9s',  duration: '2.9s' },
+  { left: '31%', top: '85%', delay: '1.5s',  duration: '4.2s' },
+  { left: '12%', top: '68%', delay: '0.6s',  duration: '3.3s' },
+  { left: '4%',  top: '40%', delay: '2.0s',  duration: '2.7s' },
+  { left: '19%', top: '55%', delay: '1.3s',  duration: '3.6s' },
+  { left: '48%', top: '35%', delay: '0.2s',  duration: '2.4s' },
+  { left: '73%', top: '28%', delay: '1.7s',  duration: '4.1s' },
+  { left: '88%', top: '72%', delay: '0.8s',  duration: '3.0s' },
+  { left: '62%', top: '90%', delay: '2.5s',  duration: '2.6s' },
+  { left: '35%', top: '48%', delay: '1.0s',  duration: '3.9s' },
+  { left: '16%', top: '32%', delay: '0.5s',  duration: '2.3s' },
+  { left: '94%', top: '15%', delay: '1.9s',  duration: '4.3s' },
+  { left: '50%', top: '60%', delay: '0.1s',  duration: '3.2s' },
+];
+
 export default function HeroSection() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -27,24 +51,24 @@ export default function HeroSection() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(800px,100vw)] h-[min(800px,100vh)] bg-blue-600/10 rounded-full blur-[120px]" />
       <div className="absolute top-1/4 right-1/4 w-[min(400px,50vw)] h-[min(400px,50vh)] bg-purple-600/10 rounded-full blur-[100px]" />
       
-      {/* Floating Particles */}
-      <div className="absolute inset-0 overflow-hidden">
-        {[...Array(20)].map((_, i) => (
+      {/* Floating Particles - 固定预计算位置，防止 hydration 抖动 */}
+      <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+        {PARTICLES.map((p, i) => (
           <div
             key={i}
             className="absolute w-1 h-1 bg-blue-400/30 rounded-full animate-pulse"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${2 + Math.random() * 3}s`,
+              left: p.left,
+              top: p.top,
+              animationDelay: p.delay,
+              animationDuration: p.duration,
             }}
           />
         ))}
       </div>
 
       {/* Content */}
-      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 pt-28 pb-20 sm:px-6 lg:px-8 lg:pt-24 lg:pb-16">
+      <div className="landing-shell relative z-10 pt-28 pb-20 lg:pt-24 lg:pb-16">
         <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
           {/* Left: Text Content */}
           <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:max-w-none lg:text-left">
@@ -80,7 +104,7 @@ export default function HeroSection() {
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
               <a
-                href="docs/"
+                href="https://lessup.github.io/meta-human/docs/"
                 className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-semibold rounded-xl border border-white/10 transition-all hover:border-white/20"
               >
                 <BookOpen className="w-5 h-5" />

@@ -10,6 +10,18 @@ export default defineConfig(({ mode }) => {
   return {
     base: isPages ? '/meta-human/' : '/',
 
+    css: {
+      transformer: 'lightningcss',
+      lightningcss: {
+        targets: {
+          chrome: 105 << 16,
+          safari: 16 << 16,
+          ios_saf: 16 << 16,
+          firefox: 105 << 16,
+        },
+      },
+    },
+
     plugins: [
       react({
         jsxImportSource: 'react',
@@ -34,7 +46,7 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       sourcemap: false,
       cssCodeSplit: true,
-      cssMinify: 'esbuild',
+      cssMinify: 'lightningcss',
       assetsInlineLimit: 5120,
       emptyOutDir: true,
       chunkSizeWarningLimit: 1500,
