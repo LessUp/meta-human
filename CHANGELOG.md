@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.0] - 2026-04-30
+
+### 🏗️ Architecture
+
+- **Python Backend** — Moved `server/` to `examples/backend-python/` as optional reference implementation
+- **Project Structure** — Clarified backend is optional, frontend is zero-config by default
+
+### 📚 Documentation
+
+- **README** — Added backend optional note, unified Node.js ≥22 requirement
+- **docs/guide/** — Removed Python prerequisite, updated project structure
+- **docs/index.md** — Fixed version number (v1.0.0 → v2.1.0)
+- **changelog/** — Removed duplicate CHANGELOG.zh-CN.md
+
+### 🛠️ Engineering
+
+- **build-pages.sh** — Added sitemap generation, build timestamp, size output
+- **.gitignore** — Added `*.tsbuildinfo`, updated Python comments
+- **.vscode/** — Added settings.json and mcp.json
+
+---
+
 ## [2.1.0] - 2026-04-29
 
 ### 🏗️ Architecture Overhaul
