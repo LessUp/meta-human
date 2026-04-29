@@ -43,9 +43,6 @@ __pycache__/
 .omc/
 CLAUDE.local.md
 
-# OpenSpec local state
-.openspec/
-.worktrees/
 
 # Local config
 *.local

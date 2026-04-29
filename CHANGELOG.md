@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.2.0] - 2026-04-30
+## [2.2.0] - 2026-04-29
 
 ### 🏗️ Architecture
 
@@ -222,6 +222,7 @@ See release notes in each version's GitHub Release page.
 
 ---
 
+[2.2.0]: https://github.com/LessUp/meta-human/releases/tag/v2.2.0
 [2.1.0]: https://github.com/LessUp/meta-human/releases/tag/v2.1.0
 [1.1.0]: https://github.com/LessUp/meta-human/releases/tag/v1.1.0
 [1.0.0]: https://github.com/LessUp/meta-human/releases/tag/v1.0.0

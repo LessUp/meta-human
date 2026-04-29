@@ -278,7 +278,7 @@ npm run build:pages
 2. 推送到 `master` — CI 自动部署
 3. 访问：`https://lessup.github.io/meta-human/`
 
-**[📖 部署指南 →](docs/guide/installation.zh-CN.md)**
+**[📖 部署指南 →](docs/guide/installation.md)**
 
 ---
 
@@ -289,7 +289,6 @@ npm run build:pages
 ```bash
 npm run dev              # 启动开发服务器（端口 5173）
 npm run preview          # 预览生产构建
-npm run preview:https    # HTTPS 预览
 ```
 
 ### 构建
@@ -297,9 +296,6 @@ npm run preview:https    # HTTPS 预览
 ```bash
 npm run build            # 生产构建
 npm run build:pages      # GitHub Pages 构建
-npm run build:mobile     # 移动端优化构建
-npm run build:desktop    # 桌面端优化构建
-npm run build:ar         # AR 功能构建
 npm run build:analyze    # 构建并分析包体积
 ```
 
@@ -344,7 +340,7 @@ npm run test:ui          # Vitest UI 模式
 - **[快速开始](docs/guide/)** — 5 分钟快速上手
 - **[API 参考](docs/api/)** — 后端 API 文档
 - **[架构设计](docs/architecture/)** — 系统设计
-- **[配置说明](docs/guide/configuration.zh-CN.md)** — 环境变量与设置
+- **[配置说明](docs/guide/configuration.md)** — 环境变量与设置
 - **[贡献指南](docs/contributing/)** — 贡献指南
 - **[更新日志](CHANGELOG.md)** — 版本历史
 

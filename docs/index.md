@@ -44,8 +44,8 @@
 
 ## 🌐 Language Selection
 
-- **[English](./index.md)** (Current)
-- **[中文](./index.zh-CN.md)**
+- **English** (Current)
+- **[中文](../README.zh-CN.md)**
 
 ---
 
@@ -106,7 +106,7 @@ MetaHuman Engine is a **browser-native 3D digital human engine** that provides a
 
 ## 📋 Version Information
 
-**Current Version:** `v2.1.0`
+**Current Version:** `v2.2.0`
 
 See [CHANGELOG](../CHANGELOG.md) for version history.
 
