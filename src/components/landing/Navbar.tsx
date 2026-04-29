@@ -22,9 +22,11 @@ export default function Navbar() {
   }, []);
 
   const scrollToSection = (href: string) => {
-    const element = document.querySelector(href);
+    const element = document.querySelector<HTMLElement>(href);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+      const offset = 88;
+      const top = element.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top, behavior: 'smooth' });
     }
     setIsMobileMenuOpen(false);
   };
@@ -101,6 +103,7 @@ export default function Navbar() {
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
             aria-label="Toggle menu"
+            aria-expanded={isMobileMenuOpen}
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -113,7 +116,7 @@ export default function Navbar() {
           isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
-        <div className="px-4 py-4 bg-black/95 backdrop-blur-lg border-t border-white/10 space-y-3">
+        <div className="mx-auto max-w-7xl space-y-3 border-t border-white/10 bg-black/95 px-4 py-4 backdrop-blur-lg">
           {navLinks.map((link) =>
             link.external ? (
               <a

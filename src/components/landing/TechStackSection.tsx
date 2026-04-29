@@ -70,7 +70,7 @@ export default function TechStackSection() {
 
         {/* Architecture Diagram */}
         <div className="mb-20">
-          <div className="relative p-8 rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.02] to-transparent">
+          <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.02] to-transparent p-6 sm:p-8">
             {/* Layers */}
             <div className="grid gap-6">
               {techLayers.map((layer, index) => (
@@ -80,7 +80,7 @@ export default function TechStackSection() {
                     <div className="absolute left-8 top-full w-px h-6 bg-gradient-to-b from-white/20 to-transparent" />
                   )}
                   
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+                  <div className="flex flex-col gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-colors hover:border-white/10 sm:flex-row sm:items-center sm:gap-6">
                     {/* Layer Title */}
                     <div className="sm:w-32 flex-shrink-0">
                       <h3 className="text-white font-semibold">{layer.title}</h3>
@@ -114,7 +114,7 @@ export default function TechStackSection() {
         </div>
 
         {/* Browser APIs */}
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
           <div>
             <h3 className="text-xl font-semibold text-white mb-6">
               浏览器原生 API
@@ -123,10 +123,10 @@ export default function TechStackSection() {
               {browserApis.map((api) => (
                 <div
                   key={api.name}
-                  className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors"
+                  className="flex flex-col items-start gap-1.5 rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-colors hover:border-white/10 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <span className="text-white font-medium">{api.name}</span>
-                  <span className="text-sm text-gray-500">{api.desc}</span>
+                  <span className="text-sm text-gray-500 sm:text-right">{api.desc}</span>
                 </div>
               ))}
             </div>

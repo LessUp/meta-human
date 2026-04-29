@@ -1,4 +1,3 @@
-import { Toaster } from 'sonner';
 import Navbar from '@/components/landing/Navbar';
 import HeroSection from '@/components/landing/HeroSection';
 import FeaturesSection from '@/components/landing/FeaturesSection';
@@ -8,9 +7,7 @@ import Footer from '@/components/landing/Footer';
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-black text-white">
-      <Toaster position="top-center" theme="dark" />
-      
+    <div className="min-h-screen overflow-x-clip bg-black text-white">
       {/* Navigation */}
       <Navbar />
       
