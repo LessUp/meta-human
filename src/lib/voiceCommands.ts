@@ -1,6 +1,4 @@
-import { digitalHumanEngine } from '../core/avatar';
-import { asrService } from '../core/audio';
-import { ttsService } from '../core/audio';
+import { digitalHumanEngine, asrService, ttsService } from '../core/services';
 
 export interface VoiceCommandHandlers {
   onGreeting?: () => void;

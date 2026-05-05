@@ -1,6 +1,6 @@
 import { ChatResponsePayload, type StreamCallbacks } from './dialogueService';
 import { getDefaultChatTransport } from './chatTransport';
-import { digitalHumanEngine } from '../avatar';
+import { digitalHumanEngine } from '../services';
 import { loggers } from '../../lib/logger';
 
 const logger = loggers.orchestrator;
