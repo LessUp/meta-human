@@ -13,3 +13,7 @@ export { useDebounce, useDebouncedCallback } from './useDebounce';
 export { useLocalStorage } from './useLocalStorage';
 export { useFocusTrap } from './useFocusTrap';
 export { useAdvancedDigitalHumanController } from './useAdvancedDigitalHumanController';
+export { useVoiceInteraction } from './useVoiceInteraction';
+export type { VoiceInteractionControls, UseVoiceInteractionOptions } from './useVoiceInteraction';
+export { useVisionMirror } from './useVisionMirror';
+export type { VisionMirrorControls, UseVisionMirrorOptions } from './useVisionMirror';
