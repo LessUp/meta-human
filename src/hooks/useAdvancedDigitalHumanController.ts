@@ -3,17 +3,19 @@ import { toast } from 'sonner';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { useChatSessionStore } from '../store/chatSessionStore';
 import { useSystemStore } from '../store/systemStore';
-import { asrService } from '../core/audio';
-import { digitalHumanEngine } from '../core/avatar';
+import { asrService, digitalHumanEngine } from '../core/services';
 import { clearRemoteSession } from '../core/dialogue/dialogueService';
 import { abortPendingTurn } from '../core/dialogue/dialogueOrchestrator';
 import { executeVoiceCommand } from '../lib/voiceCommands';
 import { useChatStream } from './useChatStream';
 import { useConnectionHealth } from './useConnectionHealth';
+import type { UserEmotion } from '../core/vision/visionMapper';
 
 export function useAdvancedDigitalHumanController() {
-  const { isPlaying, autoRotate, setRecording, toggleMute, toggleAutoRotate, initSession } =
+  const { isPlaying, autoRotate, setRecording, toggleMute, toggleAutoRotate } =
     useDigitalHumanStore();
+  const initChatSession = useChatSessionStore((s) => s.initSession);
+  const resetSystemState = useSystemStore((s) => s.resetSystemState);
   const sessionId = useChatSessionStore((s) => s.sessionId);
   const error = useSystemStore((s) => s.error);
   const clearError = useSystemStore((s) => s.clearError);
@@ -87,6 +89,15 @@ export function useAdvancedDigitalHumanController() {
     digitalHumanEngine.setBehavior(behavior, params);
   }, []);
 
+  const handleEmotionChange = useCallback((emotion: UserEmotion) => {
+    digitalHumanEngine.setEmotion(emotion);
+  }, []);
+
+  const handleHeadMotion = useCallback((motion: 'nod' | 'shakeHead' | 'raiseHand' | 'waveHand') => {
+    digitalHumanEngine.playAnimation(motion);
+    toast(`Motion Detected: ${motion}`, { icon: '📸' });
+  }, []);
+
   const handleVoiceCommand = useCallback(
     (command: string) => {
       executeVoiceCommand(command, {
@@ -116,11 +127,13 @@ export function useAdvancedDigitalHumanController() {
   const handleNewSession = useCallback(() => {
     const oldSessionId = sessionId;
     abortPendingTurn();
-    initSession();
+    // Coordinate multi-store initialization
+    initChatSession();
+    resetSystemState();
     setChatInput('');
     toast.success('已开启新会话');
     void clearRemoteSession(oldSessionId);
-  }, [sessionId, initSession, setChatInput]);
+  }, [sessionId, initChatSession, resetSystemState, setChatInput]);
 
   const toggleSettings = useCallback(() => {
     setShowSettings((prev) => !prev);
@@ -205,7 +218,9 @@ export function useAdvancedDigitalHumanController() {
       closeSettings,
       handleBehaviorChange,
       handleChatSend,
+      handleEmotionChange,
       handleExpressionChange,
+      handleHeadMotion,
       handleModelLoad,
       handleNewSession,
       handlePlayPause,
@@ -228,7 +243,9 @@ export function useAdvancedDigitalHumanController() {
       closeSettings,
       handleBehaviorChange,
       handleChatSend,
+      handleEmotionChange,
       handleExpressionChange,
+      handleHeadMotion,
       handleModelLoad,
       handleNewSession,
       handlePlayPause,

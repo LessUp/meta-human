@@ -1,5 +1,6 @@
 import { runDialogueTurn } from '../dialogue/dialogueOrchestrator';
 import { loggers } from '../../lib/logger';
+import { processVoiceCommand } from './voiceCommandProcessor';
 
 const logger = loggers.audio;
 
@@ -580,59 +581,26 @@ export class ASRService {
   // 处理语音输入 - 整合本地命令和后端对话
   private async processVoiceInput(text: string): Promise<void> {
     // 首先检查是否是本地命令
-    const isLocalCommand = this.tryLocalCommand(text);
+    const isLocalCommand = processVoiceCommand(
+      text,
+      {
+        play: () => this.state.play(),
+        pause: () => this.state.pause(),
+        reset: () => this.state.reset(),
+        setMuted: (m) => this.state.setMuted(m),
+      },
+      {
+        greeting: () => this.performGreeting(),
+        dance: () => this.performDance(),
+        nod: () => this.performNod(),
+        shakeHead: () => this.performShakeHead(),
+      },
+    );
 
     // 如果不是本地命令且启用了后端发送，则发送到对话服务
     if (!isLocalCommand && this.sendToBackend) {
       await this.sendToDialogueService(text);
     }
-  }
-
-  // 尝试执行本地命令，返回是否匹配到命令
-  private tryLocalCommand(command: string): boolean {
-    const trimmed = command.trim().toLowerCase();
-
-    // System control commands — exact match only
-    if (trimmed === '播放' || trimmed === '开始') {
-      this.state.play();
-      return true;
-    }
-    if (trimmed === '暂停' || trimmed === '停止') {
-      this.state.pause();
-      return true;
-    }
-    if (trimmed === '重置' || trimmed === '复位') {
-      this.state.reset();
-      return true;
-    }
-    if (trimmed === '取消静音') {
-      this.state.setMuted(false);
-      return true;
-    }
-    if (trimmed === '静音') {
-      this.state.setMuted(true);
-      return true;
-    }
-
-    // Quick action commands — exact match only
-    if (trimmed === '打招呼' || trimmed === '问好') {
-      this.performGreeting();
-      return true;
-    }
-    if (trimmed === '跳舞') {
-      this.performDance();
-      return true;
-    }
-    if (trimmed === '点头') {
-      this.performNod();
-      return true;
-    }
-    if (trimmed === '摇头') {
-      this.performShakeHead();
-      return true;
-    }
-
-    return false;
   }
 
   // 发送到对话服务

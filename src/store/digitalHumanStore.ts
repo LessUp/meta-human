@@ -1,7 +1,5 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { useChatSessionStore } from './chatSessionStore';
-import { useSystemStore } from './systemStore';
 
 // Named constants
 const RECORDING_TIMEOUT_MS = 30000;
@@ -71,9 +69,6 @@ interface DigitalHumanState {
   setExpressionIntensity: (intensity: number) => void;
   setBehavior: (behavior: BehaviorType) => void;
 
-  // 会话管理
-  initSession: () => void;
-
   // 控制方法
   play: () => void;
   pause: () => void;
@@ -125,12 +120,6 @@ export const useDigitalHumanStore = create<DigitalHumanState>()(
       setExpressionIntensity: (intensity) =>
         set({ expressionIntensity: Math.max(0, Math.min(1, intensity)) }),
       setBehavior: (behavior) => set({ currentBehavior: behavior }),
-
-      // 会话管理
-      initSession: () => {
-        useChatSessionStore.getState().initSession();
-        useSystemStore.getState().resetSystemState();
-      },
 
       // 控制方法
       play: () => {

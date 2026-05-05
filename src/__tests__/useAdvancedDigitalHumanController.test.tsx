@@ -40,16 +40,13 @@ vi.mock('../hooks/useConnectionHealth', () => ({
   }),
 }));
 
-vi.mock('../core/audio', () => ({
+vi.mock('../core/services', () => ({
   asrService: {
     start: mocks.asrStartMock,
     stop: mocks.asrStopMock,
     performGreeting: mocks.asrPerformGreetingMock,
     performDance: mocks.asrPerformDanceMock,
   },
-}));
-
-vi.mock('../core/avatar', () => ({
   digitalHumanEngine: {
     dispose: mocks.digitalHumanDisposeMock,
     pause: mocks.digitalHumanPauseMock,

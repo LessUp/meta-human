@@ -6,6 +6,7 @@ import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { useChatSessionStore } from '../store/chatSessionStore';
 import { useSystemStore } from '../store/systemStore';
 import { TTSService, ASRService } from '../core/audio/audioService';
+import { processVoiceCommand } from '../core/audio/voiceCommandProcessor';
 import { handleDialogueResponse } from '../core/dialogue/dialogueOrchestrator';
 import React from 'react';
 
@@ -515,11 +516,17 @@ describe('ASRService', () => {
     expect(asrService).toBeDefined();
   });
 
-  it('handles cancel mute voice command correctly', () => {
-    asrService = new ASRService({}, mockState, localTts);
+  it('voice command processor handles cancel mute correctly', () => {
+    // Voice command processing is now in voiceCommandProcessor.ts
+    // This test verifies the integration via processVoiceCommand
     useDigitalHumanStore.getState().setMuted(true);
 
-    const matched = (asrService as any).tryLocalCommand('取消静音');
+    const matched = processVoiceCommand('取消静音', {
+      play: () => useDigitalHumanStore.getState().play(),
+      pause: () => useDigitalHumanStore.getState().pause(),
+      reset: () => useDigitalHumanStore.getState().reset(),
+      setMuted: (m: boolean) => useDigitalHumanStore.getState().setMuted(m),
+    });
 
     expect(matched).toBe(true);
     expect(useDigitalHumanStore.getState().isMuted).toBe(false);
@@ -621,7 +628,9 @@ describe('Error throttle and session lifecycle', () => {
 
     const oldSessionId = useChatSessionStore.getState().sessionId;
 
-    useDigitalHumanStore.getState().initSession();
+    // Coordinate multi-store initialization (previously in digitalHumanStore.initSession)
+    useChatSessionStore.getState().initSession();
+    useSystemStore.getState().resetSystemState();
 
     const state = useSystemStore.getState();
     const sessionState = useChatSessionStore.getState();

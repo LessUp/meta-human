@@ -34,7 +34,7 @@ vi.mock('../core/dialogue/chatTransport', () => {
 });
 
 // Mock digitalHumanEngine to avoid store dependency
-vi.mock('../core/avatar', () => ({
+vi.mock('../core/services', () => ({
   digitalHumanEngine: {
     setBehavior: vi.fn(),
     setEmotion: vi.fn(),
@@ -201,19 +201,19 @@ describe('handleDialogueResponse', () => {
   });
 
   it('sets emotion on digitalHumanEngine', async () => {
-    const { digitalHumanEngine } = await import('../core/avatar');
+    const { digitalHumanEngine } = await import('../core/services');
     await handleDialogueResponse({ replyText: 'hi', emotion: 'happy', action: 'idle' });
     expect(digitalHumanEngine.setEmotion).toHaveBeenCalledWith('happy');
   });
 
   it('plays animation for non-idle action', async () => {
-    const { digitalHumanEngine } = await import('../core/avatar');
+    const { digitalHumanEngine } = await import('../core/services');
     await handleDialogueResponse({ replyText: 'hi', emotion: 'neutral', action: 'wave' });
     expect(digitalHumanEngine.playAnimation).toHaveBeenCalledWith('wave');
   });
 
   it('does not play animation for idle action', async () => {
-    const { digitalHumanEngine } = await import('../core/avatar');
+    const { digitalHumanEngine } = await import('../core/services');
     (digitalHumanEngine.playAnimation as ReturnType<typeof vi.fn>).mockClear();
     await handleDialogueResponse({ replyText: 'hi', emotion: 'neutral', action: 'idle' });
     expect(digitalHumanEngine.playAnimation).not.toHaveBeenCalled();
