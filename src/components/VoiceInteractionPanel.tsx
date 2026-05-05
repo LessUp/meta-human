@@ -1,7 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useVoiceInteraction } from '../hooks/useVoiceInteraction';
 import { Mic, MicOff, Volume2, VolumeX, Play } from 'lucide-react';
-import { ttsService, asrService } from '../core/audio';
-import { useDigitalHumanStore } from '../store/digitalHumanStore';
 
 interface VoiceInteractionPanelProps {
   onTranscript: (text: string) => void;
@@ -12,86 +10,16 @@ export default function VoiceInteractionPanel({
   onTranscript,
   onSpeak,
 }: VoiceInteractionPanelProps) {
-  const { isRecording, isMuted, setRecording, toggleMute } = useDigitalHumanStore();
-  const [transcript, setTranscript] = useState('');
-  const [isSupported, setIsSupported] = useState(false);
-  const [volume, setVolume] = useState(0.8);
-  const [pitch, setPitch] = useState(1.0);
-  const [rate, setRate] = useState(1.0);
-  const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
-  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const voice = useVoiceInteraction({
+    onTranscript,
+    onSpeak,
+  });
 
-  // 初始化语音识别和合成
-  useEffect(() => {
-    // 检查浏览器支持
-    const hasSpeechRecognition =
-      'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
-    const hasSpeechSynthesis = 'speechSynthesis' in window;
-
-    setIsSupported(hasSpeechRecognition && hasSpeechSynthesis);
-
-    if (hasSpeechSynthesis) {
-      loadVoices();
-    }
-
-    return () => {
-      asrService.stop();
-    };
-  }, []);
-
-  // 加载语音
-  const loadVoices = () => {
-    const voices = ttsService.getVoices();
-    setAvailableVoices(voices);
-
-    // 优先选择中文语音
-    const chineseVoice = voices.find((v) => v.lang.includes('zh'));
-    if (chineseVoice) {
-      setVoice(chineseVoice);
-    } else if (voices.length > 0) {
-      setVoice(voices[0]);
-    }
-  };
-
-  // 开始/停止录音
-  const toggleRecording = () => {
-    if (!isSupported) return;
-
-    if (isRecording) {
-      asrService.stop();
-      setRecording(false);
-    } else {
-      asrService.start({
-        mode: 'dictation',
-        onResult: (text: string) => {
-          setTranscript(text);
-          onTranscript(text);
-        },
-      });
-    }
-  };
-
-  // 语音合成
-  const speakText = (text: string) => {
-    if (isMuted) return;
-
-    ttsService.speakWithOptions(text, {
-      lang: 'zh-CN',
-      volume,
-      pitch,
-      rate,
-      voiceName: voice?.name,
-    });
-
-    onSpeak?.(text);
-  };
-
-  // 测试语音
   const testVoice = () => {
-    speakText('您好！这是数字人语音交互系统的测试。');
+    voice.speak('您好！这是数字人语音交互系统的测试。');
   };
 
-  if (!isSupported) {
+  if (!voice.isSupported) {
     return (
       <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
         <div className="flex items-center space-x-2 text-yellow-200">
@@ -111,10 +39,10 @@ export default function VoiceInteractionPanel({
         <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">语音交互</h3>
         <div className="flex items-center space-x-2">
           <div
-            className={`w-2 h-2 rounded-full ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-gray-300 dark:bg-gray-600'}`}
+            className={`w-2 h-2 rounded-full ${voice.isRecording ? 'bg-red-500 animate-pulse' : 'bg-gray-300 dark:bg-gray-600'}`}
           ></div>
           <span className="text-sm text-gray-600 dark:text-gray-300">
-            {isRecording ? '录音中' : '待机'}
+            {voice.isRecording ? '录音中' : '待机'}
           </span>
         </div>
       </div>
@@ -123,37 +51,37 @@ export default function VoiceInteractionPanel({
       <div className="space-y-4">
         <div className="flex items-center space-x-4">
           <button
-            onClick={toggleRecording}
-            aria-label={isRecording ? '停止录音' : '开始录音'}
+            onClick={voice.toggleRecording}
+            aria-label={voice.isRecording ? '停止录音' : '开始录音'}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-              isRecording
+              voice.isRecording
                 ? 'bg-red-500 hover:bg-red-600 text-white'
                 : 'bg-blue-500 hover:bg-blue-600 text-white'
             }`}
           >
-            {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
-            <span>{isRecording ? '停止录音' : '开始录音'}</span>
+            {voice.isRecording ? <MicOff size={16} /> : <Mic size={16} />}
+            <span>{voice.isRecording ? '停止录音' : '开始录音'}</span>
           </button>
 
           <button
-            onClick={toggleMute}
-            aria-label={isMuted ? '取消静音' : '静音'}
+            onClick={voice.toggleMute}
+            aria-label={voice.isMuted ? '取消静音' : '静音'}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-              isMuted
+              voice.isMuted
                 ? 'bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200'
                 : 'bg-purple-500 hover:bg-purple-600 text-white'
             }`}
           >
-            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-            <span>{isMuted ? '取消静音' : '静音'}</span>
+            {voice.isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            <span>{voice.isMuted ? '取消静音' : '静音'}</span>
           </button>
         </div>
 
         {/* 识别结果 */}
-        {transcript && (
+        {voice.transcript && (
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
             <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">识别结果:</div>
-            <div className="text-gray-800 dark:text-gray-100">{transcript}</div>
+            <div className="text-gray-800 dark:text-gray-100">{voice.transcript}</div>
           </div>
         )}
       </div>
@@ -178,14 +106,14 @@ export default function VoiceInteractionPanel({
             语音选择
           </label>
           <select
-            value={voice?.name || ''}
+            value={voice.voice?.name || ''}
             onChange={(e) => {
-              const selectedVoice = availableVoices.find((v) => v.name === e.target.value);
-              setVoice(selectedVoice || null);
+              const selectedVoice = voice.availableVoices.find((v) => v.name === e.target.value);
+              voice.setVoice(selectedVoice || null);
             }}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            {availableVoices.map((v) => (
+            {voice.availableVoices.map((v) => (
               <option key={v.name} value={v.name} className="bg-gray-800 text-gray-100">
                 {v.name} ({v.lang})
               </option>
@@ -196,15 +124,15 @@ export default function VoiceInteractionPanel({
         {/* 音量控制 */}
         <div>
           <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
-            音量: {Math.round(volume * 100)}%
+            音量: {Math.round(voice.volume * 100)}%
           </label>
           <input
             type="range"
             min="0"
             max="1"
             step="0.1"
-            value={volume}
-            onChange={(e) => setVolume(parseFloat(e.target.value))}
+            value={voice.volume}
+            onChange={(e) => voice.setVolume(parseFloat(e.target.value))}
             className="w-full"
           />
         </div>
@@ -212,15 +140,15 @@ export default function VoiceInteractionPanel({
         {/* 音调控制 */}
         <div>
           <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
-            音调: {pitch.toFixed(1)}
+            音调: {voice.pitch.toFixed(1)}
           </label>
           <input
             type="range"
             min="0.5"
             max="2"
             step="0.1"
-            value={pitch}
-            onChange={(e) => setPitch(parseFloat(e.target.value))}
+            value={voice.pitch}
+            onChange={(e) => voice.setPitch(parseFloat(e.target.value))}
             className="w-full"
           />
         </div>
@@ -228,15 +156,15 @@ export default function VoiceInteractionPanel({
         {/* 语速控制 */}
         <div>
           <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
-            语速: {rate.toFixed(1)}
+            语速: {voice.rate.toFixed(1)}
           </label>
           <input
             type="range"
             min="0.5"
             max="2"
             step="0.1"
-            value={rate}
-            onChange={(e) => setRate(parseFloat(e.target.value))}
+            value={voice.rate}
+            onChange={(e) => voice.setRate(parseFloat(e.target.value))}
             className="w-full"
           />
         </div>
@@ -256,7 +184,7 @@ export default function VoiceInteractionPanel({
           ].map((text, index) => (
             <button
               key={index}
-              onClick={() => speakText(text)}
+              onClick={() => voice.speak(text)}
               className="px-3 py-2 bg-indigo-100 dark:bg-indigo-500/20 hover:bg-indigo-200 dark:hover:bg-indigo-500/30 text-indigo-700 dark:text-indigo-300 rounded text-sm transition-colors text-left"
             >
               {text}

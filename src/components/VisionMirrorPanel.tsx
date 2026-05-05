@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { visionService } from '../core/vision/visionService';
+import { useVisionMirror } from '../hooks/useVisionMirror';
 import type { UserEmotion } from '../core/vision/visionMapper';
 import { Camera, CameraOff, ScanFace, AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -31,99 +30,34 @@ export default function VisionMirrorPanel({
   onEmotionChange,
   onHeadMotion,
 }: VisionMirrorPanelProps) {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [isCameraOn, setIsCameraOn] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [currentEmotion, setCurrentEmotion] = useState<UserEmotion>('neutral');
-  const [lastMotion, setLastMotion] = useState<string | null>(null);
-  const [fps, setFps] = useState(0);
-
-  // 清理函数
-  useEffect(() => {
-    return () => {
-      visionService.stop();
-    };
-  }, []);
-
-  // 动作检测提示自动消失
-  useEffect(() => {
-    if (lastMotion) {
-      const timer = setTimeout(() => setLastMotion(null), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [lastMotion]);
-
-  // FPS 更新
-  useEffect(() => {
-    if (!isCameraOn) return;
-    const interval = setInterval(() => {
-      setFps(visionService.getFps());
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isCameraOn]);
-
-  // 处理摄像头开关
-  const handleToggleCamera = useCallback(async () => {
-    if (isCameraOn) {
-      visionService.stop();
-      setIsCameraOn(false);
-      setCurrentEmotion('neutral');
-      onEmotionChange('neutral');
-      setLastMotion(null);
-      setFps(0);
-      setError(null);
-    } else {
-      if (videoRef.current) {
-        setIsLoading(true);
-        setError(null);
-
-        const success = await visionService.start(
-          videoRef.current,
-          (emotion) => {
-            setCurrentEmotion(emotion);
-            onEmotionChange(emotion);
-          },
-          (motion) => {
-            setLastMotion(motion);
-            toast.info(`检测到动作: ${motion}`);
-            onHeadMotion?.(motion);
-          },
-        );
-
-        setIsLoading(false);
-
-        if (success) {
-          setIsCameraOn(true);
-          toast.success('摄像头已启动');
-        } else {
-          setError('摄像头启动失败，请检查权限设置');
-          toast.error('摄像头启动失败');
-        }
-      }
-    }
-  }, [isCameraOn, onEmotionChange, onHeadMotion]);
+  const vision = useVisionMirror({
+    onEmotionChange,
+    onHeadMotion: (motion) => {
+      toast.info(`检测到动作: ${motion}`);
+      onHeadMotion?.(motion);
+    },
+  });
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-white">视觉镜像</h3>
         <div className="flex items-center space-x-3">
-          {isCameraOn && fps > 0 && (
-            <span className="text-[10px] text-white/40 font-mono">{fps} FPS</span>
+          {vision.isCameraOn && vision.fps > 0 && (
+            <span className="text-[10px] text-white/40 font-mono">{vision.fps} FPS</span>
           )}
           <div className="flex items-center space-x-2">
             <div
               className={`w-1.5 h-1.5 rounded-full ${
-                isLoading
+                vision.isLoading
                   ? 'bg-yellow-500 animate-pulse'
-                  : isCameraOn
+                  : vision.isCameraOn
                     ? 'bg-red-500 animate-pulse'
                     : 'bg-white/20'
               }`}
             />
             <span className="text-xs text-white/60">
-              {isLoading ? '启动中' : isCameraOn ? 'LIVE' : '离线'}
+              {vision.isLoading ? '启动中' : vision.isCameraOn ? 'LIVE' : '离线'}
             </span>
           </div>
         </div>
@@ -131,7 +65,7 @@ export default function VisionMirrorPanel({
 
       <div className="relative aspect-video bg-black/50 rounded-xl overflow-hidden border border-white/10 shadow-inner">
         {/* 加载状态 */}
-        {isLoading && (
+        {vision.isLoading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 z-10">
             <Loader2 size={32} className="text-blue-400 animate-spin mb-2" />
             <span className="text-xs text-white/60">正在启动摄像头...</span>
@@ -139,15 +73,15 @@ export default function VisionMirrorPanel({
         )}
 
         {/* 错误状态 */}
-        {error && !isLoading && (
+        {vision.error && !vision.isLoading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-900/20 z-10">
             <AlertCircle size={32} className="text-red-400 mb-2" />
-            <span className="text-xs text-red-300 text-center px-4">{error}</span>
+            <span className="text-xs text-red-300 text-center px-4">{vision.error}</span>
           </div>
         )}
 
         {/* 离线状态 */}
-        {!isCameraOn && !isLoading && !error && (
+        {!vision.isCameraOn && !vision.isLoading && !vision.error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-white/20">
             <ScanFace size={48} className="mb-2" />
             <span className="text-xs uppercase tracking-widest">摄像头未开启</span>
@@ -155,21 +89,21 @@ export default function VisionMirrorPanel({
         )}
 
         <video
-          ref={videoRef}
-          className={`w-full h-full object-cover transition-opacity ${isCameraOn ? 'opacity-100' : 'opacity-0'} transform scale-x-[-1]`}
+          ref={vision.videoRef}
+          className={`w-full h-full object-cover transition-opacity ${vision.isCameraOn ? 'opacity-100' : 'opacity-0'} transform scale-x-[-1]`}
           autoPlay
           playsInline
           muted
         />
 
-        {isCameraOn && (
+        {vision.isCameraOn && (
           <>
             <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur rounded text-[10px] text-white/80 border border-white/10">
               AI 追踪中
             </div>
-            {lastMotion && (
+            {vision.lastMotion && (
               <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 bg-blue-500/80 backdrop-blur rounded-full text-xs text-white font-medium animate-fade-in-up">
-                检测到: {lastMotion.toUpperCase()}
+                检测到: {vision.lastMotion.toUpperCase()}
               </div>
             )}
           </>
@@ -179,29 +113,31 @@ export default function VisionMirrorPanel({
       <div className="flex justify-between items-center">
         <div className="text-xs text-white/60">
           检测情感:
-          <span className={`ml-2 font-medium ${EMOTION_COLORS[currentEmotion]}`}>
-            {EMOTION_LABELS[currentEmotion]}
+          <span className={`ml-2 font-medium ${EMOTION_COLORS[vision.currentEmotion]}`}>
+            {EMOTION_LABELS[vision.currentEmotion]}
           </span>
         </div>
 
         <button
-          onClick={handleToggleCamera}
-          disabled={isLoading}
+          onClick={vision.toggleCamera}
+          disabled={vision.isLoading}
           className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-medium transition-all border disabled:opacity-50 disabled:cursor-not-allowed ${
-            isCameraOn
+            vision.isCameraOn
               ? 'bg-red-500/20 text-red-400 border-red-500/50 hover:bg-red-500/30'
               : 'bg-blue-500/20 text-blue-400 border-blue-500/50 hover:bg-blue-500/30'
           }`}
-          aria-label={isCameraOn ? '关闭摄像头' : '开启摄像头'}
+          aria-label={vision.isCameraOn ? '关闭摄像头' : '开启摄像头'}
         >
-          {isLoading ? (
+          {vision.isLoading ? (
             <Loader2 size={14} className="animate-spin" />
-          ) : isCameraOn ? (
+          ) : vision.isCameraOn ? (
             <CameraOff size={14} />
           ) : (
             <Camera size={14} />
           )}
-          <span>{isLoading ? '启动中...' : isCameraOn ? '关闭摄像头' : '开启摄像头'}</span>
+          <span>
+            {vision.isLoading ? '启动中...' : vision.isCameraOn ? '关闭摄像头' : '开启摄像头'}
+          </span>
         </button>
       </div>
     </div>

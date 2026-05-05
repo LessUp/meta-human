@@ -12,7 +12,9 @@ export default function AdvancedDigitalHumanPage() {
     closeSettings,
     handleBehaviorChange,
     handleChatSend,
+    handleEmotionChange,
     handleExpressionChange,
+    handleHeadMotion,
     handleModelLoad,
     handleNewSession,
     handlePlayPause,
@@ -62,6 +64,8 @@ export default function AdvancedDigitalHumanPage() {
         onChatSend={handleChatSend}
         onExpressionChange={handleExpressionChange}
         onBehaviorChange={handleBehaviorChange}
+        onEmotionChange={handleEmotionChange}
+        onHeadMotion={handleHeadMotion}
       />
 
       <ChatDock
