@@ -1,13 +1,12 @@
 import { Settings, X, Sun, Moon } from 'lucide-react';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
-import { digitalHumanEngine } from '../core/avatar';
-import { toast } from 'sonner';
 import { useFocusTrap, useTheme } from '../hooks';
 import ControlPanel from './ControlPanel';
 import ExpressionControlPanel from './ExpressionControlPanel';
 import BehaviorControlPanel from './BehaviorControlPanel';
 import VisionMirrorPanel from './VisionMirrorPanel';
 import VoiceInteractionPanel from './VoiceInteractionPanel';
+import type { UserEmotion } from '../core/vision/visionMapper';
 
 interface SettingsDrawerProps {
   show: boolean;
@@ -23,6 +22,8 @@ interface SettingsDrawerProps {
   onChatSend: (text?: string) => void;
   onExpressionChange: (expression: string, intensity: number) => void;
   onBehaviorChange: (behavior: string, params: Record<string, unknown>) => void;
+  onEmotionChange: (emotion: UserEmotion) => void;
+  onHeadMotion: (motion: 'nod' | 'shakeHead' | 'raiseHand' | 'waveHand') => void;
 }
 
 const TABS = ['basic', 'expression', 'behavior', 'vision', 'voice'] as const;
@@ -41,6 +42,8 @@ export default function SettingsDrawer({
   onChatSend,
   onExpressionChange,
   onBehaviorChange,
+  onEmotionChange,
+  onHeadMotion,
 }: SettingsDrawerProps) {
   const isPlaying = useDigitalHumanStore((s) => s.isPlaying);
   const isRecording = useDigitalHumanStore((s) => s.isRecording);
@@ -147,15 +150,7 @@ export default function SettingsDrawer({
             {activeTab === 'vision' && (
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-gray-400">
                 Vision Mirror Module requires camera access.
-                <VisionMirrorPanel
-                  onEmotionChange={(emotion) => {
-                    digitalHumanEngine.setEmotion(emotion);
-                  }}
-                  onHeadMotion={(motion) => {
-                    digitalHumanEngine.playAnimation(motion);
-                    toast(`Motion Detected: ${motion}`, { icon: '📸' });
-                  }}
-                />
+                <VisionMirrorPanel onEmotionChange={onEmotionChange} onHeadMotion={onHeadMotion} />
               </div>
             )}
             {activeTab === 'voice' && (
