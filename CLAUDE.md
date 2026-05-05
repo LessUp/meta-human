@@ -14,11 +14,11 @@ npm run build:pages  # GitHub Pages 构建
 
 ## 构建模式
 
-| 命令            | 用途                  |
-| --------------- | --------------------- |
-| `build`         | 标准生产构建          |
+| 命令            | 用途                                          |
+| --------------- | --------------------------------------------- |
+| `build`         | 标准生产构建                                  |
 | `build:pages`   | GitHub Pages 部署构建（base: `/meta-human/`） |
-| `build:analyze` | 构建产物分析（Bundle Visualizer） |
+| `build:analyze` | 构建产物分析（Bundle Visualizer）             |
 
 ## 环境要求
 
@@ -40,3 +40,17 @@ npm run build:pages  # GitHub Pages 构建
 3. **路径别名**: 始终使用 `@/` 前缀（如 `@/store/systemStore`）
 4. **Zustand 5**: `set` 函数使用 `replace?: false`（非 `boolean`）
 5. **Tailwind CSS 4**: 使用 `@import 'tailwindcss'` + `@theme` 语法
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues (`LessUp/meta-human`). Uses `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Uses default label vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout. Domain context: `CONTEXT.md` at repo root. ADRs: `docs/adr/`. See `docs/agents/domain.md`.
