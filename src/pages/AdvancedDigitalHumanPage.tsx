@@ -3,15 +3,16 @@ import TopHUD from '@/components/TopHUD';
 import SettingsDrawer from '@/components/SettingsDrawer';
 import ChatDock from '@/components/ChatDock';
 import { useAdvancedDigitalHumanController } from '@/hooks/useAdvancedDigitalHumanController';
+import { useChatStream } from '@/hooks/useChatStream';
+import { useConnectionHealth } from '@/hooks/useConnectionHealth';
 
 export default function AdvancedDigitalHumanPage() {
+  // 控制器 hook（不含聊天流）
   const {
     activeTab,
     autoRotate,
-    chatInput,
     closeSettings,
     handleBehaviorChange,
-    handleChatSend,
     handleEmotionChange,
     handleExpressionChange,
     handleHeadMotion,
@@ -21,15 +22,28 @@ export default function AdvancedDigitalHumanPage() {
     handleReset,
     handleToggleRecording,
     handleVoiceCommand,
-    isChatLoading,
-    reconnect,
     setActiveTab,
-    setChatInput,
     showSettings,
     toggleMute,
     toggleSettings,
     toggleAutoRotate,
+    setConnectionStatus,
+    setError,
+    clearError,
+    sessionId,
   } = useAdvancedDigitalHumanController();
+
+  // 聊天流 hook（直接调用）
+  const { chatInput, setChatInput, isChatLoading, handleChatSend } = useChatStream({
+    sessionId,
+    isMuted: false, // TODO: 从 store 获取
+    onConnectionChange: (status) => setConnectionStatus(status),
+    onClearError: () => clearError(),
+    onError: (msg) => setError(msg),
+  });
+
+  // 连接健康检查
+  const { reconnect } = useConnectionHealth();
 
   return (
     <div className="relative isolate h-[100dvh] min-h-screen w-full overflow-hidden bg-black font-sans text-white selection:bg-blue-500/30">
