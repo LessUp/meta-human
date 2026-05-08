@@ -56,6 +56,41 @@ vi.mock('../core/services', () => ({
     setExpressionIntensity: mocks.digitalHumanSetExpressionIntensityMock,
     setBehavior: mocks.digitalHumanSetBehaviorMock,
   },
+  useEngine: () => ({
+    dispose: mocks.digitalHumanDisposeMock,
+    pause: mocks.digitalHumanPauseMock,
+    play: mocks.digitalHumanPlayMock,
+    reset: mocks.digitalHumanResetMock,
+    setExpression: mocks.digitalHumanSetExpressionMock,
+    setExpressionIntensity: mocks.digitalHumanSetExpressionIntensityMock,
+    setBehavior: mocks.digitalHumanSetBehaviorMock,
+    setEmotion: vi.fn(),
+    playAnimation: vi.fn(),
+  }),
+  useASR: () => ({
+    start: mocks.asrStartMock,
+    stop: mocks.asrStopMock,
+    performGreeting: mocks.asrPerformGreetingMock,
+    performDance: mocks.asrPerformDanceMock,
+  }),
+  useServices: () => ({
+    engine: {
+      dispose: mocks.digitalHumanDisposeMock,
+      pause: mocks.digitalHumanPauseMock,
+      play: mocks.digitalHumanPlayMock,
+      reset: mocks.digitalHumanResetMock,
+      setExpression: mocks.digitalHumanSetExpressionMock,
+      setExpressionIntensity: mocks.digitalHumanSetExpressionIntensityMock,
+      setBehavior: mocks.digitalHumanSetBehaviorMock,
+    },
+    asr: {
+      start: mocks.asrStartMock,
+      stop: mocks.asrStopMock,
+      performGreeting: mocks.asrPerformGreetingMock,
+      performDance: mocks.asrPerformDanceMock,
+    },
+    tts: {},
+  }),
 }));
 
 vi.mock('../core/dialogue/dialogueService', () => ({

@@ -1,140 +1,113 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+/**
+ * 高级数字人控制器 Hook。
+ *
+ * 协调播放控制、会话管理、语音命令等子 hooks。
+ * 注意：聊天流和键盘快捷键已移到各自的位置。
+ */
+
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { useDigitalHumanStore } from '../store/digitalHumanStore';
-import { useChatSessionStore } from '../store/chatSessionStore';
-import { useSystemStore } from '../store/systemStore';
-import { asrService, digitalHumanEngine } from '../core/services';
-import { clearRemoteSession } from '../core/dialogue/dialogueService';
-import { abortPendingTurn } from '../core/dialogue/dialogueOrchestrator';
-import { executeVoiceCommand } from '../lib/voiceCommands';
-import { useChatStream } from './useChatStream';
-import { useConnectionHealth } from './useConnectionHealth';
-import type { UserEmotion } from '../core/vision/visionMapper';
+import { useDigitalHumanStore } from '@/store/digitalHumanStore';
+import { useSystemStore } from '@/store/systemStore';
+import { useEngine, useASR } from '@/core/services';
+import { usePlaybackController } from './usePlaybackController';
+import { useSessionManager } from './useSessionManager';
+import { useVoiceCommandHandler } from './useVoiceCommandHandler';
+import type { UserEmotion } from '@/core/vision/visionMapper';
 
 export function useAdvancedDigitalHumanController() {
-  const { isPlaying, autoRotate, setRecording, toggleMute, toggleAutoRotate } =
-    useDigitalHumanStore();
-  const initChatSession = useChatSessionStore((s) => s.initSession);
-  const resetSystemState = useSystemStore((s) => s.resetSystemState);
-  const sessionId = useChatSessionStore((s) => s.sessionId);
+  // 子 hooks
+  const playback = usePlaybackController();
+  const session = useSessionManager();
+
+  // 直接访问 store
+  const autoRotate = useDigitalHumanStore((s) => s.autoRotate);
+  const toggleAutoRotate = useDigitalHumanStore((s) => s.toggleAutoRotate);
+  const toggleMute = useDigitalHumanStore((s) => s.toggleMute);
+  const setRecording = useDigitalHumanStore((s) => s.setRecording);
   const error = useSystemStore((s) => s.error);
   const clearError = useSystemStore((s) => s.clearError);
   const setConnectionStatus = useSystemStore((s) => s.setConnectionStatus);
   const setError = useSystemStore((s) => s.setError);
+
+  // 服务
+  const engine = useEngine();
+  const asr = useASR();
+
+  // 本地状态
   const [showSettings, setShowSettings] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
-  const { reconnect } = useConnectionHealth();
 
-  const { chatInput, setChatInput, isChatLoading, handleChatSend } = useChatStream({
-    sessionId,
-    isMuted: useDigitalHumanStore.getState().isMuted,
-    onConnectionChange: (status) => setConnectionStatus(status),
-    onClearError: () => clearError(),
-    onError: (msg) => setError(msg),
-  });
-
+  // 错误自动清除
   useEffect(() => {
     if (!error) return;
-
     const id = setTimeout(() => clearError(), 5000);
     return () => clearTimeout(id);
   }, [error, clearError]);
 
+  // 引擎清理
   useEffect(() => {
     return () => {
-      digitalHumanEngine.dispose();
+      engine.dispose();
     };
-  }, []);
+  }, [engine]);
 
+  // 模型加载回调
   const handleModelLoad = useCallback(() => {
-    toast.success('数字人接口已上线');
+    // toast.success('数字人接口已上线');
   }, []);
 
-  const handlePlayPause = useCallback(() => {
-    if (isPlaying) {
-      digitalHumanEngine.pause();
-      toast.info('已暂停');
-    } else {
-      digitalHumanEngine.play();
-      toast.success('已播放');
-    }
-  }, [isPlaying]);
-
-  const handleReset = useCallback(() => {
-    digitalHumanEngine.reset();
-    toast.info('系统已重置');
-  }, []);
-
+  // 录音控制
   const handleToggleRecording = useCallback(() => {
     const isRecording = useDigitalHumanStore.getState().isRecording;
     if (isRecording) {
-      asrService.stop();
+      asr.stop();
       setRecording(false);
       toast.info('录音已停止');
       return;
     }
 
-    const started = asrService.start();
+    const started = asr.start();
     if (started) {
+      setRecording(true);
       toast.success('正在聆听...');
     }
-  }, [setRecording]);
+  }, [asr, setRecording]);
 
-  const handleExpressionChange = useCallback((expression: string, intensity: number) => {
-    digitalHumanEngine.setExpression(expression);
-    digitalHumanEngine.setExpressionIntensity(intensity);
-  }, []);
-
-  const handleBehaviorChange = useCallback((behavior: string, params: Record<string, unknown>) => {
-    digitalHumanEngine.setBehavior(behavior, params);
-  }, []);
-
-  const handleEmotionChange = useCallback((emotion: UserEmotion) => {
-    digitalHumanEngine.setEmotion(emotion);
-  }, []);
-
-  const handleHeadMotion = useCallback((motion: 'nod' | 'shakeHead' | 'raiseHand' | 'waveHand') => {
-    digitalHumanEngine.playAnimation(motion);
-    toast(`Motion Detected: ${motion}`, { icon: '📸' });
-  }, []);
-
-  const handleVoiceCommand = useCallback(
-    (command: string) => {
-      executeVoiceCommand(command, {
-        onGreeting: () => {
-          asrService.performGreeting();
-          toast.success('执行打招呼动作');
-        },
-        onDance: () => {
-          asrService.performDance();
-          toast.success('开始跳舞');
-        },
-        onSpeak: () => {
-          handleChatSend('你好，请自我介绍一下');
-        },
-        onExpression: (expression) => {
-          digitalHumanEngine.setExpression(expression);
-          toast.success(`切换到 ${expression} 表情`);
-        },
-        onDefault: (cmd) => {
-          handleChatSend(cmd);
-        },
-      });
+  // 表情控制
+  const handleExpressionChange = useCallback(
+    (expression: string, intensity: number) => {
+      engine.setExpression(expression);
+      engine.setExpressionIntensity(intensity);
     },
-    [handleChatSend],
+    [engine],
   );
 
-  const handleNewSession = useCallback(() => {
-    const oldSessionId = sessionId;
-    abortPendingTurn();
-    // Coordinate multi-store initialization
-    initChatSession();
-    resetSystemState();
-    setChatInput('');
-    toast.success('已开启新会话');
-    void clearRemoteSession(oldSessionId);
-  }, [sessionId, initChatSession, resetSystemState, setChatInput]);
+  // 行为控制
+  const handleBehaviorChange = useCallback(
+    (behavior: string, params: Record<string, unknown>) => {
+      engine.setBehavior(behavior, params);
+    },
+    [engine],
+  );
 
+  // 情绪控制
+  const handleEmotionChange = useCallback(
+    (emotion: UserEmotion) => {
+      engine.setEmotion(emotion);
+    },
+    [engine],
+  );
+
+  // 头部动作
+  const handleHeadMotion = useCallback(
+    (motion: 'nod' | 'shakeHead' | 'raiseHand' | 'waveHand') => {
+      engine.playAnimation(motion);
+    },
+    [engine],
+  );
+
+  // 设置面板控制
   const toggleSettings = useCallback(() => {
     setShowSettings((prev) => !prev);
   }, []);
@@ -143,122 +116,59 @@ export function useAdvancedDigitalHumanController() {
     setShowSettings(false);
   }, []);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+  // 语音命令处理（需要外部传入 handleChatSend）
+  const { handleVoiceCommand } = useVoiceCommandHandler();
 
-      // Get current state values at event time to avoid stale closures
-      const currentIsMuted = useDigitalHumanStore.getState().isMuted;
-      const currentIsRecording = useDigitalHumanStore.getState().isRecording;
-
-      switch (e.key.toLowerCase()) {
-        case ' ':
-          e.preventDefault();
-          handlePlayPause();
-          break;
-        case 'r':
-          if (!e.ctrlKey && !e.metaKey) handleReset();
-          break;
-        case 'm':
-          toggleMute();
-          // Use the fresh value from getState() for accurate toast
-          toast.info(currentIsMuted ? '已取消静音' : '已静音');
-          break;
-        case 'v':
-          if (currentIsRecording) {
-            asrService.stop();
-            setRecording(false);
-            toast.info('录音已停止');
-          } else {
-            const started = asrService.start();
-            if (started) {
-              toast.success('正在聆听...');
-            }
-          }
-          break;
-        case 's':
-          if (!e.ctrlKey && !e.metaKey) toggleSettings();
-          break;
-        case 'escape':
-          closeSettings();
-          break;
-        case '1':
-          handleVoiceCommand('打招呼');
-          break;
-        case '2':
-          handleVoiceCommand('跳舞');
-          break;
-        case '3':
-          handleVoiceCommand('说话');
-          break;
-        case '4':
-          handleVoiceCommand('表情');
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [
-    closeSettings,
-    handlePlayPause,
-    handleReset,
-    handleVoiceCommand,
-    setRecording,
-    toggleMute,
-    toggleSettings,
-  ]);
-
-  // Memoize the returned object to prevent unnecessary re-renders of consumers
   return useMemo(
     () => ({
+      // 来自子 hooks
+      ...playback,
+      ...session,
+
+      // 本地状态
       activeTab,
       autoRotate,
-      chatInput,
+      showSettings,
+
+      // 回调
       closeSettings,
       handleBehaviorChange,
-      handleChatSend,
       handleEmotionChange,
       handleExpressionChange,
       handleHeadMotion,
       handleModelLoad,
-      handleNewSession,
-      handlePlayPause,
-      handleReset,
       handleToggleRecording,
       handleVoiceCommand,
-      isChatLoading,
-      reconnect,
       setActiveTab,
-      setChatInput,
-      showSettings,
+      toggleAutoRotate,
       toggleMute,
       toggleSettings,
-      toggleAutoRotate,
+
+      // 服务访问（供 useChatStream 使用）
+      setConnectionStatus,
+      setError,
+      clearError,
     }),
     [
+      playback,
+      session,
       activeTab,
       autoRotate,
-      chatInput,
+      showSettings,
       closeSettings,
       handleBehaviorChange,
-      handleChatSend,
       handleEmotionChange,
       handleExpressionChange,
       handleHeadMotion,
       handleModelLoad,
-      handleNewSession,
-      handlePlayPause,
-      handleReset,
       handleToggleRecording,
       handleVoiceCommand,
-      isChatLoading,
-      reconnect,
-      setChatInput,
-      showSettings,
+      toggleAutoRotate,
       toggleMute,
       toggleSettings,
-      toggleAutoRotate,
+      setConnectionStatus,
+      setError,
+      clearError,
     ],
   );
 }

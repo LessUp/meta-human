@@ -1,9 +1,31 @@
 /**
- * Service instantiation and dependency injection.
+ * 服务实例导出。
  *
- * This module is the single place where services are wired to stores.
- * Tests can create their own service instances with test adapters.
+ * 提供两种使用方式：
+ * 1. 推荐方式：通过 ServicesProvider + useServices() hooks
+ * 2. 向后兼容：直接导入全局单例（旧代码可用）
+ *
+ * 注意：测试时应使用 ServicesProvider 注入 mock 服务，
+ * 而不是依赖全局单例。
  */
+
+// 导出新的 Context Provider（推荐）
+export { ServicesProvider } from './ServicesProvider';
+export { ServicesContext } from './servicesContext';
+
+// 导出 hooks（推荐）
+export { useServices, useEngine, useTTS, useASR } from './serviceHooks';
+
+// 导出工厂函数（供测试使用）
+export { createServices, type Services } from './createServices';
+
+// 导出类型（供外部使用）
+export type { StateAdapter } from './avatar/DigitalHumanEngine';
+export type { TTSCallbacks, ASRStateAdapter } from './audio/audioService';
+
+// ============================================================================
+// 向后兼容：全局单例
+// ============================================================================
 
 import { DigitalHumanEngine, type StateAdapter } from './avatar/DigitalHumanEngine';
 import {
@@ -16,14 +38,10 @@ import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { useChatSessionStore } from '../store/chatSessionStore';
 import { useSystemStore } from '../store/systemStore';
 
-// ============================================================================
-// Store Adapters
-// ============================================================================
-
 /**
- * Create a StateAdapter backed by the Zustand digitalHumanStore.
+ * @deprecated 使用 useServices() hooks 替代
  */
-export function createDigitalHumanStoreAdapter(): StateAdapter {
+function createDigitalHumanStoreAdapter(): StateAdapter {
   return {
     play: () => useDigitalHumanStore.getState().play(),
     pause: () => useDigitalHumanStore.getState().pause(),
@@ -38,9 +56,9 @@ export function createDigitalHumanStoreAdapter(): StateAdapter {
 }
 
 /**
- * Create TTS callbacks backed by Zustand stores.
+ * @deprecated 使用 useServices() hooks 替代
  */
-export function createTTSCallbacksFromStores(): TTSCallbacks {
+function createTTSCallbacksFromStores(): TTSCallbacks {
   return {
     onSpeakStart: () => {
       useDigitalHumanStore.getState().setSpeaking(true);
@@ -57,9 +75,9 @@ export function createTTSCallbacksFromStores(): TTSCallbacks {
 }
 
 /**
- * Create an ASRStateAdapter backed by Zustand stores.
+ * @deprecated 使用 useServices() hooks 替代
  */
-export function createASRStateAdapterFromStores(): ASRStateAdapter {
+function createASRStateAdapterFromStores(): ASRStateAdapter {
   return {
     setRecording: (r) => useDigitalHumanStore.getState().setRecording(r),
     setBehavior: (b) =>
@@ -97,47 +115,17 @@ export function createASRStateAdapterFromStores(): ASRStateAdapter {
   };
 }
 
-// ============================================================================
-// Service Factories
-// ============================================================================
+/**
+ * @deprecated 使用 useServices() hooks 替代
+ */
+export const digitalHumanEngine = new DigitalHumanEngine(createDigitalHumanStoreAdapter());
 
 /**
- * Create a DigitalHumanEngine with store-backed adapter.
+ * @deprecated 使用 useServices() hooks 替代
  */
-export function createDigitalHumanEngine(): DigitalHumanEngine {
-  return new DigitalHumanEngine(createDigitalHumanStoreAdapter());
-}
+export const ttsService = new TTSService({}, createTTSCallbacksFromStores());
 
 /**
- * Create TTSService with store-backed callbacks.
+ * @deprecated 使用 useServices() hooks 替代
  */
-export function createTTSService(): TTSService {
-  return new TTSService({}, createTTSCallbacksFromStores());
-}
-
-/**
- * Create ASRService with store-backed adapter and TTS dependency.
- */
-export function createASRService(tts: TTSService): ASRService {
-  return new ASRService({}, createASRStateAdapterFromStores(), tts);
-}
-
-// ============================================================================
-// Default Singletons (for production use)
-// ============================================================================
-
-/**
- * Pre-configured DigitalHumanEngine using default store adapters.
- * Use this for production. Tests should create their own instances.
- */
-export const digitalHumanEngine = createDigitalHumanEngine();
-
-/**
- * Pre-configured TTSService using default store callbacks.
- */
-export const ttsService = createTTSService();
-
-/**
- * Pre-configured ASRService using default store adapter.
- */
-export const asrService = createASRService(ttsService);
+export const asrService = new ASRService({}, createASRStateAdapterFromStores(), ttsService);
