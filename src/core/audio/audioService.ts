@@ -1,6 +1,6 @@
 import { runDialogueTurn } from '../dialogue/dialogueOrchestrator';
 import { loggers } from '../../lib/logger';
-import { processVoiceCommand } from './voiceCommandProcessor';
+import { VoiceCommandExecutor } from '../voiceCommand';
 
 const logger = loggers.audio;
 
@@ -330,8 +330,8 @@ export class ASRService {
   private onResultCallback: ((text: string) => void) | null = null;
   private mode: 'command' | 'dictation' = 'command';
   private pendingRestartTimer: ReturnType<typeof setTimeout> | null = null;
-  private presetTimers: ReturnType<typeof setTimeout>[] = [];
   private recognitionGeneration = 0;
+  private voiceCommandExecutor: VoiceCommandExecutor;
 
   constructor(config: ASRConfig = {}, state: ASRStateAdapter, tts: TTSService) {
     this.isSupportedFlag =
@@ -345,6 +345,32 @@ export class ASRService {
     };
     this.state = state;
     this.tts = tts;
+
+    // Initialize voice command executor
+    this.voiceCommandExecutor = new VoiceCommandExecutor({
+      systemControls: {
+        play: () => this.state.play(),
+        pause: () => this.state.pause(),
+        reset: () => this.state.reset(),
+        setMuted: (m) => this.state.setMuted(m),
+      },
+      avatarControls: {
+        setEmotion: (e) => this.state.setEmotion(e),
+        setExpression: (e) => this.state.setExpression(e),
+        setAnimation: (a) => this.state.setAnimation(a),
+        setBehavior: (b) => this.state.setBehavior(b),
+        speak: (text) => {
+          void this.tts.speak(text).catch((err: unknown) => {
+            logger.warn('Speech failed:', err instanceof Error ? err.message : err);
+          });
+        },
+      },
+      onUnhandled: async (text: string) => {
+        if (this.sendToBackend) {
+          await this.sendToDialogueService(text);
+        }
+      },
+    });
 
     if (this.isSupportedFlag && typeof window !== 'undefined') {
       this.initRecognition();
@@ -462,12 +488,6 @@ export class ASRService {
     return errorMessages[error] || `语音识别失败: ${error}`;
   }
 
-  private speakSafely(text: string): void {
-    void this.tts.speak(text).catch((error: unknown) => {
-      logger.warn('Speech failed safely:', error instanceof Error ? error.message : error);
-    });
-  }
-
   start(options?: ASRStartOptions): boolean {
     if (!this.isSupportedFlag) {
       logger.warn('浏览器不支持语音识别');
@@ -516,7 +536,7 @@ export class ASRService {
   }
 
   stop(): void {
-    this.clearPresetTimers();
+    this.voiceCommandExecutor.abort();
     if (this.pendingRestartTimer) {
       clearTimeout(this.pendingRestartTimer);
       this.pendingRestartTimer = null;
@@ -541,7 +561,7 @@ export class ASRService {
    */
   dispose(): void {
     // Clear all preset timers first to prevent memory leaks
-    this.clearPresetTimers();
+    this.voiceCommandExecutor.abort();
 
     // Stop recognition and cleanup
     this.stop();
@@ -562,7 +582,7 @@ export class ASRService {
   }
 
   abort(): void {
-    this.clearPresetTimers();
+    this.voiceCommandExecutor.abort();
     if (this.pendingRestartTimer) {
       clearTimeout(this.pendingRestartTimer);
       this.pendingRestartTimer = null;
@@ -578,29 +598,9 @@ export class ASRService {
     this.state.setBehavior('idle');
   }
 
-  // 处理语音输入 - 整合本地命令和后端对话
+  // 处理语音输入 - 使用 VoiceCommandExecutor
   private async processVoiceInput(text: string): Promise<void> {
-    // 首先检查是否是本地命令
-    const isLocalCommand = processVoiceCommand(
-      text,
-      {
-        play: () => this.state.play(),
-        pause: () => this.state.pause(),
-        reset: () => this.state.reset(),
-        setMuted: (m) => this.state.setMuted(m),
-      },
-      {
-        greeting: () => this.performGreeting(),
-        dance: () => this.performDance(),
-        nod: () => this.performNod(),
-        shakeHead: () => this.performShakeHead(),
-      },
-    );
-
-    // 如果不是本地命令且启用了后端发送，则发送到对话服务
-    if (!isLocalCommand && this.sendToBackend) {
-      await this.sendToDialogueService(text);
-    }
+    this.voiceCommandExecutor.execute(text);
   }
 
   // 发送到对话服务
@@ -629,68 +629,23 @@ export class ASRService {
     }
   }
 
-  private clearPresetTimers(): void {
-    this.presetTimers.forEach(clearTimeout);
-    this.presetTimers = [];
-  }
-
-  private schedulePresetReset(fn: () => void, delay: number): void {
-    this.presetTimers.push(setTimeout(fn, delay));
-  }
-
-  // 预设动作：打招呼
+  // 预设动作：打招呼（委托给 VoiceCommandExecutor）
   performGreeting(): void {
-    this.state.setEmotion('happy');
-    this.state.setExpression('smile');
-    this.state.setBehavior('greeting');
-    this.state.setAnimation('wave');
-
-    this.speakSafely('您好！很高兴见到您！有什么可以帮助您的吗？');
-
-    this.schedulePresetReset(() => {
-      this.state.setEmotion('neutral');
-      this.state.setExpression('neutral');
-      this.state.setBehavior('idle');
-      this.state.setAnimation('idle');
-    }, 4000);
+    this.voiceCommandExecutor.presetActions.greeting();
   }
 
-  // 预设动作：跳舞
+  // 预设动作：跳舞（委托给 VoiceCommandExecutor）
   performDance(): void {
-    this.state.setAnimation('dance');
-    this.state.setBehavior('excited');
-    this.state.setEmotion('happy');
-
-    this.speakSafely('让我为您跳一支舞！');
-
-    this.schedulePresetReset(() => {
-      this.state.setAnimation('idle');
-      this.state.setBehavior('idle');
-      this.state.setEmotion('neutral');
-    }, 6000);
+    this.voiceCommandExecutor.presetActions.dance();
   }
 
-  // 预设动作：点头
+  // 预设动作：点头（委托给 VoiceCommandExecutor）
   performNod(): void {
-    this.state.setAnimation('nod');
-    this.state.setBehavior('listening');
-
-    this.speakSafely('好的，我明白了。');
-
-    this.schedulePresetReset(() => {
-      this.state.setAnimation('idle');
-      this.state.setBehavior('idle');
-    }, 2000);
+    this.voiceCommandExecutor.presetActions.nod();
   }
 
-  // 预设动作：摇头
+  // 预设动作：摇头（委托给 VoiceCommandExecutor）
   performShakeHead(): void {
-    this.state.setAnimation('shakeHead');
-
-    this.speakSafely('不太确定呢。');
-
-    this.schedulePresetReset(() => {
-      this.state.setAnimation('idle');
-    }, 2000);
+    this.voiceCommandExecutor.presetActions.shakeHead();
   }
 }

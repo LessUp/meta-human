@@ -1,4 +1,7 @@
 /**
+ * @deprecated Use parseVoiceCommand from '@/core/voiceCommand' instead.
+ * This file is kept for backward compatibility and will be removed in a future version.
+ *
  * Voice command processor.
  *
  * Pure logic for mapping voice commands to actions.
@@ -34,10 +37,8 @@ export interface VoiceCommandResult {
 }
 
 /**
+ * @deprecated Use parseVoiceCommand from '@/core/voiceCommand/parser' instead.
  * Parse a voice command string and return the corresponding action.
- *
- * @param command - The voice input text (already lowercased/trimmed)
- * @returns The parsed result with action and matched status
  */
 export function parseVoiceCommand(command: string): VoiceCommandResult {
   const trimmed = command.trim().toLowerCase();
@@ -77,12 +78,8 @@ export function parseVoiceCommand(command: string): VoiceCommandResult {
 }
 
 /**
+ * @deprecated Use VoiceCommandExecutor instead.
  * Execute a voice command action against a state adapter.
- *
- * @param action - The action to execute
- * @param state - The state adapter to mutate
- * @param presets - Optional preset action handlers (for greeting, dance, etc.)
- * @returns true if the action was executed
  */
 export function executeVoiceCommandAction(
   action: VoiceCommandAction,
@@ -154,12 +151,8 @@ export function executeVoiceCommandAction(
 }
 
 /**
+ * @deprecated Use VoiceCommandExecutor.execute() instead.
  * Parse and execute a voice command in one step.
- *
- * @param command - The voice input text
- * @param state - The state adapter for system commands
- * @param presets - Optional preset action handlers
- * @returns true if a command was matched and executed
  */
 export function processVoiceCommand(
   command: string,

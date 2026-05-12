@@ -2,7 +2,7 @@
  * 高级数字人控制器 Hook。
  *
  * 协调播放控制、会话管理、语音命令等子 hooks。
- * 注意：聊天流和键盘快捷键已移到各自的位置。
+ * 注意：聊天流已移到页面层，键盘快捷键在此处理。
  */
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
@@ -37,6 +37,37 @@ export function useAdvancedDigitalHumanController() {
   // 本地状态
   const [showSettings, setShowSettings] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
+
+  // 设置面板控制
+  const toggleSettings = useCallback(() => {
+    setShowSettings((prev) => !prev);
+  }, []);
+
+  const closeSettings = useCallback(() => {
+    setShowSettings(false);
+  }, []);
+
+  // 键盘快捷键处理
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 忽略输入框中的按键
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      switch (e.key.toLowerCase()) {
+        case 's':
+          if (!e.ctrlKey && !e.metaKey) {
+            toggleSettings();
+          }
+          break;
+        case 'escape':
+          closeSettings();
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleSettings, closeSettings]);
 
   // 错误自动清除
   useEffect(() => {
@@ -106,15 +137,6 @@ export function useAdvancedDigitalHumanController() {
     },
     [engine],
   );
-
-  // 设置面板控制
-  const toggleSettings = useCallback(() => {
-    setShowSettings((prev) => !prev);
-  }, []);
-
-  const closeSettings = useCallback(() => {
-    setShowSettings(false);
-  }, []);
 
   // 语音命令处理（需要外部传入 handleChatSend）
   const { handleVoiceCommand } = useVoiceCommandHandler();

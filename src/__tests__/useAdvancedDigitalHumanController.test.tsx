@@ -73,6 +73,9 @@ vi.mock('../core/services', () => ({
     performGreeting: mocks.asrPerformGreetingMock,
     performDance: mocks.asrPerformDanceMock,
   }),
+  useTTS: () => ({
+    speak: vi.fn(),
+  }),
   useServices: () => ({
     engine: {
       dispose: mocks.digitalHumanDisposeMock,
@@ -152,14 +155,14 @@ describe('useAdvancedDigitalHumanController', () => {
     });
   });
 
-  it('starts a new session, clears draft input, and clears remote session', () => {
+  it('starts a new session and clears remote session', () => {
     const { result } = renderHook(() => useAdvancedDigitalHumanController());
 
     act(() => {
       result.current.handleNewSession();
     });
 
-    expect(mocks.setChatInputMock).toHaveBeenCalledWith('');
+    // Note: setChatInput('') is now handled at the page level, not the controller
     expect(mocks.clearRemoteSessionMock).toHaveBeenCalledWith('session_old');
     expect(useChatSessionStore.getState().sessionId).not.toBe('session_old');
     expect(mocks.toastSuccessMock).toHaveBeenCalledWith('已开启新会话');

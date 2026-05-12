@@ -1,18 +1,24 @@
-import { digitalHumanEngine, asrService, ttsService } from '../core/services';
+/**
+ * @deprecated Use VoiceCommandExecutor from '@/core/voiceCommand' instead.
+ * This file is kept for backward compatibility and will be removed in a future version.
+ */
+
+import { asrService, ttsService, digitalHumanEngine } from '../core/services';
+import type { ExpressionType } from '../store/digitalHumanStore';
 
 export interface VoiceCommandHandlers {
   onGreeting?: () => void;
   onDance?: () => void;
   onSpeak?: (text: string) => void;
-  onExpression?: (expression: string) => void;
+  onExpression?: (expression: ExpressionType) => void;
   onDefault?: (command: string) => void;
 }
 
 let expressionResetTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
+ * @deprecated Use VoiceCommandExecutor.execute() instead.
  * Execute a voice command with customizable handlers.
- * This centralizes voice command logic to avoid duplication.
  */
 export function executeVoiceCommand(command: string, handlers: VoiceCommandHandlers = {}): void {
   // Clear any pending reset timer to avoid stale callbacks
@@ -32,7 +38,7 @@ export function executeVoiceCommand(command: string, handlers: VoiceCommandHandl
       handlers.onSpeak?.('您好！有什么可以帮助您的吗？');
       break;
     case '表情': {
-      const expressions = ['smile', 'surprise', 'laugh'] as const;
+      const expressions: ExpressionType[] = ['smile', 'surprise', 'laugh'];
       const randomExpr = expressions[Math.floor(Math.random() * expressions.length)];
       handlers.onExpression?.(randomExpr);
       // Reset to neutral after 3 seconds
@@ -48,6 +54,7 @@ export function executeVoiceCommand(command: string, handlers: VoiceCommandHandl
 }
 
 /**
+ * @deprecated Use VoiceCommandExecutor with explicit dependencies instead.
  * Default voice command handlers for the main digital human page.
  */
 export function getDefaultVoiceCommandHandlers(): VoiceCommandHandlers {
