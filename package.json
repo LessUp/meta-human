@@ -7,9 +7,11 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "build:pages": "tsc && vite build --mode pages && bash scripts/build-pages.sh",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-
     "serve": "vite preview --host 0.0.0.0 --port 3000",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -61,6 +63,7 @@
     "typescript-eslint": "^8.33.0",
     "vite": "^6.3.5",
     "vite-plugin-compression2": "^2.0.0",
+    "vitepress": "^1.6.4",
     "vitest": "^3.2.4"
   },
   "keywords": [
