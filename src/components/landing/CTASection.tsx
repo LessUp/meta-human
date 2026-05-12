@@ -55,8 +55,8 @@ export default function CTASection() {
   const footerLinks =
     lang === 'zh-CN'
       ? [
-          { label: '文档', href: 'docs/' },
-          { label: 'API 参考', href: 'docs/api/' },
+          { label: '文档', href: 'docs/zh/' },
+          { label: 'API 参考', href: 'docs/zh/api/' },
           { label: '更新日志', href: 'CHANGELOG.md' },
           {
             label: '问题反馈',
@@ -70,8 +70,8 @@ export default function CTASection() {
           },
         ]
       : [
-          { label: 'Docs', href: 'docs/' },
-          { label: 'API', href: 'docs/api/' },
+          { label: 'Docs', href: 'docs/en/' },
+          { label: 'API', href: 'docs/en/api/' },
           { label: 'Changelog', href: 'CHANGELOG.md' },
           { label: 'Issues', href: 'https://github.com/LessUp/meta-human/issues', external: true },
           {

@@ -119,7 +119,7 @@ export default function HeroSection() {
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
               <a
-                href="https://lessup.github.io/meta-human/docs/"
+                href={`./docs/${lang === 'zh-CN' ? 'zh' : 'en'}/`}
                 className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-semibold rounded-xl border border-white/10 transition-all hover:border-white/20"
               >
                 <BookOpen className="w-5 h-5" />

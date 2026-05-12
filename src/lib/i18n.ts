@@ -8,6 +8,14 @@
 
 export type Language = 'zh-CN' | 'en';
 
+// 有效的语言列表
+export const VALID_LANGUAGES: Language[] = ['zh-CN', 'en'];
+
+// 语言验证辅助函数
+export function isValidLanguage(lang: string): lang is Language {
+  return VALID_LANGUAGES.includes(lang as Language);
+}
+
 // 语言包定义
 const translations = {
   'zh-CN': {
@@ -230,34 +238,23 @@ const translations = {
 };
 
 // 获取当前语言
+// 优先级：URL 参数 > localStorage > 浏览器语言
 export function getCurrentLanguage(): Language {
-  // 优先从 HTML 标签读取（由 index.html 中的脚本设置）
-  const htmlLang =
-    document.documentElement.lang || document.documentElement.getAttribute('data-lang');
-  if (htmlLang === 'en') return 'en';
-  if (htmlLang === 'zh-CN' || htmlLang?.startsWith('zh')) return 'zh-CN';
-
-  // 从 localStorage 读取
-  const stored = localStorage.getItem('preferred-lang') as Language | null;
-  if (stored === 'en' || stored === 'zh-CN') return stored;
-
-  // 从 URL 参数读取
+  // 1. URL 参数（最高优先级，允许显式覆盖）
   const params = new URLSearchParams(window.location.search);
   const urlLang = params.get('lang');
   if (urlLang === 'en') return 'en';
   if (urlLang === 'zh') return 'zh-CN';
 
-  // 从 window 全局变量读取（由 index.html 中的脚本设置）
-  if (
-    typeof window !== 'undefined' &&
-    (window as unknown as { __INITIAL_LANG__?: string }).__INITIAL_LANG__
-  ) {
-    const initialLang = (window as unknown as { __INITIAL_LANG__: string }).__INITIAL_LANG__;
-    if (initialLang === 'en') return 'en';
-    if (initialLang === 'zh-CN') return 'zh-CN';
-  }
+  // 2. localStorage（用户偏好）
+  const stored = localStorage.getItem('preferred-lang') as Language | null;
+  if (stored === 'en' || stored === 'zh-CN') return stored;
 
-  // 默认中文
+  // 3. 浏览器语言
+  const browserLang = navigator.language || '';
+  if (browserLang.startsWith('zh')) return 'zh-CN';
+
+  // 4. 默认中文
   return 'zh-CN';
 }
 

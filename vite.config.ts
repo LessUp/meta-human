@@ -1,7 +1,29 @@
-import { defineConfig } from 'vite';
+import { defineConfig, Plugin, ResolvedConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
+
+/**
+ * HTML 转换插件：替换模板变量
+ * 将 ${BASE_URL} 替换为完整的部署 URL
+ */
+function htmlTransformPlugin(): Plugin {
+  let config: ResolvedConfig;
+
+  return {
+    name: 'html-transform',
+    configResolved(resolvedConfig) {
+      config = resolvedConfig;
+    },
+    transformIndexHtml(html) {
+      // 根据构建 base 判断是否为 GitHub Pages 部署
+      const isPages = config.base === '/meta-human/';
+      const baseUrl = isPages ? 'https://lessup.github.io/meta-human/' : 'http://localhost:5173/';
+
+      return html.replace(/\$\{BASE_URL\}/g, baseUrl);
+    },
+  };
+}
 
 export default defineConfig(({ mode }) => {
   const isProduction = mode === 'production' || mode === 'pages';
@@ -28,6 +50,7 @@ export default defineConfig(({ mode }) => {
         removeConsole: isProduction,
       }),
       tailwindcss(),
+      htmlTransformPlugin(),
     ].filter(Boolean),
 
     resolve: {
@@ -53,7 +76,8 @@ export default defineConfig(({ mode }) => {
               if (/[\\/]node_modules[\\/](react|react-dom)[\\/]/.test(id)) return 'react-vendor';
               if (/[\\/]node_modules[\\/](three|@react-three)[\\/]/.test(id)) return 'three-vendor';
               if (/[\\/]node_modules[\\/]zustand[\\/]/.test(id)) return 'state-vendor';
-              if (/[\\/]node_modules[\\/](lucide-react|sonner|clsx|tailwind-merge)[\\/]/.test(id)) return 'ui-vendor';
+              if (/[\\/]node_modules[\\/](lucide-react|sonner|clsx|tailwind-merge)[\\/]/.test(id))
+                return 'ui-vendor';
               if (/[\\/]node_modules[\\/]react-router-dom[\\/]/.test(id)) return 'router-vendor';
             }
           },
@@ -74,7 +98,5 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       port: 4173,
     },
-
   };
-
 });
