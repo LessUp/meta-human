@@ -1,13 +1,13 @@
 /**
  * 语音命令处理 Hook。
  *
- * 处理语音命令的解析和执行。
+ * 使用 VoiceCommandExecutor 处理语音命令。
  */
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
-import { useEngine, useASR } from '@/core/services';
-import { executeVoiceCommand } from '@/lib/voiceCommands';
+import { useEngine, useASR, useTTS } from '@/core/services';
+import { VoiceCommandExecutor } from '@/core/voiceCommand';
 
 interface UseVoiceCommandHandlerOptions {
   onChatSend?: (text: string) => void;
@@ -16,32 +16,70 @@ interface UseVoiceCommandHandlerOptions {
 export function useVoiceCommandHandler(options: UseVoiceCommandHandlerOptions = {}) {
   const engine = useEngine();
   const asr = useASR();
+  const tts = useTTS();
   const { onChatSend } = options;
+
+  // Create executor once, not on every call
+  const executor = useMemo(
+    () =>
+      new VoiceCommandExecutor({
+        systemControls: {
+          play: () => engine.play(),
+          pause: () => engine.pause(),
+          reset: () => engine.reset(),
+          setMuted: () => {
+            /* Not applicable in this context */
+          },
+        },
+        avatarControls: {
+          setEmotion: (e) => engine.setEmotion(e),
+          setExpression: (e) => engine.setExpression(e),
+          setAnimation: (a) => engine.playAnimation(a),
+          setBehavior: (b) => engine.setBehavior(b),
+          speak: (text) => {
+            void tts.speak(text).catch(() => undefined);
+          },
+        },
+        onUnhandled: (text) => {
+          onChatSend?.(text);
+        },
+      }),
+    [engine, tts, onChatSend],
+  );
 
   const handleVoiceCommand = useCallback(
     (command: string) => {
-      executeVoiceCommand(command, {
-        onGreeting: () => {
-          asr.performGreeting();
-          toast.success('执行打招呼动作');
-        },
-        onDance: () => {
-          asr.performDance();
-          toast.success('开始跳舞');
-        },
-        onSpeak: () => {
-          onChatSend?.('你好，请自我介绍一下');
-        },
-        onExpression: (expression) => {
-          engine.setExpression(expression);
-          toast.success(`切换到 ${expression} 表情`);
-        },
-        onDefault: (cmd) => {
-          onChatSend?.(cmd);
-        },
-      });
+      const handled = executor.execute(command);
+
+      if (!handled) {
+        // Command was not recognized, already handled by onUnhandled
+        return;
+      }
+
+      // Show toast notifications for specific commands
+      const result = executor.parse(command);
+      if (result.action) {
+        switch (result.action.type) {
+          case 'greeting':
+            asr.performGreeting();
+            toast.success('执行打招呼动作');
+            break;
+          case 'dance':
+            asr.performDance();
+            toast.success('开始跳舞');
+            break;
+          case 'expression':
+            toast.success(`切换到 ${result.action.expression} 表情`);
+            break;
+          case 'speak':
+            toast.success('开始说话');
+            break;
+          default:
+            break;
+        }
+      }
     },
-    [engine, asr, onChatSend],
+    [executor, asr],
   );
 
   return {
