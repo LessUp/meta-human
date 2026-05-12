@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" dir="ltr">
+<html lang="zh-CN" dir="ltr">
   <head>
     <!-- 基础元数据 -->
     <meta charset="UTF-8" />
@@ -13,11 +13,13 @@
     <!-- 描述和关键词 -->
     <meta
       name="description"
-      content="MetaHuman Engine - Browser-native 3D digital human engine with voice, vision, and dialogue capabilities. Zero-config, offline-ready, production-grade."
+      content="MetaHuman Engine - 开源 3D 数字人交互引擎，支持语音、视觉和对话能力。零配置，离线可用，生产级品质。"
+      data-i18n-meta="description"
     />
     <meta
       name="keywords"
-      content="digital human, 3D avatar, AI, voice interaction, computer vision, WebGL, Three.js, React, TypeScript"
+      content="digital human, 3D avatar, AI, voice interaction, computer vision, WebGL, Three.js, React, TypeScript, 数字人, 3D形象, 人工智能, 语音交互, 计算机视觉"
+      data-i18n-meta="keywords"
     />
     <meta name="author" content="LessUp" />
     <meta name="robots" content="index, follow" />
@@ -25,10 +27,11 @@
     <!-- 开放图谱 / Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="MetaHuman Engine" />
-    <meta property="og:title" content="MetaHuman Engine - 3D Digital Human Platform" />
+    <meta property="og:title" content="MetaHuman Engine - 3D数字人交互引擎" data-i18n-meta="og:title" />
     <meta
       property="og:description"
-      content="Browser-native 3D digital human engine with voice, vision, and dialogue capabilities"
+      content="浏览器原生的 3D 数字人引擎，集成语音、视觉、对话能力。零配置，离线可用，生产级。"
+      data-i18n-meta="og:description"
     />
     <meta property="og:url" content="https://lessup.github.io/meta-human/" />
     <meta property="og:image" content="https://lessup.github.io/meta-human/og-image.png" />
@@ -51,7 +54,7 @@
     <!-- iOS Safari -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="MetaHuman" />
+    <meta name="apple-mobile-web-app-title" content="MetaHuman" data-i18n-meta="apple:title" />
 
     <!-- Windows -->
     <meta name="msapplication-TileColor" content="#6366f1" />
@@ -117,6 +120,36 @@
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https: wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
     />
+
+    <!-- 语言检测 - 必须在其他脚本之前执行 -->
+    <script>
+      (function () {
+        // 语言优先级：URL参数 > localStorage > 浏览器语言
+        const params = new URLSearchParams(window.location.search);
+        const urlLang = params.get('lang');
+        const storedLang = localStorage.getItem('preferred-lang');
+        const browserLang = navigator.language || navigator.userLanguage || '';
+
+        let lang = 'zh-CN';
+        if (urlLang === 'en' || urlLang === 'zh') {
+          lang = urlLang === 'en' ? 'en' : 'zh-CN';
+        } else if (storedLang) {
+          lang = storedLang;
+        } else if (/^en/i.test(browserLang)) {
+          lang = 'en';
+        }
+
+        // 设置 HTML lang 属性
+        document.documentElement.lang = lang;
+        document.documentElement.setAttribute('data-lang', lang);
+
+        // 存储用户偏好
+        localStorage.setItem('preferred-lang', lang);
+
+        // 存储到 window 供 React 应用读取
+        window.__INITIAL_LANG__ = lang;
+      })();
+    </script>
 
     <!-- 性能优化脚本 -->
     <script>
@@ -236,7 +269,7 @@
       }
     </style>
 
-    <title>MetaHuman Engine - 开源 3D 数字人交互引擎</title>
+    <title data-i18n-meta="title">MetaHuman Engine - 开源 3D 数字人交互引擎</title>
   </head>
   <body>
     <!-- 加载屏幕 -->

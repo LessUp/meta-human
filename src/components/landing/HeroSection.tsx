@@ -1,44 +1,47 @@
 import { Link } from 'react-router-dom';
 import { Play, BookOpen, ArrowRight, Sparkles, Zap, Shield } from 'lucide-react';
-
-const highlights = [
-  { icon: Sparkles, label: '零配置启动' },
-  { icon: Zap, label: '离线可用' },
-  { icon: Shield, label: '生产级品质' },
-];
+import { useI18n } from '@/hooks/useI18n';
 
 // 预计算粒子位置，避免 Math.random() 导致每次渲染不一致（hydration 抖动）
 const PARTICLES = [
-  { left: '8%',  top: '12%', delay: '0s',    duration: '2.8s' },
-  { left: '23%', top: '5%',  delay: '0.4s',  duration: '3.5s' },
-  { left: '41%', top: '18%', delay: '1.1s',  duration: '2.2s' },
-  { left: '67%', top: '8%',  delay: '0.7s',  duration: '4.0s' },
-  { left: '85%', top: '22%', delay: '1.8s',  duration: '3.1s' },
-  { left: '92%', top: '45%', delay: '0.3s',  duration: '2.5s' },
-  { left: '78%', top: '62%', delay: '2.2s',  duration: '3.8s' },
-  { left: '55%', top: '78%', delay: '0.9s',  duration: '2.9s' },
-  { left: '31%', top: '85%', delay: '1.5s',  duration: '4.2s' },
-  { left: '12%', top: '68%', delay: '0.6s',  duration: '3.3s' },
-  { left: '4%',  top: '40%', delay: '2.0s',  duration: '2.7s' },
-  { left: '19%', top: '55%', delay: '1.3s',  duration: '3.6s' },
-  { left: '48%', top: '35%', delay: '0.2s',  duration: '2.4s' },
-  { left: '73%', top: '28%', delay: '1.7s',  duration: '4.1s' },
-  { left: '88%', top: '72%', delay: '0.8s',  duration: '3.0s' },
-  { left: '62%', top: '90%', delay: '2.5s',  duration: '2.6s' },
-  { left: '35%', top: '48%', delay: '1.0s',  duration: '3.9s' },
-  { left: '16%', top: '32%', delay: '0.5s',  duration: '2.3s' },
-  { left: '94%', top: '15%', delay: '1.9s',  duration: '4.3s' },
-  { left: '50%', top: '60%', delay: '0.1s',  duration: '3.2s' },
+  { left: '8%', top: '12%', delay: '0s', duration: '2.8s' },
+  { left: '23%', top: '5%', delay: '0.4s', duration: '3.5s' },
+  { left: '41%', top: '18%', delay: '1.1s', duration: '2.2s' },
+  { left: '67%', top: '8%', delay: '0.7s', duration: '4.0s' },
+  { left: '85%', top: '22%', delay: '1.8s', duration: '3.1s' },
+  { left: '92%', top: '45%', delay: '0.3s', duration: '2.5s' },
+  { left: '78%', top: '62%', delay: '2.2s', duration: '3.8s' },
+  { left: '55%', top: '78%', delay: '0.9s', duration: '2.9s' },
+  { left: '31%', top: '85%', delay: '1.5s', duration: '4.2s' },
+  { left: '12%', top: '68%', delay: '0.6s', duration: '3.3s' },
+  { left: '4%', top: '40%', delay: '2.0s', duration: '2.7s' },
+  { left: '19%', top: '55%', delay: '1.3s', duration: '3.6s' },
+  { left: '48%', top: '35%', delay: '0.2s', duration: '2.4s' },
+  { left: '73%', top: '28%', delay: '1.7s', duration: '4.1s' },
+  { left: '88%', top: '72%', delay: '0.8s', duration: '3.0s' },
+  { left: '62%', top: '90%', delay: '2.5s', duration: '2.6s' },
+  { left: '35%', top: '48%', delay: '1.0s', duration: '3.9s' },
+  { left: '16%', top: '32%', delay: '0.5s', duration: '2.3s' },
+  { left: '94%', top: '15%', delay: '1.9s', duration: '4.3s' },
+  { left: '50%', top: '60%', delay: '0.1s', duration: '3.2s' },
 ];
 
 export default function HeroSection() {
+  const { t, lang } = useI18n();
+
+  const highlights = [
+    { icon: Sparkles, label: t('hero.highlight.config') },
+    { icon: Zap, label: t('hero.highlight.offline') },
+    { icon: Shield, label: t('hero.highlight.quality') },
+  ];
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-gradient-to-b from-black via-[#0a0a1a] to-black" />
-      
+
       {/* Grid Pattern */}
-      <div 
+      <div
         className="absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage: `linear-gradient(rgba(99, 102, 241, 0.5) 1px, transparent 1px),
@@ -46,11 +49,11 @@ export default function HeroSection() {
           backgroundSize: '60px 60px',
         }}
       />
-      
+
       {/* Radial Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(800px,100vw)] h-[min(800px,100vh)] bg-blue-600/10 rounded-full blur-[120px]" />
       <div className="absolute top-1/4 right-1/4 w-[min(400px,50vw)] h-[min(400px,50vh)] bg-purple-600/10 rounded-full blur-[100px]" />
-      
+
       {/* Floating Particles - 固定预计算位置，防止 hydration 抖动 */}
       <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
         {PARTICLES.map((p, i) => (
@@ -75,22 +78,34 @@ export default function HeroSection() {
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm mb-6">
               <Sparkles className="w-4 h-4" />
-              <span>开源 3D 数字人引擎 v1.0</span>
+              <span>{t('hero.badge')}</span>
             </div>
 
             {/* Main Heading */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-              让 AI 拥有
-              <br />
-              <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                实时交互的数字身体
-              </span>
+              {lang === 'zh-CN' ? (
+                <>
+                  让 AI 拥有
+                  <br />
+                  <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                    {t('hero.titleHighlight')}
+                  </span>
+                </>
+              ) : (
+                <>
+                  Give AI a
+                  <br />
+                  <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                    {t('hero.titleHighlight')}
+                  </span>
+                </>
+              )}
             </h1>
 
             {/* Subtitle */}
             <p className="mx-auto mb-8 max-w-2xl text-lg text-gray-400 sm:text-xl lg:mx-0 lg:max-w-xl">
-              浏览器原生的 3D 数字人交互引擎，支持语音、视觉、对话能力。
-              <span className="text-gray-300">零配置启动，离线可用，生产级品质。</span>
+              {t('hero.subtitle')}
+              <span className="text-gray-300">{t('hero.subtitleHighlight')}</span>
             </p>
 
             {/* CTA Buttons */}
@@ -100,7 +115,7 @@ export default function HeroSection() {
                 className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all hover:shadow-xl hover:shadow-blue-600/20 hover:-translate-y-0.5"
               >
                 <Play className="w-5 h-5" />
-                立即体验
+                {t('hero.cta.try')}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
               <a
@@ -108,7 +123,7 @@ export default function HeroSection() {
                 className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-semibold rounded-xl border border-white/10 transition-all hover:border-white/20"
               >
                 <BookOpen className="w-5 h-5" />
-                查看文档
+                {t('hero.cta.docs')}
               </a>
             </div>
 
@@ -129,7 +144,7 @@ export default function HeroSection() {
             <div className="relative mx-auto aspect-square w-full max-w-[22rem] sm:max-w-lg">
               {/* Outer Glow Ring */}
               <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 blur-2xl" />
-              
+
               {/* Card Container */}
               <div className="relative h-full rounded-3xl overflow-hidden border border-white/10 bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm">
                 {/* Top Bar */}
@@ -138,7 +153,7 @@ export default function HeroSection() {
                   <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
                   <div className="w-3 h-3 rounded-full bg-green-500/80" />
                   <div className="flex-1 text-center text-xs text-gray-500 font-mono">
-                    MetaHuman Engine Preview
+                    {t('hero.preview.title')}
                   </div>
                 </div>
 
@@ -151,12 +166,18 @@ export default function HeroSection() {
                         <Sparkles className="w-10 h-10 text-blue-300" />
                       </div>
                     </div>
-                    
+
                     {/* Orbiting Elements */}
-                    <div className="absolute inset-0 animate-spin" style={{ animationDuration: '20s' }}>
+                    <div
+                      className="absolute inset-0 animate-spin"
+                      style={{ animationDuration: '20s' }}
+                    >
                       <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-blue-400 rounded-full blur-sm" />
                     </div>
-                    <div className="absolute inset-0 animate-spin" style={{ animationDuration: '15s', animationDirection: 'reverse' }}>
+                    <div
+                      className="absolute inset-0 animate-spin"
+                      style={{ animationDuration: '15s', animationDirection: 'reverse' }}
+                    >
                       <div className="absolute top-1/2 -right-2 -translate-y-1/2 w-3 h-3 bg-purple-400 rounded-full blur-sm" />
                     </div>
                   </div>
@@ -169,17 +190,19 @@ export default function HeroSection() {
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center">
                       <Zap className="w-4 h-4 text-white" />
                     </div>
-                    <div className="flex-1 text-sm text-gray-400">输入消息与数字人互动...</div>
+                    <div className="flex-1 text-sm text-gray-400">
+                      {t('hero.preview.placeholder')}
+                    </div>
                     <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
                       <ArrowRight className="w-4 h-4 text-gray-400" />
                     </div>
                   </div>
-                  
+
                   {/* Status Bar */}
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                      <span>系统已连接</span>
+                      <span>{t('hero.preview.connected')}</span>
                     </div>
                     <div>Three.js | WebGL 2.0</div>
                   </div>
@@ -194,15 +217,17 @@ export default function HeroSection() {
             {/* Floating Stats Cards */}
             <div className="absolute left-0 top-1/4 hidden xl:block">
               <div className="p-3 rounded-xl bg-black/60 backdrop-blur border border-white/10">
-                <div className="text-2xl font-bold text-white">60<span className="text-blue-400">fps</span></div>
-                <div className="text-xs text-gray-400">流畅渲染</div>
+                <div className="text-2xl font-bold text-white">
+                  60<span className="text-blue-400">fps</span>
+                </div>
+                <div className="text-xs text-gray-400">{t('hero.stats.fps')}</div>
               </div>
             </div>
-            
+
             <div className="absolute right-0 bottom-1/3 hidden xl:block">
               <div className="p-3 rounded-xl bg-black/60 backdrop-blur border border-white/10">
                 <div className="text-2xl font-bold text-white">468</div>
-                <div className="text-xs text-gray-400">面部关键点</div>
+                <div className="text-xs text-gray-400">{t('hero.stats.landmarks')}</div>
               </div>
             </div>
           </div>
@@ -211,7 +236,7 @@ export default function HeroSection() {
 
       {/* Scroll Indicator */}
       <div className="absolute bottom-8 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 text-gray-500 md:flex">
-        <span className="text-xs">向下滚动了解更多</span>
+        <span className="text-xs">{t('hero.scrollHint')}</span>
         <div className="w-6 h-10 rounded-full border-2 border-white/20 flex items-start justify-center p-1">
           <div className="w-1.5 h-3 bg-blue-400 rounded-full animate-bounce" />
         </div>

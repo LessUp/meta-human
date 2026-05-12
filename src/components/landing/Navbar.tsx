@@ -1,17 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, Menu, X, Github, Play } from 'lucide-react';
-
-const navLinks = [
-  { label: '功能', href: '#features' },
-  { label: '技术', href: '#tech-stack' },
-  { label: '快速开始', href: '#quickstart' },
-  { label: '文档', href: 'docs/', external: true },
-];
+import { Activity, Menu, X, Github, Play, Globe } from 'lucide-react';
+import { useI18n } from '@/hooks/useI18n';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { t, lang, toggleLang } = useI18n();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -31,12 +26,17 @@ export default function Navbar() {
     setIsMobileMenuOpen(false);
   };
 
+  const navLinks = [
+    { label: t('nav.features'), href: '#features' },
+    { label: t('nav.tech'), href: '#tech-stack' },
+    { label: t('nav.quickstart'), href: '#quickstart' },
+    { label: t('nav.docs'), href: 'docs/', external: true },
+  ];
+
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
-          ? 'bg-black/80 backdrop-blur-lg border-b border-white/10'
-          : 'bg-transparent'
+        isScrolled ? 'bg-black/80 backdrop-blur-lg border-b border-white/10' : 'bg-transparent'
       }`}
     >
       <div className="landing-shell">
@@ -47,9 +47,7 @@ export default function Navbar() {
               <Activity className="w-6 h-6 text-blue-400 group-hover:text-blue-300 transition-colors" />
               <div className="absolute inset-0 bg-blue-400/20 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
-            <span className="text-lg font-semibold text-white tracking-tight">
-              MetaHuman
-            </span>
+            <span className="text-lg font-semibold text-white tracking-tight">MetaHuman</span>
             <span className="hidden sm:inline-flex text-xs bg-blue-500/20 px-2 py-0.5 rounded text-blue-300 border border-blue-500/30">
               ENGINE
             </span>
@@ -74,11 +72,11 @@ export default function Navbar() {
                 >
                   {link.label}
                 </button>
-              )
+              ),
             )}
           </div>
 
-          {/* CTA Buttons */}
+          {/* CTA Buttons + Language Switch */}
           <div className="hidden md:flex items-center gap-3">
             <a
               href="https://github.com/LessUp/meta-human"
@@ -89,12 +87,24 @@ export default function Navbar() {
             >
               <Github className="w-5 h-5" />
             </a>
+
+            {/* Language Switch */}
+            <button
+              onClick={toggleLang}
+              className="flex items-center gap-1.5 px-2 py-1.5 text-sm text-gray-400 hover:text-white transition-colors rounded-md hover:bg-white/5"
+              aria-label={lang === 'zh-CN' ? 'Switch to English' : '切换到中文'}
+              title={lang === 'zh-CN' ? 'Switch to English' : 'Switch to 中文'}
+            >
+              <Globe className="w-4 h-4" />
+              <span>{lang === 'zh-CN' ? 'EN' : '中文'}</span>
+            </button>
+
             <Link
               to="/app"
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-all hover:shadow-lg hover:shadow-blue-600/20"
             >
               <Play className="w-4 h-4" />
-              立即体验
+              {t('nav.tryNow')}
             </Link>
           </div>
 
@@ -135,7 +145,7 @@ export default function Navbar() {
               >
                 {link.label}
               </button>
-            )
+            ),
           )}
           <div className="pt-3 border-t border-white/10 flex items-center gap-3">
             <a
@@ -147,13 +157,24 @@ export default function Navbar() {
               <Github className="w-5 h-5" />
               <span>GitHub</span>
             </a>
+            {/* Mobile Language Switch */}
+            <button
+              onClick={() => {
+                toggleLang();
+                setIsMobileMenuOpen(false);
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-300 hover:text-white transition-colors"
+            >
+              <Globe className="w-4 h-4" />
+              <span>{lang === 'zh-CN' ? 'Switch to English' : '切换到中文'}</span>
+            </button>
             <Link
               to="/app"
               className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               <Play className="w-4 h-4" />
-              立即体验
+              {t('nav.tryNow')}
             </Link>
           </div>
         </div>

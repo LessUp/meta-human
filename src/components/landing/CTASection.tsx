@@ -1,7 +1,86 @@
 import { Link } from 'react-router-dom';
 import { Play, Github, ArrowRight, Download, Code2, Terminal } from 'lucide-react';
+import { useI18n } from '@/hooks/useI18n';
 
 export default function CTASection() {
+  const { t, lang } = useI18n();
+
+  const featureCards =
+    lang === 'zh-CN'
+      ? [
+          {
+            icon: Download,
+            title: '多种安装方式',
+            desc: 'Git Clone、Docker、Vite 模板',
+          },
+          {
+            icon: Code2,
+            title: '完整 TypeScript 支持',
+            desc: '类型安全，智能提示',
+          },
+          {
+            icon: Terminal,
+            title: '命令行工具',
+            desc: '脚手架快速创建项目',
+          },
+          {
+            icon: Play,
+            title: '在线演示',
+            desc: '无需安装，浏览器即用',
+          },
+        ]
+      : [
+          {
+            icon: Download,
+            title: 'Multiple Install Methods',
+            desc: 'Git Clone, Docker, Vite Template',
+          },
+          {
+            icon: Code2,
+            title: 'Full TypeScript Support',
+            desc: 'Type safety with IntelliSense',
+          },
+          {
+            icon: Terminal,
+            title: 'CLI Tools',
+            desc: 'Quick project scaffolding',
+          },
+          {
+            icon: Play,
+            title: 'Live Demo',
+            desc: 'No installation, use in browser',
+          },
+        ];
+
+  const footerLinks =
+    lang === 'zh-CN'
+      ? [
+          { label: '文档', href: 'docs/' },
+          { label: 'API 参考', href: 'docs/api/' },
+          { label: '更新日志', href: 'CHANGELOG.md' },
+          {
+            label: '问题反馈',
+            href: 'https://github.com/LessUp/meta-human/issues',
+            external: true,
+          },
+          {
+            label: '讨论区',
+            href: 'https://github.com/LessUp/meta-human/discussions',
+            external: true,
+          },
+        ]
+      : [
+          { label: 'Docs', href: 'docs/' },
+          { label: 'API', href: 'docs/api/' },
+          { label: 'Changelog', href: 'CHANGELOG.md' },
+          { label: 'Issues', href: 'https://github.com/LessUp/meta-human/issues', external: true },
+          {
+            label: 'Discussions',
+            href: 'https://github.com/LessUp/meta-human/discussions',
+            external: true,
+          },
+        ];
+
   return (
     <section id="quickstart" className="relative overflow-hidden py-24 bg-black">
       {/* Background */}
@@ -14,12 +93,8 @@ export default function CTASection() {
         <div className="landing-center max-w-5xl grid gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-start">
           {/* Left: CTA Content */}
           <div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-              准备好开始了吗？
-            </h2>
-            <p className="text-lg text-gray-400 mb-8">
-              无论是个人项目还是企业应用，MetaHuman Engine 都能帮你快速构建下一代 AI 交互体验。
-            </p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">{t('cta.title')}</h2>
+            <p className="text-lg text-gray-400 mb-8">{t('cta.subtitle')}</p>
 
             {/* Quick Install */}
             <div className="p-4 rounded-xl bg-[#0d1117] border border-white/10 mb-6">
@@ -32,7 +107,8 @@ export default function CTASection() {
                 </div>
               </div>
               <code className="block overflow-x-auto whitespace-pre-wrap break-words text-sm font-mono text-gray-300">
-                <span className="text-gray-500">$</span> git clone https://github.com/LessUp/meta-human.git
+                <span className="text-gray-500">$</span> git clone
+                https://github.com/LessUp/meta-human.git
                 <br />
                 <span className="text-gray-500">$</span> cd meta-human && npm install
                 <br />
@@ -47,7 +123,7 @@ export default function CTASection() {
                 className="group inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-blue-600/20"
               >
                 <Play className="w-5 h-5" />
-                立即体验
+                {t('cta.button')}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
               <a
@@ -64,28 +140,7 @@ export default function CTASection() {
 
           {/* Right: Feature Cards */}
           <div className="grid sm:grid-cols-2 gap-4">
-            {[
-              {
-                icon: Download,
-                title: '多种安装方式',
-                desc: 'Git Clone、Docker、Vite 模板',
-              },
-              {
-                icon: Code2,
-                title: '完整 TypeScript 支持',
-                desc: '类型安全，智能提示',
-              },
-              {
-                icon: Terminal,
-                title: '命令行工具',
-                desc: '脚手架快速创建项目',
-              },
-              {
-                icon: Play,
-                title: '在线演示',
-                desc: '无需安装，浏览器即用',
-              },
-            ].map((item) => (
+            {featureCards.map((item) => (
               <div
                 key={item.title}
                 className="h-full rounded-xl border border-white/5 bg-white/[0.02] p-5 transition-colors hover:border-white/10"
@@ -101,31 +156,17 @@ export default function CTASection() {
         {/* Bottom: Links */}
         <div className="mt-16 pt-8 border-t border-white/10">
           <div className="flex flex-wrap justify-center gap-4 text-sm sm:gap-8">
-            <a href="docs/" className="text-gray-400 hover:text-white transition-colors">
-              文档
-            </a>
-            <a href="docs/api/" className="text-gray-400 hover:text-white transition-colors">
-              API 参考
-            </a>
-            <a href="CHANGELOG.md" className="text-gray-400 hover:text-white transition-colors">
-              更新日志
-            </a>
-            <a
-              href="https://github.com/LessUp/meta-human/issues"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              问题反馈
-            </a>
-            <a
-              href="https://github.com/LessUp/meta-human/discussions"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              讨论区
-            </a>
+            {footerLinks.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                target={link.external ? '_blank' : undefined}
+                rel={link.external ? 'noopener noreferrer' : undefined}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                {link.label}
+              </a>
+            ))}
           </div>
         </div>
       </div>

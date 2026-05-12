@@ -1,5 +1,6 @@
 import { Activity, Github, Twitter, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useI18n } from '@/hooks/useI18n';
 
 type FooterLink = {
   label: string;
@@ -9,38 +10,86 @@ type FooterLink = {
   isAnchor?: boolean;
 };
 
-const footerLinks = {
-  product: {
-    title: '产品',
-    links: [
-      { label: '在线体验', href: '/app', isRoute: true },
-      { label: '功能特性', href: '#features', isAnchor: true },
-      { label: '技术架构', href: '#tech-stack', isAnchor: true },
-      { label: '更新日志', href: 'CHANGELOG.md' },
-    ] as FooterLink[],
-  },
-  resources: {
-    title: '资源',
-    links: [
-      { label: '快速开始', href: 'docs/' },
-      { label: 'API 文档', href: 'docs/api/' },
-      { label: '架构设计', href: 'docs/architecture/' },
-      { label: '贡献指南', href: 'docs/contributing/' },
-    ] as FooterLink[],
-  },
-  community: {
-    title: '社区',
-    links: [
-      { label: 'GitHub', href: 'https://github.com/LessUp/meta-human', external: true },
-      { label: '讨论区', href: 'https://github.com/LessUp/meta-human/discussions', external: true },
-      { label: '问题反馈', href: 'https://github.com/LessUp/meta-human/issues', external: true },
-      { label: 'Twitter', href: 'https://x.com/LessUpHQ', external: true },
-    ] as FooterLink[],
-  },
-};
-
 export default function Footer() {
+  const { t, lang } = useI18n();
   const currentYear = new Date().getFullYear();
+
+  const footerLinks =
+    lang === 'zh-CN'
+      ? {
+          product: {
+            title: '产品',
+            links: [
+              { label: '在线体验', href: '/app', isRoute: true },
+              { label: '功能特性', href: '#features', isAnchor: true },
+              { label: '技术架构', href: '#tech-stack', isAnchor: true },
+              { label: '更新日志', href: 'CHANGELOG.md' },
+            ] as FooterLink[],
+          },
+          resources: {
+            title: '资源',
+            links: [
+              { label: '快速开始', href: 'docs/' },
+              { label: 'API 文档', href: 'docs/api/' },
+              { label: '架构设计', href: 'docs/architecture/' },
+              { label: '贡献指南', href: 'docs/contributing/' },
+            ] as FooterLink[],
+          },
+          community: {
+            title: '社区',
+            links: [
+              { label: 'GitHub', href: 'https://github.com/LessUp/meta-human', external: true },
+              {
+                label: '讨论区',
+                href: 'https://github.com/LessUp/meta-human/discussions',
+                external: true,
+              },
+              {
+                label: '问题反馈',
+                href: 'https://github.com/LessUp/meta-human/issues',
+                external: true,
+              },
+              { label: 'Twitter', href: 'https://x.com/LessUpHQ', external: true },
+            ] as FooterLink[],
+          },
+        }
+      : {
+          product: {
+            title: 'Product',
+            links: [
+              { label: 'Live Demo', href: '/app', isRoute: true },
+              { label: 'Features', href: '#features', isAnchor: true },
+              { label: 'Technology', href: '#tech-stack', isAnchor: true },
+              { label: 'Changelog', href: 'CHANGELOG.md' },
+            ] as FooterLink[],
+          },
+          resources: {
+            title: 'Resources',
+            links: [
+              { label: 'Quick Start', href: 'docs/' },
+              { label: 'API Docs', href: 'docs/api/' },
+              { label: 'Architecture', href: 'docs/architecture/' },
+              { label: 'Contributing', href: 'docs/contributing/' },
+            ] as FooterLink[],
+          },
+          community: {
+            title: 'Community',
+            links: [
+              { label: 'GitHub', href: 'https://github.com/LessUp/meta-human', external: true },
+              {
+                label: 'Discussions',
+                href: 'https://github.com/LessUp/meta-human/discussions',
+                external: true,
+              },
+              {
+                label: 'Issues',
+                href: 'https://github.com/LessUp/meta-human/issues',
+                external: true,
+              },
+              { label: 'Twitter', href: 'https://x.com/LessUpHQ', external: true },
+            ] as FooterLink[],
+          },
+        };
 
   const handleAnchorClick = (e: React.MouseEvent, href: string) => {
     e.preventDefault();
@@ -62,7 +111,11 @@ export default function Footer() {
               <Activity className="w-6 h-6 text-blue-400" />
               <span className="text-lg font-semibold text-white">MetaHuman</span>
             </Link>
-            <p className="text-sm text-gray-500 mb-4">浏览器原生的 3D 数字人交互引擎</p>
+            <p className="text-sm text-gray-500 mb-4">
+              {lang === 'zh-CN'
+                ? '浏览器原生的 3D 数字人交互引擎'
+                : 'Browser-native 3D Digital Human Engine'}
+            </p>
             <div className="flex items-center gap-3">
               <a
                 href="https://github.com/LessUp/meta-human"
@@ -134,11 +187,20 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-center text-sm text-gray-600 sm:text-left">
-            © {currentYear} LessUp. Open source under MIT License.
+            {t('footer.copyright', { year: String(currentYear) })}
           </p>
           <p className="flex items-center justify-center gap-1 text-center text-sm text-gray-600 sm:justify-end sm:text-right">
-            Built with <Heart className="w-4 h-4 text-red-500 fill-red-500" /> to make digital
-            humans accessible
+            {lang === 'zh-CN' ? (
+              <>
+                用 <Heart className="w-4 h-4 text-red-500 fill-red-500" />{' '}
+                打造，让每个人都能拥有自己的数字人
+              </>
+            ) : (
+              <>
+                Built with <Heart className="w-4 h-4 text-red-500 fill-red-500" /> to make digital
+                humans accessible
+              </>
+            )}
           </p>
         </div>
       </div>
