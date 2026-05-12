@@ -1,55 +1,72 @@
-import { 
+import { useI18n } from '@/hooks/useI18n';
+import {
   ReactLogo,
   ThreeJsIcon,
   TypeScriptIcon,
   ViteIcon,
   TailwindIcon,
-  ZustandIcon
+  ZustandIcon,
 } from './icons';
 
-const techLayers = [
-  {
-    title: 'UI 层',
-    description: 'React 18 + TypeScript 构建现代化界面',
-    items: [
-      { name: 'React', icon: ReactLogo, color: '#61DAFB' },
-      { name: 'TypeScript', icon: TypeScriptIcon, color: '#3178C6' },
-      { name: 'Tailwind', icon: TailwindIcon, color: '#06B6D4' },
-    ],
-  },
-  {
-    title: '3D 渲染层',
-    description: 'Three.js + React Three Fiber 实现实时 3D',
-    items: [
-      { name: 'Three.js', icon: ThreeJsIcon, color: '#ffffff' },
-      { name: 'React Three Fiber', icon: ReactLogo, color: '#61DAFB' },
-      { name: 'Drei', icon: ThreeJsIcon, color: '#ffffff' },
-    ],
-  },
-  {
-    title: '状态管理',
-    description: 'Zustand 轻量状态管理，高性能更新',
-    items: [
-      { name: 'Zustand', icon: ZustandIcon, color: '#FFAA00' },
-    ],
-  },
-  {
-    title: '构建工具',
-    description: 'Vite 5 极速开发体验',
-    items: [
-      { name: 'Vite', icon: ViteIcon, color: '#646CFF' },
-    ],
-  },
-];
-
-const browserApis = [
-  { name: 'WebGL 2.0', desc: '硬件加速 3D 渲染' },
-  { name: 'Web Speech API', desc: '语音识别与合成' },
-  { name: 'MediaPipe', desc: '本地视觉处理' },
-  { name: 'WebSocket', desc: '实时双向通信' },
-];
-
 export default function TechStackSection() {
+  const { t, lang } = useI18n();
+
+  const techLayers = [
+    {
+      title: lang === 'zh-CN' ? 'UI 层' : 'UI Layer',
+      description:
+        lang === 'zh-CN'
+          ? 'React 18 + TypeScript 构建现代化界面'
+          : 'React 18 + TypeScript for modern interfaces',
+      items: [
+        { name: 'React', icon: ReactLogo, color: '#61DAFB' },
+        { name: 'TypeScript', icon: TypeScriptIcon, color: '#3178C6' },
+        { name: 'Tailwind', icon: TailwindIcon, color: '#06B6D4' },
+      ],
+    },
+    {
+      title: lang === 'zh-CN' ? '3D 渲染层' : '3D Rendering',
+      description:
+        lang === 'zh-CN'
+          ? 'Three.js + React Three Fiber 实现实时 3D'
+          : 'Three.js + React Three Fiber for real-time 3D',
+      items: [
+        { name: 'Three.js', icon: ThreeJsIcon, color: '#ffffff' },
+        { name: 'React Three Fiber', icon: ReactLogo, color: '#61DAFB' },
+        { name: 'Drei', icon: ThreeJsIcon, color: '#ffffff' },
+      ],
+    },
+    {
+      title: lang === 'zh-CN' ? '状态管理' : 'State Management',
+      description:
+        lang === 'zh-CN'
+          ? 'Zustand 轻量状态管理，高性能更新'
+          : 'Zustand lightweight state management',
+      items: [{ name: 'Zustand', icon: ZustandIcon, color: '#FFAA00' }],
+    },
+    {
+      title: lang === 'zh-CN' ? '构建工具' : 'Build Tools',
+      description:
+        lang === 'zh-CN' ? 'Vite 5 极速开发体验' : 'Vite 5 for fast development experience',
+      items: [{ name: 'Vite', icon: ViteIcon, color: '#646CFF' }],
+    },
+  ];
+
+  const browserApis =
+    lang === 'zh-CN'
+      ? [
+          { name: 'WebGL 2.0', desc: '硬件加速 3D 渲染' },
+          { name: 'Web Speech API', desc: '语音识别与合成' },
+          { name: 'MediaPipe', desc: '本地视觉处理' },
+          { name: 'WebSocket', desc: '实时双向通信' },
+        ]
+      : [
+          { name: 'WebGL 2.0', desc: 'Hardware-accelerated 3D' },
+          { name: 'Web Speech API', desc: 'Speech recognition/synthesis' },
+          { name: 'MediaPipe', desc: 'Local vision processing' },
+          { name: 'WebSocket', desc: 'Real-time bidirectional comms' },
+        ];
+
   return (
     <section id="tech-stack" className="relative overflow-hidden py-24 bg-[#050508]">
       {/* Background Gradient */}
@@ -60,11 +77,11 @@ export default function TechStackSection() {
       <div className="landing-shell relative z-10">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-            现代技术栈
-          </h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">{t('tech.title')}</h2>
           <p className="text-lg text-gray-400">
-            基于业界领先的开源技术构建，确保性能、可维护性和扩展性
+            {lang === 'zh-CN'
+              ? '基于业界领先的开源技术构建，确保性能、可维护性和扩展性'
+              : 'Built on industry-leading open-source technologies for performance, maintainability and scalability.'}
           </p>
         </div>
 
@@ -79,14 +96,14 @@ export default function TechStackSection() {
                   {index < techLayers.length - 1 && (
                     <div className="absolute left-8 top-full w-px h-5 bg-gradient-to-b from-white/20 to-transparent" />
                   )}
-                  
+
                   <div className="flex flex-col gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-colors hover:border-white/10 sm:flex-row sm:items-center sm:gap-8">
                     {/* Layer Title */}
                     <div className="sm:w-56 flex-shrink-0">
                       <h3 className="text-white font-semibold">{layer.title}</h3>
                       <p className="text-xs text-gray-500 mt-0.5">{layer.description}</p>
                     </div>
-                    
+
                     {/* Tech Items */}
                     <div className="flex flex-1 flex-wrap gap-3">
                       {layer.items.map((item) => (
@@ -117,7 +134,7 @@ export default function TechStackSection() {
         <div className="landing-center max-w-5xl grid gap-8 lg:grid-cols-2 lg:items-start [&>*]:min-w-0">
           <div>
             <h3 className="text-xl font-semibold text-white mb-6">
-              浏览器原生 API
+              {lang === 'zh-CN' ? '浏览器原生 API' : 'Browser Native APIs'}
             </h3>
             <div className="space-y-3">
               {browserApis.map((api) => (
@@ -135,7 +152,7 @@ export default function TechStackSection() {
           {/* Code Example */}
           <div>
             <h3 className="text-xl font-semibold text-white mb-6">
-              极简 API 设计
+              {lang === 'zh-CN' ? '极简 API 设计' : 'Minimal API Design'}
             </h3>
             <div className="rounded-xl overflow-hidden bg-[#0d1117] border border-white/10 max-w-full">
               <div className="flex items-center gap-2 px-4 py-2 bg-[#161b22] border-b border-white/5">
@@ -148,12 +165,12 @@ export default function TechStackSection() {
                 <code>{`import { digitalHumanEngine } from '@core/avatar';
 import { dialogueService } from '@core/dialogue';
 
-// 发送消息并驱动数字人响应
+// ${lang === 'zh-CN' ? '发送消息并驱动数字人响应' : 'Send message and drive avatar response'}
 const response = await dialogueService.send(
-  '你好，请介绍一下自己'
+  '${lang === 'zh-CN' ? '你好，请介绍一下自己' : 'Hello, please introduce yourself'}'
 );
 
-// 数字人自动执行对应的情绪和动作
+// ${lang === 'zh-CN' ? '数字人自动执行对应的情绪和动作' : 'Avatar automatically executes emotion and action'}
 digitalHumanEngine.perform({
   emotion: response.emotion,
   expression: response.expression,

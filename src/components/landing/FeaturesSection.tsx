@@ -1,72 +1,89 @@
-import { 
-  Box, 
-  Mic, 
-  Eye, 
-  Brain, 
-  Monitor, 
-  Cpu,
-  ArrowRight
-} from 'lucide-react';
-
-const features = [
-  {
-    icon: Box,
-    title: '3D 虚拟形象',
-    description: '支持 GLB/GLTF 模型加载，内置程序化生成数字人。情绪驱动的表情映射，骨骼动画系统支持挥手、打招呼、点头等动作。',
-    color: 'from-blue-500 to-cyan-500',
-    bgColor: 'bg-blue-500/10',
-    borderColor: 'border-blue-500/20',
-  },
-  {
-    icon: Mic,
-    title: '语音交互',
-    description: '集成 Edge TTS 实现自然语音合成，浏览器原生语音识别 API 支持实时对话。智能静音检测，自动暂停 TTS 当用户说话。',
-    color: 'from-purple-500 to-pink-500',
-    bgColor: 'bg-purple-500/10',
-    borderColor: 'border-purple-500/20',
-  },
-  {
-    icon: Brain,
-    title: '智能对话',
-    description: '支持 OpenAI、Claude 等主流 LLM，返回结构化响应包含回复文本、情绪和动作。SSE 流式传输，支持会话上下文管理。',
-    color: 'from-emerald-500 to-teal-500',
-    bgColor: 'bg-emerald-500/10',
-    borderColor: 'border-emerald-500/20',
-  },
-  {
-    icon: Eye,
-    title: '视觉感知',
-    description: 'MediaPipe Face Mesh 468 个面部关键点检测，实时微表情识别。姿态估计支持上半身手势识别，所有处理均在浏览器本地完成。',
-    color: 'from-amber-500 to-orange-500',
-    bgColor: 'bg-amber-500/10',
-    borderColor: 'border-amber-500/20',
-  },
-  {
-    icon: Monitor,
-    title: '自适应性能',
-    description: '基于设备能力自动调整渲染质量，确保在各种设备上流畅运行 60fps。减少动画偏好检测，为低性能设备提供降级体验。',
-    color: 'from-rose-500 to-red-500',
-    bgColor: 'bg-rose-500/10',
-    borderColor: 'border-rose-500/20',
-  },
-  {
-    icon: Cpu,
-    title: '零配置部署',
-    description: '开箱即用的开发体验，自动降级到本地 Mock 模式无需 API Key。支持 GitHub Pages 一键部署，Docker 容器化后端快速启动。',
-    color: 'from-indigo-500 to-violet-500',
-    bgColor: 'bg-indigo-500/10',
-    borderColor: 'border-indigo-500/20',
-  },
-];
+import { Box, Mic, Eye, Brain, Monitor, Cpu, ArrowRight } from 'lucide-react';
+import { useI18n } from '@/hooks/useI18n';
 
 export default function FeaturesSection() {
+  const { t, lang } = useI18n();
+
+  // Define features based on current language
+  const features = [
+    {
+      icon: Box,
+      title: t('features.avatar.title'),
+      description: t('features.avatar.desc'),
+      color: 'from-blue-500 to-cyan-500',
+      bgColor: 'bg-blue-500/10',
+      borderColor: 'border-blue-500/20',
+    },
+    {
+      icon: Mic,
+      title: t('features.voice.title'),
+      description: t('features.voice.desc'),
+      color: 'from-purple-500 to-pink-500',
+      bgColor: 'bg-purple-500/10',
+      borderColor: 'border-purple-500/20',
+    },
+    {
+      icon: Brain,
+      title: t('features.dialogue.title'),
+      description: t('features.dialogue.desc'),
+      color: 'from-emerald-500 to-teal-500',
+      bgColor: 'bg-emerald-500/10',
+      borderColor: 'border-emerald-500/20',
+    },
+    {
+      icon: Eye,
+      title: t('features.vision.title'),
+      description: t('features.vision.desc'),
+      color: 'from-amber-500 to-orange-500',
+      bgColor: 'bg-amber-500/10',
+      borderColor: 'border-amber-500/20',
+    },
+    {
+      icon: Monitor,
+      title: lang === 'zh-CN' ? '自适应性能' : 'Adaptive Performance',
+      description:
+        lang === 'zh-CN'
+          ? '基于设备能力自动调整渲染质量，确保在各种设备上流畅运行 60fps。减少动画偏好检测，为低性能设备提供降级体验。'
+          : 'Automatically adjusts rendering quality based on device capabilities for smooth 60fps performance. Reduced animation preferences, degraded experience for low-end devices.',
+      color: 'from-rose-500 to-red-500',
+      bgColor: 'bg-rose-500/10',
+      borderColor: 'border-rose-500/20',
+    },
+    {
+      icon: Cpu,
+      title: lang === 'zh-CN' ? '零配置部署' : 'Zero Config Deployment',
+      description:
+        lang === 'zh-CN'
+          ? '开箱即用的开发体验，自动降级到本地 Mock 模式无需 API Key。支持 GitHub Pages 一键部署，Docker 容器化后端快速启动。'
+          : 'Out-of-the-box development experience with automatic fallback to local Mock mode without API Key. Supports one-click GitHub Pages deployment, Docker containerized backend.',
+      color: 'from-indigo-500 to-violet-500',
+      bgColor: 'bg-indigo-500/10',
+      borderColor: 'border-indigo-500/20',
+    },
+  ];
+
+  const stats =
+    lang === 'zh-CN'
+      ? [
+          { value: '60+', label: 'FPS 流畅渲染' },
+          { value: '468', label: '面部关键点' },
+          { value: '<100ms', label: '首字响应延迟' },
+          { value: '0 配置', label: '开箱即用' },
+        ]
+      : [
+          { value: '60+', label: 'FPS Smooth' },
+          { value: '468', label: 'Facial Landmarks' },
+          { value: '<100ms', label: 'First Token Latency' },
+          { value: '0 Config', label: 'Out-of-the-box' },
+        ];
+
   return (
     <section id="features" className="relative overflow-hidden py-24 bg-black">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-b from-black via-[#0a0a0f] to-black" />
-      
+
       {/* Grid Pattern */}
-      <div 
+      <div
         className="absolute inset-0 opacity-[0.02]"
         style={{
           backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)`,
@@ -77,13 +94,21 @@ export default function FeaturesSection() {
       <div className="landing-shell relative z-10">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-            核心功能特性
-          </h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">{t('features.title')}</h2>
           <p className="text-lg text-gray-400">
-            从 3D 渲染到智能对话，从语音交互到视觉感知，
-            <br className="hidden sm:block" />
-            一站式构建你的数字人应用
+            {lang === 'zh-CN' ? (
+              <>
+                从 3D 渲染到智能对话，从语音交互到视觉感知，
+                <br className="hidden sm:block" />
+                一站式构建你的数字人应用
+              </>
+            ) : (
+              <>
+                From 3D rendering to intelligent dialogue, voice interaction to visual perception,
+                <br className="hidden sm:block" />
+                build your digital human application all-in-one.
+              </>
+            )}
           </p>
         </div>
 
@@ -105,33 +130,26 @@ export default function FeaturesSection() {
               </div>
 
               {/* Content */}
-              <h3 className="text-xl font-semibold text-white mb-2">
-                {feature.title}
-              </h3>
-              <p className="flex-1 text-sm leading-relaxed text-gray-400">
-                {feature.description}
-              </p>
+              <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
+              <p className="flex-1 text-sm leading-relaxed text-gray-400">{feature.description}</p>
 
               {/* Learn More Link */}
               <div className="mt-4 flex items-center gap-1 text-sm text-gray-500 group-hover:text-white transition-colors">
-                <span>了解更多</span>
+                <span>{lang === 'zh-CN' ? '了解更多' : 'Learn more'}</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </div>
 
               {/* Hover Glow Effect */}
-              <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 transition-opacity`} />
+              <div
+                className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 transition-opacity`}
+              />
             </div>
           ))}
         </div>
 
         {/* Bottom Stats */}
         <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8">
-          {[
-            { value: '60+', label: 'FPS 流畅渲染' },
-            { value: '468', label: '面部关键点' },
-            { value: '<100ms', label: '首字响应延迟' },
-            { value: '0 配置', label: '开箱即用' },
-          ].map((stat) => (
+          {stats.map((stat) => (
             <div key={stat.label} className="text-center">
               <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                 {stat.value}
