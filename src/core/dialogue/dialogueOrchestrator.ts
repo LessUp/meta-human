@@ -1,11 +1,12 @@
 import { ChatResponsePayload, type StreamCallbacks } from './dialogueService';
 import { getDefaultChatTransport } from './chatTransport';
-import { digitalHumanEngine } from '../services';
+import type { DigitalHumanEngine } from '../avatar/DigitalHumanEngine';
 import { loggers } from '../../lib/logger';
 
 const logger = loggers.orchestrator;
 
 export interface DialogueHandleOptions {
+  engine?: DigitalHumanEngine;
   isMuted?: boolean;
   speakWith?: (text: string) => Promise<void> | void;
   onAddUserMessage?: (text: string) => void;
@@ -67,6 +68,7 @@ export function isDialogueTurnPending(): boolean {
  */
 function prepareDialogueTurn(
   userText: string,
+  engine: DigitalHumanEngine | undefined,
   onAddUserMessage?: (text: string) => void,
   setLoading?: (loading: boolean) => void,
 ): { content: string; turnId: number; abortCtrl: AbortController } | null {
@@ -86,7 +88,7 @@ function prepareDialogueTurn(
 
   onAddUserMessage?.(content);
   setLoading?.(true);
-  digitalHumanEngine.setBehavior('thinking');
+  engine?.setBehavior('thinking');
 
   return { content, turnId, abortCtrl };
 }
@@ -115,6 +117,7 @@ export async function runDialogueTurn(
   const {
     sessionId,
     meta,
+    engine,
     isMuted = false,
     speakWith,
     setLoading,
@@ -125,7 +128,7 @@ export async function runDialogueTurn(
     onAddUserMessage,
   } = options;
 
-  const preparation = prepareDialogueTurn(userText, onAddUserMessage, setLoading);
+  const preparation = prepareDialogueTurn(userText, engine, onAddUserMessage, setLoading);
   if (!preparation) {
     return undefined;
   }
@@ -164,6 +167,7 @@ export async function runDialogueTurn(
       options.onTurnResponse?.(result.response);
 
       await handleDialogueResponse(result.response, {
+        engine,
         isMuted,
         speakWith,
         onAddAssistantMessage: options.onAddAssistantMessage,
@@ -194,6 +198,7 @@ export async function runDialogueTurnStream(
   const {
     sessionId,
     meta,
+    engine,
     isMuted = false,
     speakWith,
     setLoading,
@@ -206,7 +211,7 @@ export async function runDialogueTurnStream(
     onStreamEnd,
   } = options;
 
-  const preparation = prepareDialogueTurn(userText, onAddUserMessage, setLoading);
+  const preparation = prepareDialogueTurn(userText, engine, onAddUserMessage, setLoading);
   if (!preparation) {
     return undefined;
   }
@@ -293,6 +298,7 @@ export async function runDialogueTurnStream(
       options.onTurnResponse?.(result.response);
 
       await handleDialogueResponse(result.response, {
+        engine,
         isMuted,
         speakWith,
         onAddAssistantMessage: options.onAddAssistantMessage,
@@ -322,18 +328,18 @@ export async function handleDialogueResponse(
   res: ChatResponsePayload,
   options: DialogueHandleOptions = {},
 ): Promise<void> {
-  const { isMuted = false, speakWith, onAddAssistantMessage, onError } = options;
+  const { engine, isMuted = false, speakWith, onAddAssistantMessage, onError } = options;
 
   if (res.replyText) {
     onAddAssistantMessage?.(res.replyText);
   }
 
   if (res.emotion) {
-    digitalHumanEngine.setEmotion(res.emotion);
+    engine?.setEmotion(res.emotion);
   }
 
   if (res.action && res.action !== 'idle') {
-    digitalHumanEngine.playAnimation(res.action);
+    engine?.playAnimation(res.action);
   }
 
   if (res.replyText && !isMuted && speakWith) {

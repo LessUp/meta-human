@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { useChatSessionStore } from '../store/chatSessionStore';
 import { useSystemStore } from '../store/systemStore';
-import { ttsService, digitalHumanEngine } from '../core/services';
+import { useTTS, useEngine } from '@/core/services';
 import { runDialogueTurnStream } from '../core/dialogue/dialogueOrchestrator';
 import { toast } from 'sonner';
 import { loggers } from '../lib/logger';
@@ -18,6 +18,8 @@ export interface UseChatStreamOptions {
 }
 
 export function useChatStream(options: UseChatStreamOptions) {
+  const tts = useTTS();
+  const engine = useEngine();
   const addChatMessage = useChatSessionStore((s) => s.addChatMessage);
   const updateChatMessage = useChatSessionStore((s) => s.updateChatMessage);
   const removeChatMessage = useChatSessionStore((s) => s.removeChatMessage);
@@ -112,8 +114,9 @@ export function useChatStream(options: UseChatStreamOptions) {
         const result = await runDialogueTurnStream(content, {
           sessionId,
           meta: { timestamp: Date.now() },
+          engine,
           isMuted,
-          speakWith: (textToSpeak) => ttsService.speak(textToSpeak),
+          speakWith: (textToSpeak) => tts.speak(textToSpeak),
           setLoading,
           // 流式模式下助手消息通过 onStreamToken 逐步更新，
           // 此处显式设为 undefined 以避免 handleDialogueResponse 再次添加完整消息导致重复
@@ -179,7 +182,7 @@ export function useChatStream(options: UseChatStreamOptions) {
             }
 
             if (useDigitalHumanStore.getState().currentBehavior === 'thinking') {
-              digitalHumanEngine.setBehavior('idle');
+              engine.setBehavior('idle');
             }
           },
         });
@@ -201,6 +204,8 @@ export function useChatStream(options: UseChatStreamOptions) {
     },
     [
       chatInput,
+      tts,
+      engine,
       addChatMessage,
       updateChatMessage,
       removeChatMessage,

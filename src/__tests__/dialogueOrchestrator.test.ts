@@ -33,14 +33,12 @@ vi.mock('../core/dialogue/chatTransport', () => {
   };
 });
 
-// Mock digitalHumanEngine to avoid store dependency
-vi.mock('../core/services', () => ({
-  digitalHumanEngine: {
-    setBehavior: vi.fn(),
-    setEmotion: vi.fn(),
-    playAnimation: vi.fn(),
-  },
-}));
+// Mock engine for handleDialogueResponse tests
+const mockEngine = {
+  setBehavior: vi.fn(),
+  setEmotion: vi.fn(),
+  playAnimation: vi.fn(),
+};
 
 async function* tokens(texts: string[]): AsyncGenerator<string> {
   for (const t of texts) {
@@ -200,23 +198,31 @@ describe('handleDialogueResponse', () => {
     expect(onAddAssistantMessage).toHaveBeenCalledWith('你好！');
   });
 
-  it('sets emotion on digitalHumanEngine', async () => {
-    const { digitalHumanEngine } = await import('../core/services');
-    await handleDialogueResponse({ replyText: 'hi', emotion: 'happy', action: 'idle' });
-    expect(digitalHumanEngine.setEmotion).toHaveBeenCalledWith('happy');
+  it('sets emotion on engine', async () => {
+    mockEngine.setEmotion.mockClear();
+    await handleDialogueResponse(
+      { replyText: 'hi', emotion: 'happy', action: 'idle' },
+      { engine: mockEngine as any },
+    );
+    expect(mockEngine.setEmotion).toHaveBeenCalledWith('happy');
   });
 
   it('plays animation for non-idle action', async () => {
-    const { digitalHumanEngine } = await import('../core/services');
-    await handleDialogueResponse({ replyText: 'hi', emotion: 'neutral', action: 'wave' });
-    expect(digitalHumanEngine.playAnimation).toHaveBeenCalledWith('wave');
+    mockEngine.playAnimation.mockClear();
+    await handleDialogueResponse(
+      { replyText: 'hi', emotion: 'neutral', action: 'wave' },
+      { engine: mockEngine as any },
+    );
+    expect(mockEngine.playAnimation).toHaveBeenCalledWith('wave');
   });
 
   it('does not play animation for idle action', async () => {
-    const { digitalHumanEngine } = await import('../core/services');
-    (digitalHumanEngine.playAnimation as ReturnType<typeof vi.fn>).mockClear();
-    await handleDialogueResponse({ replyText: 'hi', emotion: 'neutral', action: 'idle' });
-    expect(digitalHumanEngine.playAnimation).not.toHaveBeenCalled();
+    mockEngine.playAnimation.mockClear();
+    await handleDialogueResponse(
+      { replyText: 'hi', emotion: 'neutral', action: 'idle' },
+      { engine: mockEngine as any },
+    );
+    expect(mockEngine.playAnimation).not.toHaveBeenCalled();
   });
 
   it('calls speakWith when not muted', async () => {
