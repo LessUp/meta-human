@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ttsService, asrService } from '../core/services';
+import { useTTS, useASR } from '@/core/services';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 
 export interface UseVoiceInteractionOptions {
@@ -64,6 +64,8 @@ export function useVoiceInteraction(
   options: UseVoiceInteractionOptions = {},
 ): VoiceInteractionControls {
   const { onTranscript, onSpeak } = options;
+  const tts = useTTS();
+  const asr = useASR();
 
   const isRecording = useDigitalHumanStore((s) => s.isRecording);
   const isMuted = useDigitalHumanStore((s) => s.isMuted);
@@ -103,7 +105,7 @@ export function useVoiceInteraction(
     setIsSupported(hasSpeechRecognition && hasSpeechSynthesis);
 
     if (hasSpeechSynthesis) {
-      const voices = ttsService.getVoices();
+      const voices = tts.getVoices();
       if (mountedRef.current) {
         setAvailableVoices(voices);
         // Prefer Chinese voice
@@ -117,15 +119,15 @@ export function useVoiceInteraction(
     }
 
     return () => {
-      asrService.stop();
+      asr.stop();
     };
-  }, []);
+  }, [asr, tts]);
 
   // Start recording
   const startRecording = useCallback(() => {
     if (!isSupported) return;
 
-    asrService.start({
+    asr.start({
       mode: 'dictation',
       onResult: (text: string) => {
         if (!mountedRef.current) return;
@@ -133,13 +135,13 @@ export function useVoiceInteraction(
         onTranscriptRef.current?.(text);
       },
     });
-  }, [isSupported]); // Removed onTranscript dep - now using ref
+  }, [isSupported, asr]);
 
   // Stop recording
   const stopRecording = useCallback(() => {
-    asrService.stop();
+    asr.stop();
     setRecording(false);
-  }, [setRecording]);
+  }, [setRecording, asr]);
 
   // Toggle recording
   const toggleRecording = useCallback(() => {
@@ -155,7 +157,7 @@ export function useVoiceInteraction(
     (text: string) => {
       if (isMuted) return;
 
-      ttsService.speakWithOptions(text, {
+      tts.speakWithOptions(text, {
         lang: 'zh-CN',
         volume,
         pitch,
@@ -165,7 +167,7 @@ export function useVoiceInteraction(
 
       onSpeakRef.current?.(text);
     },
-    [isMuted, volume, pitch, rate, voice], // Removed onSpeak dep - now using ref
+    [isMuted, volume, pitch, rate, voice, tts],
   );
 
   return {

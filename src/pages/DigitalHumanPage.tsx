@@ -1,14 +1,18 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import DigitalHumanViewer from '@/components/DigitalHumanViewer';
 import ControlPanel from '@/components/ControlPanel';
 import { useDigitalHumanStore } from '@/store/digitalHumanStore';
 import { useSystemStore } from '@/store/systemStore';
-import { ttsService, asrService, digitalHumanEngine } from '@/core/services';
-import { executeVoiceCommand, getDefaultVoiceCommandHandlers } from '@/lib/voiceCommands';
+import { useEngine, useTTS, useASR } from '@/core/services';
+import { VoiceCommandExecutor } from '@/core/voiceCommand/executor';
 import { Toaster, toast } from 'sonner';
 import { Wifi, WifiOff } from 'lucide-react';
 
 export default function DigitalHumanPage() {
+  const engine = useEngine();
+  const tts = useTTS();
+  const asr = useASR();
+
   const {
     isPlaying,
     isRecording,
@@ -23,6 +27,26 @@ export default function DigitalHumanPage() {
 
   const [modelLoaded, setModelLoaded] = useState(false);
 
+  const voiceCommandExecutor = useMemo(
+    () =>
+      new VoiceCommandExecutor({
+        systemControls: {
+          play: () => engine.play(),
+          pause: () => engine.pause(),
+          reset: () => engine.reset(),
+          setMuted: (m) => useDigitalHumanStore.getState().setMuted(m),
+        },
+        avatarControls: {
+          setEmotion: (e) => engine.setEmotion(e),
+          setExpression: (x) => engine.setExpression(x),
+          setAnimation: (a) => engine.playAnimation(a),
+          setBehavior: (b) => engine.setBehavior(b),
+          speak: (text) => void tts.speak(text).catch(() => undefined),
+        },
+      }),
+    [engine, tts],
+  );
+
   // 处理模型加载完成
   const handleModelLoad = useCallback((_model: unknown) => {
     setModelLoaded(true);
@@ -32,24 +56,24 @@ export default function DigitalHumanPage() {
   // 处理播放/暂停
   const handlePlayPause = () => {
     if (isPlaying) {
-      digitalHumanEngine.pause();
+      engine.pause();
     } else {
-      digitalHumanEngine.play();
+      engine.play();
     }
   };
 
   // 处理重置
   const handleReset = () => {
-    digitalHumanEngine.reset();
+    engine.reset();
   };
 
   // 处理录音开关
   const handleToggleRecording = () => {
     if (isRecording) {
-      asrService.stop();
+      asr.stop();
       setRecording(false);
     } else {
-      asrService.start();
+      asr.start();
     }
   };
 
@@ -63,25 +87,27 @@ export default function DigitalHumanPage() {
     toggleAutoRotate();
   };
 
-  // 处理语音命令（使用共享工具）
-  const handleVoiceCommand = useCallback((command: string) => {
-    toast.success(`执行命令: ${command}`);
-    const handlers = getDefaultVoiceCommandHandlers();
-    executeVoiceCommand(command, handlers);
-  }, []);
+  // 处理语音命令
+  const handleVoiceCommand = useCallback(
+    (command: string) => {
+      toast.success(`执行命令: ${command}`);
+      voiceCommandExecutor.execute(command);
+    },
+    [voiceCommandExecutor],
+  );
 
   // 组件卸载时清理
   useEffect(() => {
     return () => {
       const { isRecording: recording, isSpeaking: speaking } = useDigitalHumanStore.getState();
       if (recording) {
-        asrService.stop();
+        asr.stop();
       }
       if (speaking) {
-        ttsService.stop();
+        tts.stop();
       }
     };
-  }, []);
+  }, [asr, tts]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">

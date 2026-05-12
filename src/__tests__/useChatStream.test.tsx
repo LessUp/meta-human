@@ -7,16 +7,9 @@ import { useSystemStore } from '../store/systemStore';
 
 const runDialogueTurnStreamMock = vi.fn();
 
-vi.mock('../core/audio', () => ({
-  ttsService: {
-    speak: vi.fn(),
-  },
-}));
-
-vi.mock('../core/avatar', () => ({
-  digitalHumanEngine: {
-    setBehavior: vi.fn(),
-  },
+vi.mock('@/core/services', () => ({
+  useTTS: () => ({ speak: vi.fn() }),
+  useEngine: () => ({ setBehavior: vi.fn() }),
 }));
 
 vi.mock('../core/dialogue/dialogueOrchestrator', () => ({
