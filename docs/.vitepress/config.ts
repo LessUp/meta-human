@@ -15,6 +15,11 @@ export default defineConfig({
   title: 'MetaHuman Engine Docs',
   description: 'Browser-Native 3D Digital Human Engine Documentation',
 
+  // Sitemap 配置
+  sitemap: {
+    hostname: 'https://lessup.github.io/meta-human/',
+  },
+
   // 忽略本地开发链接和某些相对链接
   ignoreDeadLinks: [/localhost/, /CHANGELOG/, /\.\.\/api\//, /\.\.\/architecture\//],
 

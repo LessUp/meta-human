@@ -8,12 +8,24 @@ import { useRouter } from 'vitepress'
 
 onMounted(() => {
   const router = useRouter()
-  const lang = navigator.language || navigator.userLanguage
-  if (lang.startsWith('zh')) {
-    router.go('/zh/')
+
+  // 优先级：localStorage > URL 参数 > 浏览器语言
+  // 与 Landing Page (src/lib/i18n.ts) 保持一致
+  const stored = localStorage.getItem('preferred-lang')
+  const params = new URLSearchParams(window.location.search)
+  const urlLang = params.get('lang')
+
+  let targetLang = 'en'
+  if (urlLang === 'zh' || stored === 'zh-CN' || stored === 'zh') {
+    targetLang = 'zh'
+  } else if (urlLang === 'en' || stored === 'en') {
+    targetLang = 'en'
   } else {
-    router.go('/en/')
+    const browserLang = navigator.language || navigator.userLanguage || ''
+    if (browserLang.startsWith('zh')) targetLang = 'zh'
   }
+
+  router.go(`/${targetLang}/`)
 })
 </script>
 

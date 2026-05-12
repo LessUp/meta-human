@@ -4,6 +4,7 @@ import {
   setLanguage,
   toggleLanguage,
   t,
+  isValidLanguage,
   type Language,
   type UseI18nReturn,
 } from '@/lib/i18n';
@@ -30,14 +31,15 @@ export function useI18n(): UseI18nReturn {
 
     // 监听 storage 事件（跨标签页同步）
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'preferred-lang' && e.newValue) {
-        const newLang = e.newValue as Language;
-        if (newLang !== lang) {
-          setLangState(newLang);
-          document.documentElement.lang = newLang;
-          document.documentElement.setAttribute('data-lang', newLang);
-        }
-      }
+      if (e.key !== 'preferred-lang' || !e.newValue) return;
+      if (!isValidLanguage(e.newValue)) return;
+
+      const newLang = e.newValue;
+      if (newLang === lang) return;
+
+      setLangState(newLang);
+      document.documentElement.lang = newLang;
+      document.documentElement.setAttribute('data-lang', newLang);
     };
 
     window.addEventListener('storage', handleStorage);

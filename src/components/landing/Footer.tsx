@@ -29,9 +29,9 @@ export default function Footer() {
           resources: {
             title: '资源',
             links: [
-              { label: '快速开始', href: 'docs/' },
-              { label: 'API 文档', href: 'docs/api/' },
-              { label: '架构设计', href: 'docs/architecture/' },
+              { label: '快速开始', href: 'docs/zh/' },
+              { label: 'API 文档', href: 'docs/zh/api/' },
+              { label: '架构设计', href: 'docs/zh/architecture/' },
               { label: '贡献指南', href: 'docs/contributing/' },
             ] as FooterLink[],
           },
@@ -66,9 +66,9 @@ export default function Footer() {
           resources: {
             title: 'Resources',
             links: [
-              { label: 'Quick Start', href: 'docs/' },
-              { label: 'API Docs', href: 'docs/api/' },
-              { label: 'Architecture', href: 'docs/architecture/' },
+              { label: 'Quick Start', href: 'docs/en/' },
+              { label: 'API Docs', href: 'docs/en/api/' },
+              { label: 'Architecture', href: 'docs/en/architecture/' },
               { label: 'Contributing', href: 'docs/contributing/' },
             ] as FooterLink[],
           },
