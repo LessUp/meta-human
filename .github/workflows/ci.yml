@@ -83,6 +83,7 @@ jobs:
         run: npm run build:pages
         env:
           NODE_ENV: production
+          VITEPRESS_BASE: /meta-human/
 
       - uses: actions/upload-pages-artifact@v3
         with:
