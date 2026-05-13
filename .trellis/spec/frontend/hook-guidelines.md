@@ -83,6 +83,67 @@ useFrame(() => {
 
 ---
 
+## Service Hooks
+
+This project uses a **Context + Hooks** pattern for service access. Services (TTS, ASR, DigitalHumanEngine) are provided via `ServicesProvider` and accessed through hooks.
+
+### Available Hooks
+
+| Hook            | Returns                | Purpose            |
+| --------------- | ---------------------- | ------------------ |
+| `useServices()` | `{ engine, tts, asr }` | All services       |
+| `useEngine()`   | `DigitalHumanEngine`   | Avatar engine      |
+| `useTTS()`      | `TTSService`           | Text-to-speech     |
+| `useASR()`      | `ASRService`           | Speech recognition |
+
+### Usage Pattern
+
+```typescript
+// ✅ Good: Use service hooks in components/hooks
+function MyComponent() {
+  const { engine, tts } = useServices();
+  // or specific hooks
+  const engine = useEngine();
+}
+
+function useVoiceInteraction() {
+  const tts = useTTS();
+  const asr = useASR();
+
+  const speak = (text: string) => {
+    tts.speak(text);
+  };
+
+  return { speak };
+}
+```
+
+### Non-Hook Module Integration
+
+For pure function modules (not hooks/components), use **dependency injection via parameters**:
+
+```typescript
+// dialogueOrchestrator.ts - pure function module
+export function prepareDialogueTurn(
+  sessionId: string,
+  engine: DigitalHumanEngine, // Injected
+): void {
+  engine.play();
+}
+
+// Calling from hook
+function useDialogue() {
+  const engine = useEngine();
+  return {
+    start: () => prepareDialogueTurn(sessionId, engine),
+  };
+}
+```
+
+> ⚠️ **Never import singleton directly** from `@/core/services`. Use hooks or parameter injection.
+
+---
+
 ## Data Fetching
 
 This project does NOT use React Query or SWR. Data fetching is handled by:

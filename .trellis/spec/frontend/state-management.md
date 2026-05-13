@@ -145,6 +145,86 @@ export function createASRStateAdapter(): ASRStateAdapter {
 
 ---
 
+## Service Layer: Context + Hooks Pattern
+
+### Architecture Decision
+
+**Problem**: Global singletons (`digitalHumanEngine`, `ttsService`, `asrService`) caused:
+
+- Tight coupling between modules
+- Difficulty testing (global state pollution)
+- No dependency injection capability
+
+**Solution**: React Context + hooks service layer:
+
+```
+ServicesProvider (App.tsx)
+    └── ServicesContext
+            └── useServices(), useEngine(), useTTS(), useASR()
+```
+
+**Key Files**:
+
+| File                   | Purpose                                                |
+| ---------------------- | ------------------------------------------------------ |
+| `ServicesProvider.tsx` | Context provider, creates services on mount            |
+| `servicesContext.ts`   | Context definition                                     |
+| `serviceHooks.ts`      | `useServices()`, `useEngine()`, `useTTS()`, `useASR()` |
+| `createServices.ts`    | Factory function for service instances                 |
+
+### Pattern: Service Consumption
+
+```typescript
+// ✅ Good: Use hooks in components/hooks
+function MyComponent() {
+  const { engine, tts, asr } = useServices();
+  // or use specific hooks
+  const engine = useEngine();
+}
+
+// ✅ Good: Use hooks in custom hooks
+function useVoiceInteraction() {
+  const tts = useTTS();
+  const asr = useASR();
+}
+
+// ❌ Wrong: Import singleton (deprecated)
+import { ttsService } from '@/core/services'; // DON'T
+```
+
+### Pattern: Non-Hook Module Dependency Injection
+
+**Problem**: `dialogueOrchestrator.ts` is a pure function module, not a hook. Cannot use `useEngine()`.
+
+**Solution**: Pass dependency through function parameters.
+
+```typescript
+// dialogueOrchestrator.ts
+export function prepareDialogueTurn(
+  sessionId: string,
+  engine: DigitalHumanEngine, // Injected dependency
+): void {
+  engine.play();
+}
+
+// Calling from hook
+function useDialogue() {
+  const engine = useEngine();
+
+  const startDialogue = () => {
+    prepareDialogueTurn(sessionId, engine); // Pass engine
+  };
+}
+```
+
+**Benefits**:
+
+- Testable with mock engine
+- No global state dependency
+- Prepares for future refactor (module-level state)
+
+---
+
 ## Common Mistakes
 
 ### ❌ Destructuring entire store
