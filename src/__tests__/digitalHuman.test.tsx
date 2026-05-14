@@ -6,7 +6,7 @@ import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { useChatSessionStore } from '../store/chatSessionStore';
 import { useSystemStore } from '../store/systemStore';
 import { TTSService, ASRService } from '../core/audio/audioService';
-import { processVoiceCommand } from '../core/audio/voiceCommandProcessor';
+import { createVoiceCommandExecutor } from '../core/voiceCommand';
 import { handleDialogueResponse } from '../core/dialogue/dialogueOrchestrator';
 import React from 'react';
 
@@ -516,17 +516,28 @@ describe('ASRService', () => {
     expect(asrService).toBeDefined();
   });
 
-  it('voice command processor handles cancel mute correctly', () => {
-    // Voice command processing is now in voiceCommandProcessor.ts
-    // This test verifies the integration via processVoiceCommand
+  it('voice command executor handles cancel mute correctly', () => {
+    // Voice command processing now uses VoiceCommandExecutor
+    // This test verifies the integration via createVoiceCommandExecutor
     useDigitalHumanStore.getState().setMuted(true);
 
-    const matched = processVoiceCommand('取消静音', {
-      play: () => useDigitalHumanStore.getState().play(),
-      pause: () => useDigitalHumanStore.getState().pause(),
-      reset: () => useDigitalHumanStore.getState().reset(),
-      setMuted: (m: boolean) => useDigitalHumanStore.getState().setMuted(m),
+    const executor = createVoiceCommandExecutor({
+      systemControls: {
+        play: () => useDigitalHumanStore.getState().play(),
+        pause: () => useDigitalHumanStore.getState().pause(),
+        reset: () => useDigitalHumanStore.getState().reset(),
+        setMuted: (m: boolean) => useDigitalHumanStore.getState().setMuted(m),
+      },
+      avatarControls: {
+        setEmotion: () => {},
+        setExpression: () => {},
+        setAnimation: () => {},
+        setBehavior: () => {},
+        speak: () => {},
+      },
     });
+
+    const matched = executor.execute('取消静音');
 
     expect(matched).toBe(true);
     expect(useDigitalHumanStore.getState().isMuted).toBe(false);
