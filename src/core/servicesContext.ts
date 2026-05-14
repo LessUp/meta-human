@@ -5,7 +5,18 @@
  */
 
 import { createContext } from 'react';
-import type { Services } from './createServices';
+import { DigitalHumanEngine } from './avatar/DigitalHumanEngine';
+import { TTSService, ASRService } from './audio/audioService';
+
+// ============================================================================
+// 服务接口
+// ============================================================================
+
+export interface Services {
+  engine: DigitalHumanEngine;
+  tts: TTSService;
+  asr: ASRService;
+}
 
 // ============================================================================
 // Context

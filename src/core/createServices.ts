@@ -9,16 +9,7 @@ import { TTSService, ASRService } from './audio/audioService';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { useChatSessionStore } from '../store/chatSessionStore';
 import { useSystemStore } from '../store/systemStore';
-
-// ============================================================================
-// 服务接口
-// ============================================================================
-
-export interface Services {
-  engine: DigitalHumanEngine;
-  tts: TTSService;
-  asr: ASRService;
-}
+import type { Services } from './servicesContext';
 
 // ============================================================================
 // 服务工厂

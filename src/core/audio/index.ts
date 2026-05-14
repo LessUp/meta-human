@@ -6,9 +6,3 @@ export type {
   TTSCallbacks,
   ASRStateAdapter,
 } from './audioService';
-export {
-  parseVoiceCommand,
-  processVoiceCommand,
-  executeVoiceCommandAction,
-} from './voiceCommandProcessor';
-export type { VoiceCommandAction, VoiceCommandResult } from './voiceCommandProcessor';
