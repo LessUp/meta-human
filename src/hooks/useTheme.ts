@@ -12,10 +12,26 @@ function resolveTheme(theme: Theme): ResolvedTheme {
   return theme === 'system' ? getSystemTheme() : theme;
 }
 
+function getStoredTheme(): Theme {
+  try {
+    return (localStorage.getItem('theme') as Theme) || 'system';
+  } catch {
+    return 'system';
+  }
+}
+
+function setStoredTheme(theme: Theme): void {
+  try {
+    localStorage.setItem('theme', theme);
+  } catch {
+    // Ignore storage write failures
+  }
+}
+
 export function useTheme() {
   const [theme, setThemeState] = useState<Theme>(() => {
     if (typeof window === 'undefined') return 'system';
-    return (localStorage.getItem('theme') as Theme) || 'system';
+    return getStoredTheme();
   });
 
   const resolved = resolveTheme(theme);
@@ -23,7 +39,7 @@ export function useTheme() {
   useEffect(() => {
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.classList.add(resolved);
-    localStorage.setItem('theme', theme);
+    setStoredTheme(theme);
   }, [theme, resolved]);
 
   useEffect(() => {

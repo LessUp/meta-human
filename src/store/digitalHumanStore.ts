@@ -118,7 +118,7 @@ export const useDigitalHumanStore = create<DigitalHumanState>()(
       setEmotion: (emotion) => set({ currentEmotion: emotion }),
       setExpression: (expression) => set({ currentExpression: expression }),
       setExpressionIntensity: (intensity) =>
-        set({ expressionIntensity: Math.max(0, Math.min(1, intensity)) }),
+        set({ expressionIntensity: Math.max(0, Math.min(1, intensity || 0)) }),
       setBehavior: (behavior) => set({ currentBehavior: behavior }),
 
       // 控制方法
