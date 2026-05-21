@@ -105,10 +105,9 @@ export class MetaHumanWSClient {
         }
       };
 
-      this.ws.onerror = (event) => {
-
+      this.ws.onerror = () => {
         this.rejectConnect = null;
-        reject(event);
+        reject(new Error('WebSocket 连接失败'));
       };
 
       this.ws.onclose = () => {
@@ -136,7 +135,6 @@ export class MetaHumanWSClient {
     if (this.rejectConnect) {
       this.rejectConnect(new Error('WebSocket disconnected'));
       this.rejectConnect = null;
-
     }
     this.ws?.close();
     this.ws = null;

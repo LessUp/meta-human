@@ -247,8 +247,12 @@ export function getCurrentLanguage(): Language {
   if (urlLang === 'zh') return 'zh-CN';
 
   // 2. localStorage（用户偏好）
-  const stored = localStorage.getItem('preferred-lang') as Language | null;
-  if (stored === 'en' || stored === 'zh-CN') return stored;
+  try {
+    const stored = localStorage.getItem('preferred-lang') as Language | null;
+    if (stored === 'en' || stored === 'zh-CN') return stored;
+  } catch {
+    // Ignore storage read failures
+  }
 
   // 3. 浏览器语言
   const browserLang = navigator.language || '';
@@ -260,7 +264,11 @@ export function getCurrentLanguage(): Language {
 
 // 设置语言
 export function setLanguage(lang: Language): void {
-  localStorage.setItem('preferred-lang', lang);
+  try {
+    localStorage.setItem('preferred-lang', lang);
+  } catch {
+    // Ignore storage write failures
+  }
   document.documentElement.lang = lang;
   document.documentElement.setAttribute('data-lang', lang);
 

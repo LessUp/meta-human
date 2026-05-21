@@ -40,6 +40,14 @@ export interface ChatTransportCapabilities {
 
 const DEFAULT_TIMEOUT_MS = 15000;
 
+const VALID_EMOTIONS = ['neutral', 'happy', 'surprised', 'sad', 'angry'] as const;
+
+const validateEmotion = (emotion: string): ChatResponsePayload['emotion'] => {
+  return VALID_EMOTIONS.includes(emotion as (typeof VALID_EMOTIONS)[number])
+    ? (emotion as ChatResponsePayload['emotion'])
+    : 'neutral';
+};
+
 const buildEmptyResponse = (): ChatResponsePayload => ({
   replyText: '',
   emotion: 'neutral',
@@ -132,7 +140,7 @@ async function* streamOverWebSocket(
     if (event.type === 'done') {
       callbacks.onDone?.({
         replyText: event.replyText,
-        emotion: event.emotion as ChatResponsePayload['emotion'],
+        emotion: validateEmotion(event.emotion),
         action: event.action,
       });
       setTerminalEvent(event);
@@ -187,7 +195,7 @@ async function* streamOverWebSocket(
       return {
         response: {
           replyText: terminal.replyText,
-          emotion: terminal.emotion as ChatResponsePayload['emotion'],
+          emotion: validateEmotion(terminal.emotion),
           action: terminal.action,
         },
         connectionStatus: 'connected' as const,
