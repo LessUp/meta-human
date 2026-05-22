@@ -1,9 +1,9 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { useChatSessionStore } from '../store/chatSessionStore';
 import { useSystemStore } from '../store/systemStore';
 import { useTTS, useEngine } from '@/core/services';
-import { runDialogueTurnStream } from '../core/dialogue/dialogueOrchestrator';
+import { abortPendingTurn, runDialogueTurnStream } from '../core/dialogue/dialogueOrchestrator';
 import { toast } from 'sonner';
 import { loggers } from '../lib/logger';
 
@@ -29,8 +29,15 @@ export function useChatStream(options: UseChatStreamOptions) {
   const setLoading = useSystemStore((s) => s.setLoading);
   const isLoading = useSystemStore((s) => s.isLoading);
   const [chatInput, setChatInput] = useState('');
-  const activeTurnRef = useRef<symbol | null>(null);
   const { sessionId, isMuted, onConnectionChange, onClearError, onError } = options;
+  const activeTurnRef = useRef<{ token: symbol; sessionId: string } | null>(null);
+
+  useEffect(() => {
+    return () => {
+      activeTurnRef.current = null;
+      abortPendingTurn();
+    };
+  }, [sessionId]);
 
   const handleChatSend = useCallback(
     async (text?: string) => {
@@ -46,11 +53,17 @@ export function useChatStream(options: UseChatStreamOptions) {
       const turnSessionId = sessionId;
       const turnToken = Symbol('chat-stream-turn');
 
-      activeTurnRef.current = turnToken;
+      activeTurnRef.current = { token: turnToken, sessionId: turnSessionId };
 
       const ownsCurrentTurn = () =>
-        activeTurnRef.current === turnToken &&
-        useChatSessionStore.getState().sessionId === turnSessionId;
+        activeTurnRef.current?.token === turnToken &&
+        activeTurnRef.current?.sessionId === turnSessionId;
+
+      const releaseCurrentTurn = () => {
+        if (ownsCurrentTurn()) {
+          activeTurnRef.current = null;
+        }
+      };
 
       const finalizePerformanceTrace = (status: 'completed' | 'failed' = 'completed') => {
         if (didFinalizePerformanceTrace || !ownsCurrentTurn()) {
@@ -190,16 +203,19 @@ export function useChatStream(options: UseChatStreamOptions) {
         if (!result) {
           finalizeAssistantMessage(true);
           finalizePerformanceTrace('failed');
+          releaseCurrentTurn();
           return;
         }
 
         syncAssistantMessageWithResult(result.replyText);
         finalizePerformanceTrace(turnConnection.status === 'error' ? 'failed' : 'completed');
+        releaseCurrentTurn();
       } catch (err: unknown) {
         logger.error('发送消息失败:', err);
         toast.error(err instanceof Error ? err.message : '发送失败，请重试');
         finalizeAssistantMessage(true);
         finalizePerformanceTrace('failed');
+        releaseCurrentTurn();
       }
     },
     [

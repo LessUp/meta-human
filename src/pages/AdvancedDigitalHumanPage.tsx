@@ -1,12 +1,15 @@
-import DigitalHumanViewer from '@/components/DigitalHumanViewer';
+import { DigitalHumanViewer } from '@/components/viewer';
 import TopHUD from '@/components/TopHUD';
 import SettingsDrawer from '@/components/SettingsDrawer';
 import ChatDock from '@/components/ChatDock';
 import { useAdvancedDigitalHumanController } from '@/hooks/useAdvancedDigitalHumanController';
 import { useChatStream } from '@/hooks/useChatStream';
 import { useConnectionHealth } from '@/hooks/useConnectionHealth';
+import { useDigitalHumanStore } from '@/store/digitalHumanStore';
 
 export default function AdvancedDigitalHumanPage() {
+  const isMuted = useDigitalHumanStore((s) => s.isMuted);
+
   // 控制器 hook（不含聊天流）
   const {
     activeTab,
@@ -36,7 +39,7 @@ export default function AdvancedDigitalHumanPage() {
   // 聊天流 hook（直接调用）
   const { chatInput, setChatInput, isChatLoading, handleChatSend } = useChatStream({
     sessionId,
-    isMuted: false, // TODO: 从 store 获取
+    isMuted,
     onConnectionChange: (status) => setConnectionStatus(status),
     onClearError: () => clearError(),
     onError: (msg) => setError(msg),

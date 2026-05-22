@@ -242,11 +242,11 @@ describe('useAdvancedDigitalHumanController', () => {
     expect(useSystemStore.getState().error).toBeNull();
   });
 
-  it('disposes the avatar engine on unmount', () => {
+  it('does not dispose the avatar engine on unmount', () => {
     const { unmount } = renderHook(() => useAdvancedDigitalHumanController());
 
     unmount();
 
-    expect(mocks.digitalHumanDisposeMock).toHaveBeenCalledTimes(1);
+    expect(mocks.digitalHumanDisposeMock).not.toHaveBeenCalled();
   });
 });

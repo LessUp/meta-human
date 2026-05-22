@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import DigitalHumanViewer from '../components/DigitalHumanViewer';
+import { DigitalHumanViewer } from '../components/viewer';
 import ControlPanel from '../components/ControlPanel';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { useChatSessionStore } from '../store/chatSessionStore';

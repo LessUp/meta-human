@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import DigitalHumanViewer from '@/components/DigitalHumanViewer';
+import { DigitalHumanViewer } from '@/components/viewer';
 import ControlPanel from '@/components/ControlPanel';
 import { useDigitalHumanStore } from '@/store/digitalHumanStore';
 import { useSystemStore } from '@/store/systemStore';

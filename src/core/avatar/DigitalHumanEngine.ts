@@ -8,6 +8,10 @@ import {
   VALID_BEHAVIORS,
   ANIMATION_TO_BEHAVIOR,
 } from './constants';
+import type { EngineStateAdapter } from '../adapters';
+
+// Re-export for backward compatibility
+export type { EngineStateAdapter as StateAdapter } from '../adapters';
 
 export type EngineEventType =
   | 'expression:change'
@@ -18,30 +22,14 @@ export type EngineEventType =
 
 type EngineEventHandler = (payload: { type: string; value: string }) => void;
 
-/**
- * Abstraction over state mutations.
- * Decouples the engine from any specific state management library.
- */
-export interface StateAdapter {
-  play(): void;
-  pause(): void;
-  reset(): void;
-  setExpression(expr: ExpressionType): void;
-  setExpressionIntensity(intensity: number): void;
-  setEmotion(emo: EmotionType): void;
-  setBehavior(beh: BehaviorType): void;
-  setAnimation(anim: string): void;
-  setPlaying(playing: boolean): void;
-}
-
 const logger = loggers.avatar;
 
 export class DigitalHumanEngine {
-  private readonly state: StateAdapter;
+  private readonly state: EngineStateAdapter;
   private animationTimeout: ReturnType<typeof setTimeout> | null = null;
   private listeners = new Map<EngineEventType, Set<EngineEventHandler>>();
 
-  constructor(stateAdapter: StateAdapter) {
+  constructor(stateAdapter: EngineStateAdapter) {
     this.state = stateAdapter;
   }
 

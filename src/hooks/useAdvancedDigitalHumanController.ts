@@ -76,13 +76,6 @@ export function useAdvancedDigitalHumanController() {
     return () => clearTimeout(id);
   }, [error, clearError]);
 
-  // 引擎清理
-  useEffect(() => {
-    return () => {
-      engine.dispose();
-    };
-  }, [engine]);
-
   // 模型加载回调
   const handleModelLoad = useCallback(() => {
     // toast.success('数字人接口已上线');

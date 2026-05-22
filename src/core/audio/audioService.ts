@@ -1,6 +1,10 @@
 import { runDialogueTurn } from '../dialogue/dialogueOrchestrator';
 import { loggers } from '../../lib/logger';
 import { VoiceCommandExecutor } from '../voiceCommand';
+import type { TTSCallbacks, ASRStateAdapter } from '../adapters';
+
+// Re-export for backward compatibility
+export type { TTSCallbacks, ASRStateAdapter } from '../adapters';
 
 const logger = loggers.audio;
 
@@ -10,51 +14,6 @@ export interface TTSConfig {
   rate?: number;
   pitch?: number;
   volume?: number;
-}
-
-/**
- * Callbacks for TTS state changes.
- * Decouples TTSService from any specific store.
- */
-export interface TTSCallbacks {
-  onSpeakStart?: () => void;
-  onSpeakEnd?: () => void;
-  onError?: (message: string) => void;
-}
-
-/**
- * State accessor for ASRService.
- * Decouples ASRService from any specific store.
- */
-export interface ASRStateAdapter {
-  setRecording(recording: boolean): void;
-  setBehavior(behavior: string): void;
-  setSpeaking(speaking: boolean): void;
-  setError(message: string): void;
-  setEmotion(emotion: string): void;
-  setExpression(expression: string): void;
-  setAnimation(animation: string): void;
-  play(): void;
-  pause(): void;
-  reset(): void;
-  setMuted(muted: boolean): void;
-  /** Whether currently muted (for dialogue send). */
-  isMuted: boolean;
-  /** Current session ID (for dialogue send). */
-  sessionId: string;
-  /** Current behavior (for thinking reset check). */
-  currentBehavior: string;
-  /** Add a message to chat history (for voice-initiated dialogue turns). */
-  addChatMessage?: (
-    role: 'user' | 'assistant',
-    text: string,
-    isStreaming?: boolean,
-  ) => number | null;
-  /** Update an existing chat message (for voice-initiated dialogue turns). */
-  updateChatMessage?: (
-    id: number,
-    updates: Partial<{ text: string; isStreaming: boolean }>,
-  ) => void;
 }
 
 type SpeechRecognitionResultItem = { transcript: string; isFinal?: boolean };
