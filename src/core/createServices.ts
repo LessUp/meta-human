@@ -1,14 +1,12 @@
 /**
  * 服务容器工厂。
  *
- * 创建服务实例，服务直接依赖 Zustand store。
+ * 创建服务实例，使用集中式 adapters 与 Zustand store 交互。
  */
 
 import { DigitalHumanEngine } from './avatar/DigitalHumanEngine';
 import { TTSService, ASRService } from './audio/audioService';
-import { useDigitalHumanStore } from '../store/digitalHumanStore';
-import { useChatSessionStore } from '../store/chatSessionStore';
-import { useSystemStore } from '../store/systemStore';
+import { createTTSCallbacks, createASRStateAdapter, createEngineStateAdapter } from './adapters';
 import type { Services } from './servicesContext';
 
 // ============================================================================
@@ -17,80 +15,22 @@ import type { Services } from './servicesContext';
 
 /**
  * 创建服务实例。
- * 服务直接操作 Zustand store，无需适配器层。
+ * 使用集中式 adapters 操作 Zustand store。
  */
 export function createServices(): Services {
-  // TTS 服务：回调直接更新 store
-  const tts = new TTSService(
-    {},
-    {
-      onSpeakStart: () => {
-        useDigitalHumanStore.getState().setSpeaking(true);
-        useDigitalHumanStore.getState().setBehavior('speaking');
-      },
-      onSpeakEnd: () => {
-        useDigitalHumanStore.getState().setSpeaking(false);
-        useDigitalHumanStore.getState().setBehavior('idle');
-      },
-      onError: (msg) => {
-        useSystemStore.getState().setError(msg);
-      },
-    },
-  );
+  // 创建集中式 adapters
+  const ttsCallbacks = createTTSCallbacks();
+  const asrStateAdapter = createASRStateAdapter();
+  const engineStateAdapter = createEngineStateAdapter();
 
-  // ASR 服务：直接操作 store
-  const asr = new ASRService(
-    {},
-    {
-      get isMuted() {
-        return useDigitalHumanStore.getState().isMuted;
-      },
-      get sessionId() {
-        return useChatSessionStore.getState().sessionId;
-      },
-      get currentBehavior() {
-        return useDigitalHumanStore.getState().currentBehavior;
-      },
-      setRecording: (r) => useDigitalHumanStore.getState().setRecording(r),
-      setBehavior: (b) =>
-        useDigitalHumanStore
-          .getState()
-          .setBehavior(b as import('../store/digitalHumanStore').BehaviorType),
-      setSpeaking: (s) => useDigitalHumanStore.getState().setSpeaking(s),
-      setError: (m) => useSystemStore.getState().setError(m),
-      setEmotion: (e) =>
-        useDigitalHumanStore
-          .getState()
-          .setEmotion(e as import('../store/digitalHumanStore').EmotionType),
-      setExpression: (x) =>
-        useDigitalHumanStore
-          .getState()
-          .setExpression(x as import('../store/digitalHumanStore').ExpressionType),
-      setAnimation: (a) => useDigitalHumanStore.getState().setAnimation(a),
-      play: () => useDigitalHumanStore.getState().play(),
-      pause: () => useDigitalHumanStore.getState().pause(),
-      reset: () => useDigitalHumanStore.getState().reset(),
-      setMuted: (m) => useDigitalHumanStore.getState().setMuted(m),
-      addChatMessage: (role, text, isStreaming) =>
-        useChatSessionStore.getState().addChatMessage(role, text, isStreaming),
-      updateChatMessage: (id, updates) =>
-        useChatSessionStore.getState().updateChatMessage(id, updates),
-    },
-    tts,
-  );
+  // TTS 服务
+  const tts = new TTSService({}, ttsCallbacks);
 
-  // DigitalHumanEngine：直接操作 store
-  const engine = new DigitalHumanEngine({
-    play: () => useDigitalHumanStore.getState().play(),
-    pause: () => useDigitalHumanStore.getState().pause(),
-    reset: () => useDigitalHumanStore.getState().reset(),
-    setExpression: (expr) => useDigitalHumanStore.getState().setExpression(expr),
-    setExpressionIntensity: (n) => useDigitalHumanStore.getState().setExpressionIntensity(n),
-    setEmotion: (emo) => useDigitalHumanStore.getState().setEmotion(emo),
-    setBehavior: (beh) => useDigitalHumanStore.getState().setBehavior(beh),
-    setAnimation: (anim) => useDigitalHumanStore.getState().setAnimation(anim),
-    setPlaying: (p) => useDigitalHumanStore.getState().setPlaying(p),
-  });
+  // ASR 服务
+  const asr = new ASRService({}, asrStateAdapter, tts);
+
+  // DigitalHumanEngine
+  const engine = new DigitalHumanEngine(engineStateAdapter);
 
   return { engine, tts, asr };
 }

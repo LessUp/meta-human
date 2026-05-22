@@ -1,3 +1,8 @@
+/**
+ * 对话编排器。
+ *
+ * 管理对话轮次的生命周期，处理并发控制和状态管理。
+ */
 import { ChatResponsePayload, type StreamCallbacks } from './dialogueService';
 import { getDefaultChatTransport } from './chatTransport';
 import type { DigitalHumanEngine } from '../avatar/DigitalHumanEngine';
@@ -33,296 +38,363 @@ interface PendingDialogueTurn {
   abortController: AbortController;
 }
 
-let pendingTurn: PendingDialogueTurn | null = null;
-let nextTurnId = 0;
+/**
+ * 对话编排器类。
+ *
+ * 封装对话状态管理，避免模块级状态导致的测试泄漏问题。
+ */
+export class DialogueOrchestrator {
+  private pendingTurn: PendingDialogueTurn | null = null;
+  private nextTurnId = 0;
+
+  /**
+   * 重置编排器状态。
+   */
+  reset(): void {
+    this.pendingTurn = null;
+    this.nextTurnId = 0;
+  }
+
+  /**
+   * 中止当前待处理的对话轮次。
+   */
+  abortPendingTurn(): void {
+    if (this.pendingTurn) {
+      this.pendingTurn.abortController.abort();
+      this.pendingTurn = null;
+    }
+  }
+
+  /**
+   * 检查是否有待处理的对话轮次。
+   */
+  isTurnPending(): boolean {
+    return this.pendingTurn !== null;
+  }
+
+  /**
+   * 运行对话轮次。
+   */
+  async runDialogueTurn(
+    userText: string,
+    options: DialogueTurnOptions = {},
+  ): Promise<ChatResponsePayload | undefined> {
+    const {
+      sessionId,
+      meta,
+      engine,
+      isMuted = false,
+      speakWith,
+      setLoading,
+      onConnectionChange,
+      onClearError,
+      onError,
+      onResetBehavior,
+      onAddUserMessage,
+    } = options;
+
+    const preparation = this.prepareDialogueTurn(userText, engine, onAddUserMessage, setLoading);
+    if (!preparation) {
+      return undefined;
+    }
+
+    const { content, turnId, abortCtrl } = preparation;
+
+    const execute = async (): Promise<ChatResponsePayload | undefined> => {
+      const chatTransport = getDefaultChatTransport();
+
+      try {
+        const result = await chatTransport.send(
+          {
+            sessionId,
+            userText: content,
+            meta,
+          },
+          {},
+          abortCtrl.signal,
+        );
+
+        if (abortCtrl.signal.aborted) {
+          return undefined;
+        }
+
+        if (result.connectionStatus === 'connected') {
+          onConnectionChange?.('connected');
+          onClearError?.();
+        } else if (result.connectionStatus === 'error') {
+          onConnectionChange?.('error');
+          if (result.error) {
+            onError?.(result.error);
+          }
+        }
+
+        options.onTurnResponse?.(result.response);
+
+        await handleDialogueResponse(result.response, {
+          engine,
+          isMuted,
+          speakWith,
+          onAddAssistantMessage: options.onAddAssistantMessage,
+          onError,
+        });
+
+        return result.response;
+      } catch (error) {
+        if (!abortCtrl.signal.aborted) {
+          throw error;
+        }
+        return undefined;
+      } finally {
+        this.finalizeDialogueTurn(turnId, setLoading, onResetBehavior);
+      }
+    };
+
+    const promise = execute();
+    this.pendingTurn = { id: turnId, promise, abortController: abortCtrl };
+    return promise;
+  }
+
+  /**
+   * 运行流式对话轮次。
+   */
+  async runDialogueTurnStream(
+    userText: string,
+    options: DialogueTurnOptions = {},
+    streamCallbacks: StreamCallbacks = {},
+  ): Promise<ChatResponsePayload | undefined> {
+    const {
+      sessionId,
+      meta,
+      engine,
+      isMuted = false,
+      speakWith,
+      setLoading,
+      onConnectionChange,
+      onClearError,
+      onError,
+      onResetBehavior,
+      onAddUserMessage,
+      onStreamToken,
+      onStreamEnd,
+    } = options;
+
+    const preparation = this.prepareDialogueTurn(userText, engine, onAddUserMessage, setLoading);
+    if (!preparation) {
+      return undefined;
+    }
+
+    const { content, turnId, abortCtrl } = preparation;
+
+    let didFinishStream = false;
+
+    const finishStream = () => {
+      if (didFinishStream) {
+        return;
+      }
+
+      didFinishStream = true;
+      onStreamEnd?.();
+    };
+
+    const execute = async (): Promise<ChatResponsePayload | undefined> => {
+      const chatTransport = getDefaultChatTransport();
+
+      try {
+        const generator = chatTransport.stream(
+          { sessionId, userText: content, meta },
+          {},
+          streamCallbacks,
+          abortCtrl.signal,
+        );
+
+        let accumulatedText = '';
+        let step = await generator.next();
+
+        while (!step.done) {
+          if (abortCtrl.signal.aborted) {
+            logger.warn('Stream aborted');
+            finishStream();
+            return undefined;
+          }
+
+          accumulatedText += step.value;
+          onStreamToken?.(accumulatedText);
+
+          try {
+            step = await generator.next();
+          } catch (genError: unknown) {
+            if (!abortCtrl.signal.aborted) {
+              logger.error('Generator error:', genError);
+              throw genError;
+            }
+            finishStream();
+            return undefined;
+          }
+        }
+
+        const streamResult = step.value;
+
+        const result = streamResult ?? {
+          response: {
+            replyText: accumulatedText,
+            emotion: 'neutral',
+            action: 'idle',
+          },
+          connectionStatus: 'connected' as const,
+          error: null,
+        };
+
+        if (abortCtrl.signal.aborted) {
+          finishStream();
+          return undefined;
+        }
+
+        if (result.connectionStatus === 'connected') {
+          onConnectionChange?.('connected');
+          onClearError?.();
+        } else {
+          onConnectionChange?.('error');
+          if (result.error) {
+            onError?.(result.error);
+          }
+        }
+
+        options.onTurnResponse?.(result.response);
+
+        await handleDialogueResponse(result.response, {
+          engine,
+          isMuted,
+          speakWith,
+          onAddAssistantMessage: options.onAddAssistantMessage,
+          onError,
+        });
+
+        finishStream();
+        return result.response;
+      } catch (error) {
+        if (!abortCtrl.signal.aborted) {
+          logger.error('流式对话失败:', error);
+          onError?.(error instanceof Error ? error.message : '流式对话失败');
+        }
+        return undefined;
+      } finally {
+        this.finalizeDialogueTurn(turnId, setLoading, onResetBehavior);
+        finishStream();
+      }
+    };
+
+    const promise = execute();
+    this.pendingTurn = { id: turnId, promise, abortController: abortCtrl };
+    return promise;
+  }
+
+  /**
+   * 预轮次验证和设置。
+   */
+  private prepareDialogueTurn(
+    userText: string,
+    engine: DigitalHumanEngine | undefined,
+    onAddUserMessage?: (text: string) => void,
+    setLoading?: (loading: boolean) => void,
+  ): { content: string; turnId: number; abortCtrl: AbortController } | null {
+    const content = userText.trim();
+    if (!content) {
+      return null;
+    }
+
+    if (this.pendingTurn) {
+      logger.warn('对话请求被忽略：上一轮对话仍在进行中');
+      return null;
+    }
+
+    const abortCtrl = new AbortController();
+    const turnId = ++this.nextTurnId;
+
+    onAddUserMessage?.(content);
+    setLoading?.(true);
+    engine?.setBehavior('thinking');
+
+    return { content, turnId, abortCtrl };
+  }
+
+  /**
+   * 后轮次清理。
+   */
+  private finalizeDialogueTurn(
+    turnId: number,
+    setLoading?: (loading: boolean) => void,
+    onResetBehavior?: () => void,
+  ): void {
+    if (this.pendingTurn?.id !== turnId) {
+      return;
+    }
+
+    setLoading?.(false);
+    this.pendingTurn = null;
+    onResetBehavior?.();
+  }
+}
+
+// ============================================================================
+// 全局实例（用于向后兼容）
+// ============================================================================
 
 /**
- * Reset the dialogue orchestrator state.
- * Call this during app initialization or testing to clear module-level state.
+ * 全局对话编排器实例。
+ *
+ * @deprecated 建议使用依赖注入创建独立实例，避免测试间状态泄漏。
+ */
+export const dialogueOrchestrator = new DialogueOrchestrator();
+
+// ============================================================================
+// 向后兼容的函数导出
+// ============================================================================
+
+/**
+ * @deprecated 使用 dialogueOrchestrator.reset() 代替
  */
 export function resetDialogueOrchestrator(): void {
-  pendingTurn = null;
-  nextTurnId = 0;
+  dialogueOrchestrator.reset();
 }
 
 /**
- * Abort any pending dialogue turn.
- * This will cancel the current request and clean up state.
+ * @deprecated 使用 dialogueOrchestrator.abortPendingTurn() 代替
  */
 export function abortPendingTurn(): void {
-  if (pendingTurn) {
-    pendingTurn.abortController.abort();
-    pendingTurn = null;
-  }
+  dialogueOrchestrator.abortPendingTurn();
 }
 
 /**
- * Check if a dialogue turn is currently pending.
+ * @deprecated 使用 dialogueOrchestrator.isTurnPending() 代替
  */
 export function isDialogueTurnPending(): boolean {
-  return pendingTurn !== null;
+  return dialogueOrchestrator.isTurnPending();
 }
 
 /**
- * Common pre-turn validation and setup
+ * @deprecated 使用 dialogueOrchestrator.runDialogueTurn() 代替
  */
-function prepareDialogueTurn(
-  userText: string,
-  engine: DigitalHumanEngine | undefined,
-  onAddUserMessage?: (text: string) => void,
-  setLoading?: (loading: boolean) => void,
-): { content: string; turnId: number; abortCtrl: AbortController } | null {
-  const content = userText.trim();
-  if (!content) {
-    return null;
-  }
-
-  if (pendingTurn) {
-    logger.warn('对话请求被忽略：上一轮对话仍在进行中');
-    return null;
-  }
-
-  // Create new abort controller for this turn
-  const abortCtrl = new AbortController();
-  const turnId = ++nextTurnId;
-
-  onAddUserMessage?.(content);
-  setLoading?.(true);
-  engine?.setBehavior('thinking');
-
-  return { content, turnId, abortCtrl };
-}
-
-/**
- * Common post-turn cleanup
- */
-function finalizeDialogueTurn(
-  turnId: number,
-  setLoading?: (loading: boolean) => void,
-  onResetBehavior?: () => void,
-): void {
-  if (pendingTurn?.id !== turnId) {
-    return;
-  }
-
-  setLoading?.(false);
-  pendingTurn = null;
-  onResetBehavior?.();
-}
-
 export async function runDialogueTurn(
   userText: string,
   options: DialogueTurnOptions = {},
 ): Promise<ChatResponsePayload | undefined> {
-  const {
-    sessionId,
-    meta,
-    engine,
-    isMuted = false,
-    speakWith,
-    setLoading,
-    onConnectionChange,
-    onClearError,
-    onError,
-    onResetBehavior,
-    onAddUserMessage,
-  } = options;
-
-  const preparation = prepareDialogueTurn(userText, engine, onAddUserMessage, setLoading);
-  if (!preparation) {
-    return undefined;
-  }
-
-  const { content, turnId, abortCtrl } = preparation;
-
-  const execute = async (): Promise<ChatResponsePayload | undefined> => {
-    const chatTransport = getDefaultChatTransport();
-
-    try {
-      const result = await chatTransport.send(
-        {
-          sessionId,
-          userText: content,
-          meta,
-        },
-        {},
-        abortCtrl.signal,
-      );
-
-      // Check if aborted
-      if (abortCtrl.signal.aborted) {
-        return undefined;
-      }
-
-      if (result.connectionStatus === 'connected') {
-        onConnectionChange?.('connected');
-        onClearError?.();
-      } else if (result.connectionStatus === 'error') {
-        onConnectionChange?.('error');
-        if (result.error) {
-          onError?.(result.error);
-        }
-      }
-
-      options.onTurnResponse?.(result.response);
-
-      await handleDialogueResponse(result.response, {
-        engine,
-        isMuted,
-        speakWith,
-        onAddAssistantMessage: options.onAddAssistantMessage,
-        onError,
-      });
-
-      return result.response;
-    } catch (error) {
-      if (!abortCtrl.signal.aborted) {
-        throw error;
-      }
-      return undefined;
-    } finally {
-      finalizeDialogueTurn(turnId, setLoading, onResetBehavior);
-    }
-  };
-
-  const promise = execute();
-  pendingTurn = { id: turnId, promise, abortController: abortCtrl };
-  return promise;
+  return dialogueOrchestrator.runDialogueTurn(userText, options);
 }
 
+/**
+ * @deprecated 使用 dialogueOrchestrator.runDialogueTurnStream() 代替
+ */
 export async function runDialogueTurnStream(
   userText: string,
   options: DialogueTurnOptions = {},
   streamCallbacks: StreamCallbacks = {},
 ): Promise<ChatResponsePayload | undefined> {
-  const {
-    sessionId,
-    meta,
-    engine,
-    isMuted = false,
-    speakWith,
-    setLoading,
-    onConnectionChange,
-    onClearError,
-    onError,
-    onResetBehavior,
-    onAddUserMessage,
-    onStreamToken,
-    onStreamEnd,
-  } = options;
-
-  const preparation = prepareDialogueTurn(userText, engine, onAddUserMessage, setLoading);
-  if (!preparation) {
-    return undefined;
-  }
-
-  const { content, turnId, abortCtrl } = preparation;
-
-  let didFinishStream = false;
-
-  const finishStream = () => {
-    if (didFinishStream) {
-      return;
-    }
-
-    didFinishStream = true;
-    onStreamEnd?.();
-  };
-
-  const execute = async (): Promise<ChatResponsePayload | undefined> => {
-    const chatTransport = getDefaultChatTransport();
-
-    try {
-      const generator = chatTransport.stream(
-        { sessionId, userText: content, meta },
-        {},
-        streamCallbacks,
-        abortCtrl.signal,
-      );
-
-      let accumulatedText = '';
-      let step = await generator.next();
-
-      while (!step.done) {
-        // Check if aborted
-        if (abortCtrl.signal.aborted) {
-          logger.warn('Stream aborted');
-          finishStream();
-          return undefined;
-        }
-
-        accumulatedText += step.value;
-        onStreamToken?.(accumulatedText);
-
-        try {
-          step = await generator.next();
-        } catch (genError: unknown) {
-          // Don't throw if aborted
-          if (!abortCtrl.signal.aborted) {
-            logger.error('Generator error:', genError);
-            throw genError;
-          }
-          finishStream();
-          return undefined;
-        }
-      }
-
-      const streamResult = step.value;
-
-      const result = streamResult ?? {
-        response: {
-          replyText: accumulatedText,
-          emotion: 'neutral',
-          action: 'idle',
-        },
-        connectionStatus: 'connected' as const,
-        error: null,
-      };
-
-      // Check if aborted before processing result
-      if (abortCtrl.signal.aborted) {
-        finishStream();
-        return undefined;
-      }
-
-      if (result.connectionStatus === 'connected') {
-        onConnectionChange?.('connected');
-        onClearError?.();
-      } else {
-        onConnectionChange?.('error');
-        if (result.error) {
-          onError?.(result.error);
-        }
-      }
-
-      options.onTurnResponse?.(result.response);
-
-      await handleDialogueResponse(result.response, {
-        engine,
-        isMuted,
-        speakWith,
-        onAddAssistantMessage: options.onAddAssistantMessage,
-        onError,
-      });
-
-      finishStream();
-      return result.response;
-    } catch (error) {
-      if (!abortCtrl.signal.aborted) {
-        logger.error('流式对话失败:', error);
-        onError?.(error instanceof Error ? error.message : '流式对话失败');
-      }
-      return undefined;
-    } finally {
-      finalizeDialogueTurn(turnId, setLoading, onResetBehavior);
-      finishStream();
-    }
-  };
-
-  const promise = execute();
-  pendingTurn = { id: turnId, promise, abortController: abortCtrl };
-  return promise;
+  return dialogueOrchestrator.runDialogueTurnStream(userText, options, streamCallbacks);
 }
+
+// ============================================================================
+// 共享函数
+// ============================================================================
 
 export async function handleDialogueResponse(
   res: ChatResponsePayload,

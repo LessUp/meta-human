@@ -6,6 +6,7 @@ import { useChatSessionStore } from '../store/chatSessionStore';
 import { useSystemStore } from '../store/systemStore';
 
 const runDialogueTurnStreamMock = vi.fn();
+const abortPendingTurnMock = vi.fn();
 
 vi.mock('@/core/services', () => ({
   useTTS: () => ({ speak: vi.fn() }),
@@ -14,11 +15,13 @@ vi.mock('@/core/services', () => ({
 
 vi.mock('../core/dialogue/dialogueOrchestrator', () => ({
   runDialogueTurnStream: (...args: unknown[]) => runDialogueTurnStreamMock(...args),
+  abortPendingTurn: () => abortPendingTurnMock(),
 }));
 
 describe('useChatStream', () => {
   beforeEach(() => {
     runDialogueTurnStreamMock.mockReset();
+    abortPendingTurnMock.mockReset();
     useDigitalHumanStore.setState({
       currentBehavior: 'idle',
     });
@@ -108,5 +111,21 @@ describe('useChatStream', () => {
     expect(useSystemStore.getState().chatPerformance.status).toBe('failed');
     expect(useSystemStore.getState().chatPerformance.firstTokenMs).toBeNull();
     expect(useSystemStore.getState().chatPerformance.responseCompleteMs).not.toBeNull();
+  });
+
+  it('aborts the pending dialogue turn on unmount', () => {
+    const { unmount } = renderHook(() =>
+      useChatStream({
+        sessionId: 'session_test',
+        isMuted: false,
+        onConnectionChange: vi.fn(),
+        onClearError: vi.fn(),
+        onError: vi.fn(),
+      }),
+    );
+
+    unmount();
+
+    expect(abortPendingTurnMock).toHaveBeenCalledTimes(1);
   });
 });
