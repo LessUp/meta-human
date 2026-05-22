@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   reconnectMock: vi.fn(),
   asrStartMock: vi.fn(),
   asrStopMock: vi.fn(),
+  dialogueAbortPendingTurnMock: vi.fn(),
   asrPerformGreetingMock: vi.fn(),
   asrPerformDanceMock: vi.fn(),
   clearRemoteSessionMock: vi.fn(),
@@ -73,6 +74,9 @@ vi.mock('../core/services', () => ({
     performGreeting: mocks.asrPerformGreetingMock,
     performDance: mocks.asrPerformDanceMock,
   }),
+  useDialogue: () => ({
+    abortPendingTurn: mocks.dialogueAbortPendingTurnMock,
+  }),
   useTTS: () => ({
     speak: vi.fn(),
   }),
@@ -91,6 +95,9 @@ vi.mock('../core/services', () => ({
       stop: mocks.asrStopMock,
       performGreeting: mocks.asrPerformGreetingMock,
       performDance: mocks.asrPerformDanceMock,
+    },
+    dialogue: {
+      abortPendingTurn: mocks.dialogueAbortPendingTurnMock,
     },
     tts: {},
   }),
@@ -115,6 +122,7 @@ describe('useAdvancedDigitalHumanController', () => {
     mocks.reconnectMock.mockReset();
     mocks.asrStartMock.mockReset();
     mocks.asrStopMock.mockReset();
+    mocks.dialogueAbortPendingTurnMock.mockReset();
     mocks.asrPerformGreetingMock.mockReset();
     mocks.asrPerformDanceMock.mockReset();
     mocks.clearRemoteSessionMock.mockReset();

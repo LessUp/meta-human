@@ -13,7 +13,11 @@ import {
   Loader2,
   type LucideIcon,
 } from 'lucide-react';
-import { useDigitalHumanStore } from '../store/digitalHumanStore';
+import {
+  selectCurrentBehavior,
+  selectIsSpeaking,
+  useDigitalHumanStore,
+} from '../store/digitalHumanStore';
 import { useSystemStore, type ConnectionStatus } from '../store/systemStore';
 
 interface ControlPanelProps {
@@ -71,7 +75,8 @@ export default function ControlPanel({
 }: ControlPanelProps) {
   // 从 store 获取状态
   const connectionStatus = useSystemStore((s) => s.connectionStatus);
-  const { isSpeaking, currentBehavior } = useDigitalHumanStore();
+  const isSpeaking = useDigitalHumanStore(selectIsSpeaking);
+  const currentBehavior = useDigitalHumanStore(selectCurrentBehavior);
 
   // Memoize status configuration lookup
   const statusConfig = useMemo(() => connectionStatusConfig[connectionStatus], [connectionStatus]);

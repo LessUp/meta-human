@@ -7,21 +7,35 @@ import { useSystemStore } from '../store/systemStore';
 
 const runDialogueTurnStreamMock = vi.fn();
 const abortPendingTurnMock = vi.fn();
+const moduleRunDialogueTurnStreamMock = vi.fn((_: string, _options: unknown) => {
+  throw new Error('useChatStream should use useDialogue().runDialogueTurnStream');
+});
+const moduleAbortPendingTurnMock = vi.fn(() => {
+  throw new Error('useChatStream should use useDialogue().abortPendingTurn');
+});
 
 vi.mock('@/core/services', () => ({
   useTTS: () => ({ speak: vi.fn() }),
   useEngine: () => ({ setBehavior: vi.fn() }),
+  useDialogue: () => ({
+    abortPendingTurn: () => abortPendingTurnMock(),
+    runDialogueTurnStream: (text: string, options: unknown) =>
+      runDialogueTurnStreamMock(text, options),
+  }),
 }));
 
 vi.mock('../core/dialogue/dialogueOrchestrator', () => ({
-  runDialogueTurnStream: (...args: unknown[]) => runDialogueTurnStreamMock(...args),
-  abortPendingTurn: () => abortPendingTurnMock(),
+  runDialogueTurnStream: (text: string, options: unknown) =>
+    moduleRunDialogueTurnStreamMock(text, options),
+  abortPendingTurn: () => moduleAbortPendingTurnMock(),
 }));
 
 describe('useChatStream', () => {
   beforeEach(() => {
     runDialogueTurnStreamMock.mockReset();
     abortPendingTurnMock.mockReset();
+    moduleRunDialogueTurnStreamMock.mockClear();
+    moduleAbortPendingTurnMock.mockClear();
     useDigitalHumanStore.setState({
       currentBehavior: 'idle',
     });

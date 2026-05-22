@@ -69,13 +69,16 @@ export class DigitalHumanEngine {
   }
 
   setExpression(expression: string): void {
-    if (VALID_EXPRESSIONS.includes(expression as ExpressionType)) {
-      this.state.setExpression(expression as ExpressionType);
-    } else {
+    const normalizedExpression = VALID_EXPRESSIONS.includes(expression as ExpressionType)
+      ? (expression as ExpressionType)
+      : 'neutral';
+
+    if (normalizedExpression === 'neutral' && expression !== 'neutral') {
       logger.warn(`Unknown expression: ${expression}, falling back to neutral`);
-      this.state.setExpression('neutral');
     }
-    this.emit('expression:change', expression);
+
+    this.state.setExpression(normalizedExpression);
+    this.emit('expression:change', normalizedExpression);
   }
 
   setExpressionIntensity(intensity: number): void {
@@ -83,28 +86,31 @@ export class DigitalHumanEngine {
   }
 
   setEmotion(emotion: string): void {
-    if (VALID_EMOTIONS.includes(emotion as EmotionType)) {
-      this.state.setEmotion(emotion as EmotionType);
-      const mappedExpression = EMOTION_TO_EXPRESSION[emotion as EmotionType];
-      if (mappedExpression) {
-        this.state.setExpression(mappedExpression);
-      }
-    } else {
+    const normalizedEmotion = VALID_EMOTIONS.includes(emotion as EmotionType)
+      ? (emotion as EmotionType)
+      : 'neutral';
+
+    if (normalizedEmotion === 'neutral' && emotion !== 'neutral') {
       logger.warn(`Unknown emotion: ${emotion}, falling back to neutral`);
-      this.state.setEmotion('neutral');
-      this.state.setExpression('neutral');
     }
-    this.emit('emotion:change', emotion);
+
+    this.state.setEmotion(normalizedEmotion);
+    const mappedExpression = EMOTION_TO_EXPRESSION[normalizedEmotion];
+    this.state.setExpression(mappedExpression ?? 'neutral');
+    this.emit('emotion:change', normalizedEmotion);
   }
 
   setBehavior(behavior: string, _params?: unknown): void {
-    if (VALID_BEHAVIORS.includes(behavior as BehaviorType)) {
-      this.state.setBehavior(behavior as BehaviorType);
-    } else {
+    const normalizedBehavior = VALID_BEHAVIORS.includes(behavior as BehaviorType)
+      ? (behavior as BehaviorType)
+      : 'idle';
+
+    if (normalizedBehavior === 'idle' && behavior !== 'idle') {
       logger.warn(`Unknown behavior: ${behavior}, falling back to idle`);
-      this.state.setBehavior('idle');
     }
-    this.emit('behavior:change', behavior);
+
+    this.state.setBehavior(normalizedBehavior);
+    this.emit('behavior:change', normalizedBehavior);
   }
 
   playAnimation(name: string, autoReset: boolean = true): void {

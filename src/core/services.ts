@@ -15,7 +15,7 @@ export { ServicesProvider } from './ServicesProvider';
 export { createServices } from './createServices';
 
 // Hooks
-export { useServices, useEngine, useTTS, useASR } from './serviceHooks';
+export { useServices, useEngine, useTTS, useASR, useDialogue } from './serviceHooks';
 
 // 类型（供外部使用）
 export type { StateAdapter } from './avatar/DigitalHumanEngine';

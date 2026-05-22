@@ -7,6 +7,7 @@
 import { createContext } from 'react';
 import { DigitalHumanEngine } from './avatar/DigitalHumanEngine';
 import { TTSService, ASRService } from './audio/audioService';
+import { DialogueOrchestrator } from './dialogue/dialogueOrchestrator';
 
 // ============================================================================
 // 服务接口
@@ -16,6 +17,7 @@ export interface Services {
   engine: DigitalHumanEngine;
   tts: TTSService;
   asr: ASRService;
+  dialogue: DialogueOrchestrator;
 }
 
 // ============================================================================

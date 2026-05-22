@@ -1,7 +1,12 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { DigitalHumanViewer } from '@/components/viewer';
 import ControlPanel from '@/components/ControlPanel';
-import { useDigitalHumanStore } from '@/store/digitalHumanStore';
+import {
+  selectIsPlaying,
+  selectIsRecording,
+  selectIsSpeaking,
+  useDigitalHumanStore,
+} from '@/store/digitalHumanStore';
 import { useSystemStore } from '@/store/systemStore';
 import { useEngine, useTTS, useASR } from '@/core/services';
 import { VoiceCommandExecutor } from '@/core/voiceCommand/executor';
@@ -13,16 +18,14 @@ export default function DigitalHumanPage() {
   const tts = useTTS();
   const asr = useASR();
 
-  const {
-    isPlaying,
-    isRecording,
-    isMuted,
-    autoRotate,
-    isSpeaking,
-    setRecording,
-    toggleMute,
-    toggleAutoRotate,
-  } = useDigitalHumanStore();
+  const isPlaying = useDigitalHumanStore(selectIsPlaying);
+  const isRecording = useDigitalHumanStore(selectIsRecording);
+  const isMuted = useDigitalHumanStore((s) => s.isMuted);
+  const autoRotate = useDigitalHumanStore((s) => s.autoRotate);
+  const isSpeaking = useDigitalHumanStore(selectIsSpeaking);
+  const setRecording = useDigitalHumanStore((s) => s.setRecording);
+  const toggleMute = useDigitalHumanStore((s) => s.toggleMute);
+  const toggleAutoRotate = useDigitalHumanStore((s) => s.toggleAutoRotate);
   const connectionStatus = useSystemStore((s) => s.connectionStatus);
 
   const [modelLoaded, setModelLoaded] = useState(false);

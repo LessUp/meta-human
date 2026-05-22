@@ -1,11 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useDigitalHumanStore } from '../store/digitalHumanStore';
-import { useChatSessionStore } from '../store/chatSessionStore';
-import { useSystemStore } from '../store/systemStore';
-import { useTTS, useEngine } from '@/core/services';
-import { abortPendingTurn, runDialogueTurnStream } from '../core/dialogue/dialogueOrchestrator';
+import { useDigitalHumanStore } from '@/store/digitalHumanStore';
+import { useChatSessionStore } from '@/store/chatSessionStore';
+import { useSystemStore } from '@/store/systemStore';
+import { useTTS, useEngine, useDialogue } from '@/core/services';
 import { toast } from 'sonner';
-import { loggers } from '../lib/logger';
+import { loggers } from '@/lib/logger';
 
 const logger = loggers.chat;
 
@@ -20,6 +19,7 @@ export interface UseChatStreamOptions {
 export function useChatStream(options: UseChatStreamOptions) {
   const tts = useTTS();
   const engine = useEngine();
+  const dialogue = useDialogue();
   const addChatMessage = useChatSessionStore((s) => s.addChatMessage);
   const updateChatMessage = useChatSessionStore((s) => s.updateChatMessage);
   const removeChatMessage = useChatSessionStore((s) => s.removeChatMessage);
@@ -35,9 +35,9 @@ export function useChatStream(options: UseChatStreamOptions) {
   useEffect(() => {
     return () => {
       activeTurnRef.current = null;
-      abortPendingTurn();
+      dialogue.abortPendingTurn();
     };
-  }, [sessionId]);
+  }, [dialogue, sessionId]);
 
   const handleChatSend = useCallback(
     async (text?: string) => {
@@ -124,7 +124,7 @@ export function useChatStream(options: UseChatStreamOptions) {
       try {
         startChatPerformanceTrace();
 
-        const result = await runDialogueTurnStream(content, {
+        const result = await dialogue.runDialogueTurnStream(content, {
           sessionId,
           meta: { timestamp: Date.now() },
           engine,
@@ -234,6 +234,7 @@ export function useChatStream(options: UseChatStreamOptions) {
       onConnectionChange,
       onClearError,
       onError,
+      dialogue,
     ],
   );
 
