@@ -165,6 +165,15 @@ describe('DigitalHumanEngine', () => {
     expect(handler).toHaveBeenCalledWith({ type: 'expression:change', value: 'smile' });
   });
 
+  it('emits normalized expression:change event for invalid expressions', () => {
+    const handler = vi.fn();
+    engine.on('expression:change', handler);
+
+    engine.setExpression('invalid_expr');
+
+    expect(handler).toHaveBeenCalledWith({ type: 'expression:change', value: 'neutral' });
+  });
+
   it('emits emotion:change event', () => {
     const handler = vi.fn();
     engine.on('emotion:change', handler);
@@ -173,12 +182,30 @@ describe('DigitalHumanEngine', () => {
     expect(handler).toHaveBeenCalledWith({ type: 'emotion:change', value: 'happy' });
   });
 
+  it('emits normalized emotion:change event for invalid emotions', () => {
+    const handler = vi.fn();
+    engine.on('emotion:change', handler);
+
+    engine.setEmotion('confused');
+
+    expect(handler).toHaveBeenCalledWith({ type: 'emotion:change', value: 'neutral' });
+  });
+
   it('emits behavior:change event', () => {
     const handler = vi.fn();
     engine.on('behavior:change', handler);
 
     engine.setBehavior('thinking');
     expect(handler).toHaveBeenCalledWith({ type: 'behavior:change', value: 'thinking' });
+  });
+
+  it('emits normalized behavior:change event for invalid behaviors', () => {
+    const handler = vi.fn();
+    engine.on('behavior:change', handler);
+
+    engine.setBehavior('flying');
+
+    expect(handler).toHaveBeenCalledWith({ type: 'behavior:change', value: 'idle' });
   });
 
   it('emits animation:start and animation:end events', () => {

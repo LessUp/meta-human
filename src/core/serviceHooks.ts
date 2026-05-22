@@ -7,7 +7,9 @@
 import { useContext } from 'react';
 import { DigitalHumanEngine } from './avatar/DigitalHumanEngine';
 import { TTSService, ASRService } from './audio/audioService';
+import { DialogueOrchestrator } from './dialogue/dialogueOrchestrator';
 import { ServicesContext } from './servicesContext';
+import type { Services } from './servicesContext';
 
 // ============================================================================
 // Hooks
@@ -17,7 +19,7 @@ import { ServicesContext } from './servicesContext';
  * 获取服务容器。
  * 必须在 ServicesProvider 内使用。
  */
-export function useServices(): { engine: DigitalHumanEngine; tts: TTSService; asr: ASRService } {
+export function useServices(): Services {
   const services = useContext(ServicesContext);
   if (!services) {
     throw new Error('useServices must be used within ServicesProvider');
@@ -44,4 +46,11 @@ export function useTTS(): TTSService {
  */
 export function useASR(): ASRService {
   return useServices().asr;
+}
+
+/**
+ * 获取 DialogueOrchestrator。
+ */
+export function useDialogue(): DialogueOrchestrator {
+  return useServices().dialogue;
 }

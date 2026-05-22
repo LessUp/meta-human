@@ -441,6 +441,9 @@ describe('ASRService', () => {
   let asrService: ASRService;
   let localTts: TTSService;
   let mockSpeechRecognition: any;
+  const mockDialogue = {
+    runDialogueTurn: vi.fn(),
+  };
 
   beforeEach(() => {
     // Create a proper constructor function for SpeechRecognition
@@ -472,6 +475,7 @@ describe('ASRService', () => {
   let mockState: any;
 
   beforeEach(() => {
+    mockDialogue.runDialogueTurn.mockReset();
     mockState = {
       setRecording: vi.fn(),
       setBehavior: vi.fn(),
@@ -498,19 +502,19 @@ describe('ASRService', () => {
   });
 
   it('initializes correctly when supported', () => {
-    asrService = new ASRService({}, mockState, localTts);
+    asrService = new ASRService({}, mockState, localTts, mockDialogue);
     expect(asrService).toBeDefined();
   });
 
   it('starts recognition', () => {
-    asrService = new ASRService({}, mockState, localTts);
+    asrService = new ASRService({}, mockState, localTts, mockDialogue);
     asrService.start();
     // Since we can't directly access the mock, we verify the service is created
     expect(asrService).toBeDefined();
   });
 
   it('stops recognition', () => {
-    asrService = new ASRService({}, mockState, localTts);
+    asrService = new ASRService({}, mockState, localTts, mockDialogue);
     asrService.stop();
     // Verify no errors are thrown
     expect(asrService).toBeDefined();

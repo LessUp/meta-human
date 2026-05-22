@@ -16,10 +16,6 @@ interface ServicesProviderProps {
   children: ReactNode;
 }
 
-type OptionalDialogueService = {
-  reset?: () => void;
-};
-
 /**
  * 提供应用级服务单例。
  * 在应用根组件包装使用。
@@ -32,16 +28,7 @@ export function ServicesProvider({ children }: ServicesProviderProps) {
       services.asr.dispose();
       services.tts.dispose();
       services.engine.dispose();
-
-      const dialogue = (
-        services as typeof services & {
-          dialogue?: OptionalDialogueService;
-        }
-      ).dialogue;
-
-      if (typeof dialogue?.reset === 'function') {
-        dialogue.reset();
-      }
+      services.dialogue.reset();
     };
   }, [services]);
 

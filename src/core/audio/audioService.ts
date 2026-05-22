@@ -1,7 +1,7 @@
-import { runDialogueTurn } from '../dialogue/dialogueOrchestrator';
 import { loggers } from '../../lib/logger';
 import { VoiceCommandExecutor } from '../voiceCommand';
 import type { TTSCallbacks, ASRStateAdapter } from '../adapters';
+import type { DialogueOrchestrator } from '../dialogue/dialogueOrchestrator';
 
 // Re-export for backward compatibility
 export type { TTSCallbacks, ASRStateAdapter } from '../adapters';
@@ -264,6 +264,8 @@ export interface ASRCallbacks {
   onEnd?: () => void;
 }
 
+type DialogueRuntime = Pick<DialogueOrchestrator, 'runDialogueTurn'>;
+
 // ASR 配置接口
 export interface ASRConfig {
   lang?: string;
@@ -291,8 +293,14 @@ export class ASRService {
   private pendingRestartTimer: ReturnType<typeof setTimeout> | null = null;
   private recognitionGeneration = 0;
   private voiceCommandExecutor: VoiceCommandExecutor;
+  private dialogue: DialogueRuntime;
 
-  constructor(config: ASRConfig = {}, state: ASRStateAdapter, tts: TTSService) {
+  constructor(
+    config: ASRConfig = {},
+    state: ASRStateAdapter,
+    tts: TTSService,
+    dialogue: DialogueRuntime,
+  ) {
     this.isSupportedFlag =
       typeof window !== 'undefined' &&
       ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window);
@@ -304,6 +312,7 @@ export class ASRService {
     };
     this.state = state;
     this.tts = tts;
+    this.dialogue = dialogue;
 
     // Initialize voice command executor
     this.voiceCommandExecutor = new VoiceCommandExecutor({
@@ -565,7 +574,7 @@ export class ASRService {
   // 发送到对话服务
   private async sendToDialogueService(text: string): Promise<void> {
     try {
-      await runDialogueTurn(text, {
+      await this.dialogue.runDialogueTurn(text, {
         sessionId: this.state.sessionId,
         isMuted: this.state.isMuted,
         speakWith: (textToSpeak) => this.tts.speak(textToSpeak),

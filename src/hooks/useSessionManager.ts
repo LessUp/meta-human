@@ -8,17 +8,18 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { useChatSessionStore } from '@/store/chatSessionStore';
 import { useSystemStore } from '@/store/systemStore';
+import { useDialogue } from '@/core/services';
 import { clearRemoteSession } from '@/core/dialogue/dialogueService';
-import { abortPendingTurn } from '@/core/dialogue/dialogueOrchestrator';
 
 export function useSessionManager() {
+  const dialogue = useDialogue();
   const sessionId = useChatSessionStore((s) => s.sessionId);
   const initChatSession = useChatSessionStore((s) => s.initSession);
   const resetSystemState = useSystemStore((s) => s.resetSystemState);
 
   const handleNewSession = useCallback(() => {
     const oldSessionId = sessionId;
-    abortPendingTurn();
+    dialogue.abortPendingTurn();
 
     // 协调多 store 初始化
     initChatSession();
@@ -28,7 +29,7 @@ export function useSessionManager() {
 
     // 清理远程会话（fire and forget）
     void clearRemoteSession(oldSessionId);
-  }, [sessionId, initChatSession, resetSystemState]);
+  }, [dialogue, sessionId, initChatSession, resetSystemState]);
 
   return {
     sessionId,
