@@ -1,56 +1,23 @@
 # CLAUDE.md
 
-Claude Code 项目专用指南。完整架构和开发规范参见 `AGENTS.md`。
+Use `AGENTS.md` as the canonical repository guide.
 
-## 快速开始
+## Quick commands
 
 ```bash
-npm run dev          # 启动开发服务器 (http://localhost:5173)
-npm run typecheck    # TypeScript 类型检查
-npm run lint         # ESLint 检查
-npm run test:run     # 运行全部测试
-npm run build:pages  # GitHub Pages 构建
+npm run dev
+npm run typecheck
+npm run lint
+npm run test:run
+npm run build:pages
 ```
 
-## 构建模式
+## Working rules
 
-| 命令            | 用途                                          |
-| --------------- | --------------------------------------------- |
-| `build`         | 标准生产构建                                  |
-| `build:pages`   | GitHub Pages 部署构建（base: `/meta-human/`） |
-| `build:analyze` | 构建产物分析（Bundle Visualizer）             |
-
-## 环境要求
-
-- Node.js ≥ 22.0.0 / npm ≥ 10.0.0
-- `.nvmrc` 已配置，使用 `nvm use` 即可
-
-## 测试须知
-
-- 测试环境: jsdom（`vitest.config.ts`）
-- Three.js / R3F / 浏览器 API（Speech, Canvas）需要 mock
-- 主测试入口: `src/__tests__/`
-- 覆盖率阈值: lines ≥ 40%, functions ≥ 34%, branches ≥ 30%
-- `speakWith` 是 fire-and-forget，测试断言前需 flush microtasks
-
-## 项目约定
-
-1. **单分支策略**: 所有工作在 `master` 分支完成
-2. **修改记录**: 所有变更在 `changelog/` 下创建条目
-3. **路径别名**: 始终使用 `@/` 前缀（如 `@/store/systemStore`）
-4. **Zustand 5**: `set` 函数使用 `replace?: false`（非 `boolean`）
-5. **Tailwind CSS 4**: 使用 `@import 'tailwindcss'` + `@theme` 语法
-
-## Agent skills
-
-### Issue tracker
-
-GitHub Issues (`LessUp/meta-human`). Uses `gh` CLI. See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-Uses default label vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-Single-context layout. Domain context: `CONTEXT.md` at repo root. ADRs: `docs/adr/`. See `docs/agents/domain.md`.
+1. Stay on `master`.
+2. Use `@/` imports.
+3. Keep `core/` free of React imports.
+4. Services should interact with Zustand via `useXStore.getState()`.
+5. Every external dependency path needs a fallback.
+6. Update only the root `CHANGELOG.md` for project history.
+7. Keep GitHub Pages and docs free of changelog-specific navigation.

@@ -10,18 +10,18 @@ export default function CTASection() {
       ? [
           {
             icon: Download,
-            title: '多种安装方式',
-            desc: 'Git Clone、Docker、Vite 模板',
+            title: '精简安装',
+            desc: 'Git Clone + npm install，前端零配置启动',
           },
           {
             icon: Code2,
-            title: '完整 TypeScript 支持',
-            desc: '类型安全，智能提示',
+            title: 'TypeScript 核心',
+            desc: 'React 19、TypeScript、Zustand 一体化',
           },
           {
             icon: Terminal,
-            title: '命令行工具',
-            desc: '脚手架快速创建项目',
+            title: '优雅降级',
+            desc: 'Mock、文本输出与传输回退默认可用',
           },
           {
             icon: Play,
@@ -32,18 +32,18 @@ export default function CTASection() {
       : [
           {
             icon: Download,
-            title: 'Multiple Install Methods',
-            desc: 'Git Clone, Docker, Vite Template',
+            title: 'Lean Setup',
+            desc: 'Git clone + npm install with zero-config startup',
           },
           {
             icon: Code2,
-            title: 'Full TypeScript Support',
-            desc: 'Type safety with IntelliSense',
+            title: 'TypeScript Core',
+            desc: 'React 19, TypeScript, and Zustand working as one stack',
           },
           {
             icon: Terminal,
-            title: 'CLI Tools',
-            desc: 'Quick project scaffolding',
+            title: 'Graceful Fallbacks',
+            desc: 'Mock mode, text-only output, and transport fallback built in',
           },
           {
             icon: Play,
@@ -57,7 +57,7 @@ export default function CTASection() {
       ? [
           { label: '文档', href: 'docs/zh/' },
           { label: 'API 参考', href: 'docs/zh/api/' },
-          { label: '更新日志', href: 'CHANGELOG.md' },
+          { label: '架构设计', href: 'docs/zh/architecture/' },
           {
             label: '问题反馈',
             href: 'https://github.com/LessUp/meta-human/issues',
@@ -72,7 +72,7 @@ export default function CTASection() {
       : [
           { label: 'Docs', href: 'docs/en/' },
           { label: 'API', href: 'docs/en/api/' },
-          { label: 'Changelog', href: 'CHANGELOG.md' },
+          { label: 'Architecture', href: 'docs/en/architecture/' },
           { label: 'Issues', href: 'https://github.com/LessUp/meta-human/issues', external: true },
           {
             label: 'Discussions',

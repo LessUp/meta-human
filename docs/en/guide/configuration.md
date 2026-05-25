@@ -38,7 +38,7 @@ VITE_CHAT_TRANSPORT=auto
 
 ## Backend Configuration
 
-Create `server/.env` in the server directory.
+Create `examples/backend-python/.env` in the optional backend example directory.
 
 ### AI/LLM Configuration
 
@@ -82,7 +82,7 @@ CORS_ALLOW_ORIGINS=http://localhost:5173,https://myapp.com
 | `PORT`      | `8000`    | Server port                                        |
 | `LOG_LEVEL` | `info`    | Logging level: `debug`, `info`, `warning`, `error` |
 
-### Example `server/.env`
+### Example `examples/backend-python/.env`
 
 ```bash
 # AI Configuration
@@ -288,7 +288,7 @@ npm run dev
 # .env.local (Frontend)
 # Empty = mock mode, no backend needed
 
-# server/.env (Backend)
+# examples/backend-python/.env (Backend)
 # Not needed without AI features
 ```
 
@@ -299,7 +299,7 @@ npm run dev
 VITE_API_BASE_URL=http://localhost:8000
 VITE_CHAT_TRANSPORT=auto
 
-# server/.env
+# examples/backend-python/.env
 OPENAI_API_KEY=sk-...
 CORS_ALLOW_ORIGINS=http://localhost:5173
 RATE_LIMIT_RPM=60
@@ -312,7 +312,7 @@ RATE_LIMIT_RPM=60
 VITE_API_BASE_URL=https://api.mydomain.com
 VITE_CHAT_TRANSPORT=websocket
 
-# server/.env (on server)
+# examples/backend-python/.env (on server)
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4
 CORS_ALLOW_ORIGINS=https://mydomain.com

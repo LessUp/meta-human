@@ -6,11 +6,11 @@ Get MetaHuman Engine running in 5 minutes.
 
 ## Prerequisites
 
-| Requirement | Version | Check Command      |
-| ----------- | ------- | ------------------ |
-| Node.js     | ≥ 22    | `node --version`   |
-| npm         | ≥ 10    | `npm --version`    |
-| Git         | Any     | `git --version`    |
+| Requirement | Version | Check Command    |
+| ----------- | ------- | ---------------- |
+| Node.js     | ≥ 22    | `node --version` |
+| npm         | ≥ 10    | `npm --version`  |
+| Git         | Any     | `git --version`  |
 
 > 🐍 **Optional Backend:** A FastAPI backend example is available in `examples/backend-python/` for custom integrations. See backend setup instructions below.
 
@@ -112,7 +112,7 @@ VITE_CHAT_TRANSPORT=auto
 
 ### Backend Environment Variables
 
-Create `server/.env`:
+Create `examples/backend-python/.env`:
 
 ```bash
 # Optional: OpenAI API for AI responses

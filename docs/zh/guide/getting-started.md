@@ -112,7 +112,7 @@ VITE_CHAT_TRANSPORT=auto
 
 ### Backend Environment Variables
 
-Create `server/.env`:
+Create `examples/backend-python/.env`:
 
 ```bash
 # Optional: OpenAI API for AI responses

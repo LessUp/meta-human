@@ -17,7 +17,6 @@ coverage/
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
-!.vscode/mcp.json
 .idea/
 *.suo
 *.ntvs*
@@ -39,10 +38,12 @@ __pycache__/
 .pytest_cache/
 *.egg-info/
 
-# AI tool state
+# AI / workflow tool state (local only)
+.claude/
+.opencode/
+.trellis/
 .omc/
 CLAUDE.local.md
-
 
 # Local config
 *.local

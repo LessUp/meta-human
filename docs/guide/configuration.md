@@ -10,19 +10,19 @@ Create `.env.local` in the project root.
 
 ### API Configuration
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `VITE_API_BASE_URL` | *(empty)* | Backend API URL. Leave empty for mock mode. |
-| `VITE_CHAT_TRANSPORT` | `auto` | Transport mode: `http`, `sse`, `websocket`, `auto` |
+| Variable              | Default   | Description                                        |
+| --------------------- | --------- | -------------------------------------------------- |
+| `VITE_API_BASE_URL`   | _(empty)_ | Backend API URL. Leave empty for mock mode.        |
+| `VITE_CHAT_TRANSPORT` | `auto`    | Transport mode: `http`, `sse`, `websocket`, `auto` |
 
 ### Transport Modes
 
-| Mode | Description | Use Case |
-|------|-------------|----------|
-| `auto` | Auto-detect capability (WebSocket → SSE → HTTP) | **Recommended** |
-| `http` | Standard HTTP requests | Simple setups |
-| `sse` | Server-Sent Events for streaming | One-way streaming |
-| `websocket` | Full-duplex WebSocket | Real-time bidirectional |
+| Mode        | Description                                     | Use Case                |
+| ----------- | ----------------------------------------------- | ----------------------- |
+| `auto`      | Auto-detect capability (WebSocket → SSE → HTTP) | **Recommended**         |
+| `http`      | Standard HTTP requests                          | Simple setups           |
+| `sse`       | Server-Sent Events for streaming                | One-way streaming       |
+| `websocket` | Full-duplex WebSocket                           | Real-time bidirectional |
 
 ### Example `.env.local`
 
@@ -38,50 +38,51 @@ VITE_CHAT_TRANSPORT=auto
 
 ## Backend Configuration
 
-Create `server/.env` in the server directory.
+Create `examples/backend-python/.env` in the optional backend example directory.
 
 ### AI/LLM Configuration
 
-| Variable | Default | Required | Description |
-|----------|---------|----------|-------------|
-| `OPENAI_API_KEY` | *(empty)* | No | OpenAI API key for AI responses |
-| `OPENAI_BASE_URL` | *(empty)* | No | Custom OpenAI-compatible endpoint |
-| `OPENAI_MODEL` | `gpt-3.5-turbo` | No | Model to use |
-| `LLM_PROVIDER` | `openai` | No | LLM provider: `openai`, `azure` |
+| Variable          | Default         | Required | Description                       |
+| ----------------- | --------------- | -------- | --------------------------------- |
+| `OPENAI_API_KEY`  | _(empty)_       | No       | OpenAI API key for AI responses   |
+| `OPENAI_BASE_URL` | _(empty)_       | No       | Custom OpenAI-compatible endpoint |
+| `OPENAI_MODEL`    | `gpt-3.5-turbo` | No       | Model to use                      |
+| `LLM_PROVIDER`    | `openai`        | No       | LLM provider: `openai`, `azure`   |
 
 ### Service Providers
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `TTS_PROVIDER` | `edge` | TTS provider: `edge`, `openai` |
-| `ASR_PROVIDER` | `whisper` | ASR provider: `whisper` |
+| Variable       | Default   | Description                    |
+| -------------- | --------- | ------------------------------ |
+| `TTS_PROVIDER` | `edge`    | TTS provider: `edge`, `openai` |
+| `ASR_PROVIDER` | `whisper` | ASR provider: `whisper`        |
 
 ### Rate Limiting
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `RATE_LIMIT_RPM` | `60` | Requests per minute per IP |
+| Variable         | Default | Description                |
+| ---------------- | ------- | -------------------------- |
+| `RATE_LIMIT_RPM` | `60`    | Requests per minute per IP |
 
 ### CORS Configuration
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CORS_ALLOW_ORIGINS` | *(empty)* | Comma-separated allowed origins |
+| Variable             | Default   | Description                     |
+| -------------------- | --------- | ------------------------------- |
+| `CORS_ALLOW_ORIGINS` | _(empty)_ | Comma-separated allowed origins |
 
 **Example:**
+
 ```bash
 CORS_ALLOW_ORIGINS=http://localhost:5173,https://myapp.com
 ```
 
 ### Server Configuration
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `HOST` | `0.0.0.0` | Server bind address |
-| `PORT` | `8000` | Server port |
-| `LOG_LEVEL` | `info` | Logging level: `debug`, `info`, `warning`, `error` |
+| Variable    | Default   | Description                                        |
+| ----------- | --------- | -------------------------------------------------- |
+| `HOST`      | `0.0.0.0` | Server bind address                                |
+| `PORT`      | `8000`    | Server port                                        |
+| `LOG_LEVEL` | `info`    | Logging level: `debug`, `info`, `warning`, `error` |
 
-### Example `server/.env`
+### Example `examples/backend-python/.env`
 
 ```bash
 # AI Configuration
@@ -115,6 +116,7 @@ OPENAI_MODEL=your-model-name
 ### Multi-Environment Setup
 
 **Development:**
+
 ```bash
 # .env.local
 VITE_API_BASE_URL=http://localhost:8000
@@ -122,6 +124,7 @@ VITE_CHAT_TRANSPORT=auto
 ```
 
 **Staging:**
+
 ```bash
 # .env.staging
 VITE_API_BASE_URL=https://staging-api.example.com
@@ -129,6 +132,7 @@ VITE_CHAT_TRANSPORT=websocket
 ```
 
 **Production:**
+
 ```bash
 # .env.production
 VITE_API_BASE_URL=https://api.example.com
@@ -136,6 +140,7 @@ VITE_CHAT_TRANSPORT=websocket
 ```
 
 Use with Vite modes:
+
 ```bash
 npm run dev -- --mode staging
 npm run build -- --mode production
@@ -150,6 +155,7 @@ npm run build -- --mode production
 Vision processing runs entirely in the browser — no backend configuration needed.
 
 **Browser requirements:**
+
 - WebGL 2.0 enabled
 - Camera permission granted
 - HTTPS or localhost
@@ -159,6 +165,7 @@ Vision processing runs entirely in the browser — no backend configuration need
 Uses Web Speech API (browser-native):
 
 **Supported browsers:**
+
 - Chrome 25+
 - Edge 79+
 - Safari 14.1+ (limited)
@@ -168,11 +175,13 @@ No backend configuration required.
 ### Text-to-Speech
 
 **Edge TTS (Default):**
+
 - No configuration needed
 - Works offline
 - Multiple voices available
 
 **OpenAI TTS:**
+
 ```bash
 TTS_PROVIDER=openai
 OPENAI_API_KEY=sk-...
@@ -192,10 +201,11 @@ OPENAI_API_KEY=sk-...
 ### 🔒 CORS
 
 1. **Restrict origins** in production:
+
    ```bash
    # Good
    CORS_ALLOW_ORIGINS=https://myapp.com
-   
+
    # Bad
    CORS_ALLOW_ORIGINS=*
    ```
@@ -239,12 +249,14 @@ RATE_LIMIT_RPM=60
 ### Changes Not Applied
 
 **Frontend:**
+
 ```bash
 # Restart dev server
 npm run dev
 ```
 
 **Backend:**
+
 ```bash
 # Restart uvicorn
 # (Auto-reloads on code changes, not env changes)
@@ -276,7 +288,7 @@ npm run dev
 # .env.local (Frontend)
 # Empty = mock mode, no backend needed
 
-# server/.env (Backend)
+# examples/backend-python/.env (Backend)
 # Not needed without AI features
 ```
 
@@ -287,7 +299,7 @@ npm run dev
 VITE_API_BASE_URL=http://localhost:8000
 VITE_CHAT_TRANSPORT=auto
 
-# server/.env
+# examples/backend-python/.env
 OPENAI_API_KEY=sk-...
 CORS_ALLOW_ORIGINS=http://localhost:5173
 RATE_LIMIT_RPM=60
@@ -300,7 +312,7 @@ RATE_LIMIT_RPM=60
 VITE_API_BASE_URL=https://api.mydomain.com
 VITE_CHAT_TRANSPORT=websocket
 
-# server/.env (on server)
+# examples/backend-python/.env (on server)
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4
 CORS_ALLOW_ORIGINS=https://mydomain.com

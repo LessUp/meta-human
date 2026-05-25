@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### 🧹 Repository Simplification
+
+- Removed repository-scoped AI workflow frameworks and generated automation from `.trellis/`, `.claude/`, and `.opencode/`
+- Simplified contributor guidance to a minimal `AGENTS.md` / `CLAUDE.md` / Copilot instruction surface
+- Stopped exposing changelog navigation in the landing page and docs site
+- Corrected stale docs and Pages copy that still claimed Docker, Render, CLI scaffolds, templates, and old backend paths
+- Consolidated historical notes from the removed `changelog/` directory into this file
+
+### 🗂️ Historical Notes Consolidated From `changelog/`
+
+- **2026-05-22** — Scoped dialogue runtime to the service container, normalized `DigitalHumanEngine` invalid inputs, and tightened broad UI subscriptions
+- **2026-05-21** — Removed the dead `DigitalHumanViewer` pass-through export, centralized service adapters, and moved dialogue orchestration away from module-level state
+- **2026-05-15** — Removed the deprecated voice command processor and clarified the four-file service container structure
+- **2026-05-12** — Consolidated voice command handling into `src/core/voiceCommand/`
+- **2026-05-12** — Added automatic language detection and persisted language preference for GitHub Pages
+
+---
+
 ## [2.2.0] - 2026-04-29
 
 ### 🏗️ Architecture

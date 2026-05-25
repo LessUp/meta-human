@@ -1,3 +1,0 @@
-{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "迁移 hooks 时需遵循 hook 编写规范"}
-{"file": ".trellis/spec/frontend/state-management.md", "reason": "涉及 Zustand store 与服务层的集成模式"}
-{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "删除文件和调整导入路径需遵循目录结构规范"}

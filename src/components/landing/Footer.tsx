@@ -23,7 +23,6 @@ export default function Footer() {
               { label: '在线体验', href: '/app', isRoute: true },
               { label: '功能特性', href: '#features', isAnchor: true },
               { label: '技术架构', href: '#tech-stack', isAnchor: true },
-              { label: '更新日志', href: 'CHANGELOG.md' },
             ] as FooterLink[],
           },
           resources: {
@@ -60,7 +59,6 @@ export default function Footer() {
               { label: 'Live Demo', href: '/app', isRoute: true },
               { label: 'Features', href: '#features', isAnchor: true },
               { label: 'Technology', href: '#tech-stack', isAnchor: true },
-              { label: 'Changelog', href: 'CHANGELOG.md' },
             ] as FooterLink[],
           },
           resources: {

@@ -54,8 +54,8 @@ export default function FeaturesSection() {
       title: lang === 'zh-CN' ? '零配置部署' : 'Zero Config Deployment',
       description:
         lang === 'zh-CN'
-          ? '开箱即用的开发体验，自动降级到本地 Mock 模式无需 API Key。支持 GitHub Pages 一键部署，Docker 容器化后端快速启动。'
-          : 'Out-of-the-box development experience with automatic fallback to local Mock mode without API Key. Supports one-click GitHub Pages deployment, Docker containerized backend.',
+          ? '开箱即用的开发体验，默认回退到本地 Mock 模式无需 API Key。前端可直接部署到 GitHub Pages；如需后端，可按需接入 `examples/backend-python/` 参考实现。'
+          : 'Out-of-the-box development with automatic local mock fallback and no required API key. The frontend deploys directly to GitHub Pages, and `examples/backend-python/` remains the optional backend reference.',
       color: 'from-indigo-500 to-violet-500',
       bgColor: 'bg-indigo-500/10',
       borderColor: 'border-indigo-500/20',

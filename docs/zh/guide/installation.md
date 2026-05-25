@@ -27,18 +27,18 @@ Complete installation instructions for MetaHuman Engine.
 
 ## Frontend Installation
 
-### Step 1: Install Node.js
+### Step 1: Install Node.js 22
 
 **macOS (Homebrew):**
 
 ```bash
-brew install node@20
+brew install node@22
 ```
 
 **Ubuntu/Debian:**
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
@@ -48,8 +48,8 @@ Download from [nodejs.org](https://nodejs.org/) (LTS version)
 **Verify installation:**
 
 ```bash
-node --version  # Should show v20.x.x
-npm --version   # Should show 9.x.x or higher
+node --version  # Should show v22.x.x
+npm --version   # Should show 10.x.x or higher
 ```
 
 ### Step 2: Clone and Setup
@@ -88,7 +88,7 @@ Access at **http://localhost:5173**
 
 ---
 
-## Backend Installation
+## Optional Backend Example
 
 ### Option 1: Local Python Environment
 
@@ -119,7 +119,7 @@ python --version  # Should show 3.10.x or higher
 **Step 2: Setup Virtual Environment**
 
 ```bash
-cd server
+cd examples/backend-python
 
 # Create virtual environment
 python -m venv venv
@@ -134,9 +134,11 @@ pip install -r requirements.txt
 
 **Step 3: Configure Environment**
 
-Create `server/.env`:
+Create `examples/backend-python/.env`:
 
 ```bash
+cp .env.example .env
+
 # Required for AI responses (optional - mock mode works without)
 OPENAI_API_KEY=sk-your-api-key-here
 
@@ -165,42 +167,9 @@ API docs at **http://localhost:8000/docs**
 
 ---
 
-### Option 2: Docker (Recommended for Production)
+> This repository no longer ships Docker, docker-compose, or Render deployment manifests. Treat `examples/backend-python/` as a reference implementation and deploy it on your own Python platform if you need a backend.
 
-**Step 1: Install Docker**
-
-See [docker.com](https://docker.com/) for platform-specific instructions.
-
-**Step 2: Build and Run**
-
-```bash
-# Build image
-docker build -t metahuman-backend ./server
-
-# Run container
-docker run -p 8000:8000 \
-  -e OPENAI_API_KEY=sk-... \
-  -e CORS_ALLOW_ORIGINS=http://localhost:5173 \
-  metahuman-backend
-```
-
-**Or use docker-compose:**
-
-```yaml
-version: '3.8'
-services:
-  backend:
-    build: ./server
-    ports:
-      - '8000:8000'
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - CORS_ALLOW_ORIGINS=http://localhost:5173
-```
-
----
-
-## Production Deployment
+## Deployment
 
 ### Frontend: GitHub Pages
 
@@ -226,41 +195,17 @@ Go to Settings → Secrets and variables → Actions:
 **Step 4: Deploy**
 
 ```bash
-git push origin main
+git push origin master
 ```
 
 Or trigger "Deploy Pages" workflow manually.
 
----
+### Optional Backend Example
 
-### Backend: Render
+Deploy `examples/backend-python/` to any Python host you control, then point the frontend at it with:
 
-**Step 1: Create Blueprint Service**
-
-Import from GitHub using `render.yaml` in project root.
-
-**Step 2: Configure Service**
-
-| Setting        | Value                                              |
-| -------------- | -------------------------------------------------- |
-| Root Directory | `server`                                           |
-| Build Command  | `pip install -r requirements.txt`                  |
-| Start Command  | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
-| Health Check   | `/health`                                          |
-
-**Step 3: Set Environment Variables**
-
-```
-CORS_ALLOW_ORIGINS=https://your-frontend-domain.com
-OPENAI_API_KEY=sk-...
-```
-
-**Step 4: Connect Frontend**
-
-Update GitHub Repository variable:
-
-```
-VITE_API_BASE_URL=https://your-backend.onrender.com
+```bash
+VITE_API_BASE_URL=https://your-backend.example.com
 ```
 
 ---

@@ -169,14 +169,6 @@ const response = await fetch('http://localhost:8000/v1/chat', {
 const data = await response.json();
 ```
 
----
-
-## Changelog
-
-See [CHANGELOG](../../CHANGELOG.md) for API changes and version history.
-
----
-
 <p align="center">
   <a href="./rest-api.md">REST API Reference →</a>
 </p>

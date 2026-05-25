@@ -52,18 +52,18 @@ git remote add upstream https://github.com/LessUp/meta-human.git
 npm install
 
 # Backend (optional)
-cd server
+cd examples/backend-python
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 cd ..
 ```
 
-### 3. Create Branch
+### 3. Stay on `master`
 
 ```bash
-git checkout -b feat/your-feature-name
-# or: git checkout -b fix/bug-description
+git checkout master
+git pull --ff-only origin master
 ```
 
 ---
@@ -84,16 +84,16 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 **Types:**
 
-| Type | Description |
-|------|-------------|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `docs` | Documentation changes |
-| `style` | Code style (formatting, semicolons, etc.) |
-| `refactor` | Code refactoring |
-| `perf` | Performance improvements |
-| `test` | Adding or updating tests |
-| `chore` | Maintenance tasks |
+| Type       | Description                               |
+| ---------- | ----------------------------------------- |
+| `feat`     | New feature                               |
+| `fix`      | Bug fix                                   |
+| `docs`     | Documentation changes                     |
+| `style`    | Code style (formatting, semicolons, etc.) |
+| `refactor` | Code refactoring                          |
+| `perf`     | Performance improvements                  |
+| `test`     | Adding or updating tests                  |
+| `chore`    | Maintenance tasks                         |
 
 **Examples:**
 
@@ -106,11 +106,13 @@ fix(dialogue): resolve memory leak in stream
 ### TypeScript Standards
 
 **Naming:**
+
 - `PascalCase` for components, types, interfaces
 - `camelCase` for functions, variables
 - `SCREAMING_SNAKE_CASE` for constants
 
 **Imports:**
+
 ```typescript
 // 1. External imports
 import React from 'react';
@@ -123,6 +125,7 @@ import { helper } from './utils';
 ```
 
 **Comments:**
+
 ```typescript
 // Good: Explains why, not what
 // Retry with exponential backoff for network resilience
@@ -295,18 +298,16 @@ Use JSDoc for public APIs:
  * @returns Promise that resolves when stream completes
  * @throws {ChatError} When transport fails
  */
-async function streamMessage(
-  message: string,
-  options: StreamOptions
-): Promise<void>
+async function streamMessage(message: string, options: StreamOptions): Promise<void>;
 ```
 
 ### README Updates
 
 When adding features:
+
 - Update main README.md if user-facing
 - Add to docs/ if API changes
-- Update CHANGELOG.md
+- Update the root `CHANGELOG.md` when the change is user-visible
 
 ---
 

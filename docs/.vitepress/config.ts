@@ -21,7 +21,7 @@ export default defineConfig({
   },
 
   // 忽略本地开发链接和某些相对链接
-  ignoreDeadLinks: [/localhost/, /CHANGELOG/, /\.\.\/api\//, /\.\.\/architecture\//],
+  ignoreDeadLinks: [/localhost/, /\.\.\/api\//, /\.\.\/architecture\//],
 
   locales: {
     zh: {
