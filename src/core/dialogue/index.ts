@@ -27,9 +27,5 @@ export type {
 } from './dialogueService';
 export type { ChatTransport, ChatTransportCapabilities, ChatTransportMode } from './chatTransport';
 
-export {
-  runDialogueTurn,
-  runDialogueTurnStream,
-  handleDialogueResponse,
-} from './dialogueOrchestrator';
+export { DialogueOrchestrator, handleDialogueResponse } from './dialogueOrchestrator';
 export type { DialogueHandleOptions, DialogueTurnOptions } from './dialogueOrchestrator';

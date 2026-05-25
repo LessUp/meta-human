@@ -31,7 +31,7 @@
   <a href="#features"><strong>功能</strong></a> ·
   <a href="#performance"><strong>性能</strong></a> ·
   <a href="#architecture"><strong>架构</strong></a> ·
-  <a href="docs/"><strong>文档</strong></a> ·
+  <a href="docs/zh/index.md"><strong>文档</strong></a> ·
   <a href="CHANGELOG.md"><strong>更新日志</strong></a> ·
   <a href="README.md"><strong>English</strong></a>
 </p>
@@ -180,7 +180,7 @@ const response = await dialogueService.send({
 | **包体积**   | 180 KB (gzipped) | 180 KB         | 180 KB         |
 | **内存占用** | ~120 MB          | ~80 MB         | ~60 MB         |
 
-> 性能根据设备能力自动调节。详见[性能模块文档](docs/architecture/)。
+> 性能根据设备能力自动调节。详见[架构概览](docs/zh/architecture/overview.md)。
 
 ---
 
@@ -218,7 +218,7 @@ const response = await dialogueService.send({
 | `systemStore`       | 连接状态、错误、性能指标             |
 | `digitalHumanStore` | 数字人运行时状态（表情、动画、音频） |
 
-**[📖 架构文档 →](docs/architecture/)**
+**[📖 架构文档 →](docs/zh/architecture/overview.md)**
 
 ---
 
@@ -260,9 +260,9 @@ src/
 
 本项目使用 Vite 路径别名，配置在 `vite.config.ts` 和 `tsconfig.json`：
 
-| 别名   | 映射路径 |
-| ------ | -------- |
-| `@/*`  | `src/*`  |
+| 别名  | 映射路径 |
+| ----- | -------- |
+| `@/*` | `src/*`  |
 
 ---
 
@@ -278,7 +278,7 @@ npm run build:pages
 2. 推送到 `master` — CI 自动部署
 3. 访问：`https://lessup.github.io/meta-human/`
 
-**[📖 部署指南 →](docs/guide/installation.md)**
+**[📖 部署指南 →](docs/zh/guide/installation.md)**
 
 ---
 
@@ -337,10 +337,10 @@ npm run test:ui          # Vitest UI 模式
 
 ## 📚 文档
 
-- **[快速开始](docs/guide/)** — 5 分钟快速上手
-- **[API 参考](docs/api/)** — 后端 API 文档
-- **[架构设计](docs/architecture/)** — 系统设计
-- **[配置说明](docs/guide/configuration.md)** — 环境变量与设置
+- **[快速开始](docs/zh/guide/getting-started.md)** — 5 分钟快速上手
+- **[API 参考](docs/zh/api/overview.md)** — 后端 API 文档
+- **[架构设计](docs/zh/architecture/overview.md)** — 系统设计
+- **[配置说明](docs/zh/guide/configuration.md)** — 环境变量与设置
 - **[贡献指南](docs/contributing/)** — 贡献指南
 - **[更新日志](CHANGELOG.md)** — 版本历史
 

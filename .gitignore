@@ -38,12 +38,5 @@ __pycache__/
 .pytest_cache/
 *.egg-info/
 
-# AI / workflow tool state (local only)
-.claude/
-.opencode/
-.trellis/
-.omc/
-CLAUDE.local.md
-
 # Local config
 *.local

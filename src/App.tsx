@@ -6,7 +6,6 @@ import { ServicesProvider } from '@/core/services';
 
 // 懒加载页面组件
 const LandingPage = lazy(() => import('@/pages/LandingPage'));
-const DigitalHumanPage = lazy(() => import('@/pages/DigitalHumanPage'));
 const AdvancedDigitalHumanPage = lazy(() => import('@/pages/AdvancedDigitalHumanPage'));
 
 // 页面加载 fallback
@@ -28,10 +27,8 @@ export default function App() {
               {/* Landing Page - 产品落地页 */}
               <Route path="/" element={<LandingPage />} />
 
-              {/* App Routes - 数字人应用 */}
+              {/* App Route - 数字人应用 */}
               <Route path="/app" element={<AdvancedDigitalHumanPage />} />
-              <Route path="/advanced" element={<AdvancedDigitalHumanPage />} />
-              <Route path="/digital-human" element={<DigitalHumanPage />} />
 
               {/* Fallback - 防止未知 hash 路径导致空白页 */}
               <Route path="*" element={<Navigate to="/" replace />} />

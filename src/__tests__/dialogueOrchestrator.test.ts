@@ -1,17 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
-  runDialogueTurnStream,
+  DialogueOrchestrator,
   handleDialogueResponse,
 } from '../core/dialogue/dialogueOrchestrator';
 
 // Mock transport to control turn behavior
 vi.mock('../core/dialogue/chatTransport', () => {
-  let mockStreamGenerator: AsyncGenerator<string, any, unknown> | null = null;
-  let mockSendResult: any = {
+  const defaultSendResult = {
     response: { replyText: 'ok', emotion: 'neutral', action: 'idle' },
     connectionStatus: 'connected',
     error: null,
   };
+  let mockStreamGenerator: AsyncGenerator<string, any, unknown> | null = null;
+  let mockSendResult: any = defaultSendResult;
 
   async function* stream() {
     if (mockStreamGenerator) {
@@ -30,6 +31,10 @@ vi.mock('../core/dialogue/chatTransport', () => {
     __setMockSendResult: (result: any) => {
       mockSendResult = result;
     },
+    __resetMockTransport: () => {
+      mockStreamGenerator = null;
+      mockSendResult = defaultSendResult;
+    },
   };
 });
 
@@ -47,8 +52,13 @@ async function* tokens(texts: string[]): AsyncGenerator<string> {
 }
 
 describe('runDialogueTurnStream', () => {
-  beforeEach(() => {
+  let orchestrator: DialogueOrchestrator;
+
+  beforeEach(async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
+    orchestrator = new DialogueOrchestrator();
+    const { __resetMockTransport } = (await import('../core/dialogue/chatTransport')) as any;
+    __resetMockTransport();
   });
 
   afterEach(() => {
@@ -65,7 +75,7 @@ describe('runDialogueTurnStream', () => {
     const onAddUserMessage = vi.fn();
     const setLoading = vi.fn();
 
-    const result = await runDialogueTurnStream('hi', {
+    const result = await orchestrator.runDialogueTurnStream('hi', {
       onAddUserMessage,
       onStreamToken,
       onStreamEnd,
@@ -79,7 +89,7 @@ describe('runDialogueTurnStream', () => {
   });
 
   it('returns undefined for empty input', async () => {
-    const result = await runDialogueTurnStream('   ');
+    const result = await orchestrator.runDialogueTurnStream('   ');
     expect(result).toBeUndefined();
   });
 
@@ -88,7 +98,7 @@ describe('runDialogueTurnStream', () => {
     __setMockStream(tokens(['ok']));
 
     const setLoading = vi.fn();
-    await runDialogueTurnStream('test', { setLoading });
+    await orchestrator.runDialogueTurnStream('test', { setLoading });
 
     expect(setLoading).toHaveBeenCalledWith(true);
     expect(setLoading).toHaveBeenCalledWith(false);
@@ -111,7 +121,7 @@ describe('runDialogueTurnStream', () => {
     __setMockStream(slowGen());
 
     // Start first request (don't await)
-    const firstPromise = runDialogueTurnStream('first', {
+    const firstPromise = orchestrator.runDialogueTurnStream('first', {
       setLoading: vi.fn(),
       onStreamToken: vi.fn(),
       onStreamEnd: vi.fn(),
@@ -119,7 +129,7 @@ describe('runDialogueTurnStream', () => {
     });
 
     // Second request should be rejected
-    const secondResult = await runDialogueTurnStream('second');
+    const secondResult = await orchestrator.runDialogueTurnStream('second');
     expect(secondResult).toBeUndefined();
 
     // Resolve first so cleanup happens
@@ -141,7 +151,7 @@ describe('runDialogueTurnStream', () => {
     const onStreamToken = vi.fn();
     const onStreamEnd = vi.fn();
 
-    const result = await runDialogueTurnStream('test', {
+    const result = await orchestrator.runDialogueTurnStream('test', {
       onError,
       onStreamToken,
       onStreamEnd,
@@ -172,7 +182,7 @@ describe('runDialogueTurnStream', () => {
     const onConnectionChange = vi.fn();
     const onStreamToken = vi.fn();
 
-    const result = await runDialogueTurnStream('test', {
+    const result = await orchestrator.runDialogueTurnStream('test', {
       onError,
       onConnectionChange,
       onStreamToken,

@@ -66,6 +66,12 @@ git checkout master
 git pull --ff-only origin master
 ```
 
+### 4. Keep the repo minimal
+
+- Do not add AI workflow frameworks, generated skill systems, or repository-scoped agent control files
+- Keep the product surface focused on the landing page, the `/app` runtime, and the localized docs site
+- Record user-visible history only in the root `CHANGELOG.md`
+
 ---
 
 ## Code Standards
@@ -218,7 +224,7 @@ describe('useChatStream', () => {
 ### 2. Create PR
 
 1. Push branch to your fork
-2. Open PR against `main` branch
+2. Open PR against `master` branch
 3. Fill out PR template
 4. Link related issues
 
@@ -238,20 +244,19 @@ Once approved, a maintainer will merge your PR.
 
 ```
 src/
-├── components/          # React components
-│   ├── ui/             # Primitive UI components
-│   ├── forms/          # Form-specific components
-│   └── panels/         # Panel/layout components
-├── core/               # Business logic
-│   ├── avatar/         # 3D avatar engine
-│   ├── audio/          # TTS/ASR
-│   ├── dialogue/       # Chat services
-│   └── vision/         # Face tracking
-├── store/              # State management
-├── hooks/              # Custom React hooks
-├── lib/                # Utilities
-├── types/              # TypeScript types
-└── __tests__/          # Tests
+├── components/          # UI, landing, viewer, and shared primitives
+├── core/                # Runtime services without React imports
+│   ├── avatar/          # 3D avatar engine
+│   ├── audio/           # TTS/ASR services
+│   ├── dialogue/        # Dialogue orchestration and transports
+│   ├── performance/     # Device capability handling
+│   ├── vision/          # Face and pose processing
+│   └── voiceCommand/    # Voice command execution
+├── hooks/               # UI orchestration hooks
+├── lib/                 # Shared utilities
+├── pages/               # Route-level pages
+├── store/               # Zustand stores
+└── __tests__/           # Tests
 ```
 
 ---
@@ -306,7 +311,7 @@ async function streamMessage(message: string, options: StreamOptions): Promise<v
 When adding features:
 
 - Update main README.md if user-facing
-- Add to docs/ if API changes
+- Update `docs/en/` and `docs/zh/` if product or API behavior changes
 - Update the root `CHANGELOG.md` when the change is user-visible
 
 ---

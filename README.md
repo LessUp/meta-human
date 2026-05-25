@@ -31,7 +31,7 @@
   <a href="#features"><strong>Features</strong></a> ·
   <a href="#performance"><strong>Performance</strong></a> ·
   <a href="#architecture"><strong>Architecture</strong></a> ·
-  <a href="docs/"><strong>Documentation</strong></a> ·
+  <a href="docs/en/index.md"><strong>Documentation</strong></a> ·
   <a href="CHANGELOG.md"><strong>Changelog</strong></a> ·
   <a href="README.zh-CN.md"><strong>中文</strong></a>
 </p>
@@ -180,7 +180,7 @@ Benchmarks measured on typical devices:
 | **Bundle Size**  | 180 KB (gzipped) | 180 KB             | 180 KB           |
 | **Memory Usage** | ~120 MB          | ~80 MB             | ~60 MB           |
 
-> Performance automatically scales based on device capabilities. See [Performance Module](docs/architecture/) for details.
+> Performance automatically scales based on device capabilities. See the [architecture overview](docs/en/architecture/overview.md) for details.
 
 ---
 
@@ -218,7 +218,7 @@ Three focused domains minimize re-renders:
 | `systemStore`       | Connection status, errors, performance metrics      |
 | `digitalHumanStore` | Avatar runtime state (expression, animation, audio) |
 
-**[📖 Architecture Docs →](docs/architecture/)**
+**[📖 Architecture Docs →](docs/en/architecture/overview.md)**
 
 ---
 
@@ -260,9 +260,9 @@ src/
 
 This project uses Vite path aliases configured in `vite.config.ts` and `tsconfig.json`:
 
-| Alias  | Maps to  |
-| ------ | -------- |
-| `@/*`  | `src/*`  |
+| Alias | Maps to |
+| ----- | ------- |
+| `@/*` | `src/*` |
 
 ---
 
@@ -278,7 +278,7 @@ npm run build:pages
 2. Push to `master` — CI auto-deploys
 3. Live at: `https://lessup.github.io/meta-human/`
 
-**[📖 Deployment Guide →](docs/guide/installation.md)**
+**[📖 Deployment Guide →](docs/en/guide/installation.md)**
 
 ---
 
@@ -337,10 +337,10 @@ npm run test:ui          # Vitest UI mode
 
 ## 📚 Documentation
 
-- **[Quick Start](docs/guide/)** — Get running in 5 minutes
-- **[API Reference](docs/api/)** — Backend API documentation
-- **[Architecture](docs/architecture/)** — System design
-- **[Configuration](docs/guide/configuration.md)** — Environment variables and settings
+- **[Quick Start](docs/en/guide/getting-started.md)** — Get running in 5 minutes
+- **[API Reference](docs/en/api/overview.md)** — Backend API documentation
+- **[Architecture](docs/en/architecture/overview.md)** — System design
+- **[Configuration](docs/en/guide/configuration.md)** — Environment variables and settings
 - **[Contributing](docs/contributing/)** — Contribution guidelines
 - **[Changelog](CHANGELOG.md)** — Version history
 

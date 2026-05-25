@@ -7,18 +7,11 @@ import { useSystemStore } from '@/store/systemStore';
 const abortPendingTurnMock = vi.fn();
 const clearRemoteSessionMock = vi.fn();
 const toastSuccessMock = vi.fn();
-const moduleAbortPendingTurnMock = vi.fn(() => {
-  throw new Error('useSessionManager should use useDialogue().abortPendingTurn');
-});
 
 vi.mock('@/core/services', () => ({
   useDialogue: () => ({
     abortPendingTurn: () => abortPendingTurnMock(),
   }),
-}));
-
-vi.mock('@/core/dialogue/dialogueOrchestrator', () => ({
-  abortPendingTurn: () => moduleAbortPendingTurnMock(),
 }));
 
 vi.mock('@/core/dialogue/dialogueService', () => ({
@@ -36,7 +29,6 @@ describe('useSessionManager', () => {
     abortPendingTurnMock.mockReset();
     clearRemoteSessionMock.mockReset();
     toastSuccessMock.mockReset();
-    moduleAbortPendingTurnMock.mockClear();
 
     useChatSessionStore.setState({
       sessionId: 'session_old',
