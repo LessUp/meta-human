@@ -335,67 +335,6 @@ export class DialogueOrchestrator {
   }
 }
 
-// ============================================================================
-// 全局实例（用于向后兼容）
-// ============================================================================
-
-/**
- * 全局对话编排器实例。
- *
- * @deprecated 建议使用依赖注入创建独立实例，避免测试间状态泄漏。
- */
-export const dialogueOrchestrator = new DialogueOrchestrator();
-
-// ============================================================================
-// 向后兼容的函数导出
-// ============================================================================
-
-/**
- * @deprecated 使用 dialogueOrchestrator.reset() 代替
- */
-export function resetDialogueOrchestrator(): void {
-  dialogueOrchestrator.reset();
-}
-
-/**
- * @deprecated 使用 dialogueOrchestrator.abortPendingTurn() 代替
- */
-export function abortPendingTurn(): void {
-  dialogueOrchestrator.abortPendingTurn();
-}
-
-/**
- * @deprecated 使用 dialogueOrchestrator.isTurnPending() 代替
- */
-export function isDialogueTurnPending(): boolean {
-  return dialogueOrchestrator.isTurnPending();
-}
-
-/**
- * @deprecated 使用 dialogueOrchestrator.runDialogueTurn() 代替
- */
-export async function runDialogueTurn(
-  userText: string,
-  options: DialogueTurnOptions = {},
-): Promise<ChatResponsePayload | undefined> {
-  return dialogueOrchestrator.runDialogueTurn(userText, options);
-}
-
-/**
- * @deprecated 使用 dialogueOrchestrator.runDialogueTurnStream() 代替
- */
-export async function runDialogueTurnStream(
-  userText: string,
-  options: DialogueTurnOptions = {},
-  streamCallbacks: StreamCallbacks = {},
-): Promise<ChatResponsePayload | undefined> {
-  return dialogueOrchestrator.runDialogueTurnStream(userText, options, streamCallbacks);
-}
-
-// ============================================================================
-// 共享函数
-// ============================================================================
-
 export async function handleDialogueResponse(
   res: ChatResponsePayload,
   options: DialogueHandleOptions = {},

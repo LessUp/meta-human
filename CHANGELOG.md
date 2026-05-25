@@ -12,7 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🧹 Repository Simplification
 
 - Removed repository-scoped AI workflow frameworks and generated automation from `.trellis/`, `.claude/`, and `.opencode/`
-- Simplified contributor guidance to a minimal `AGENTS.md` / `CLAUDE.md` / Copilot instruction surface
+- Simplified contributor guidance to a minimal `AGENTS.md` / `CLAUDE.md` surface
+- Removed residual AI workflow docs from `docs/agents/` and deleted the repository Copilot instruction file
+- Dropped the duplicate root `docs/api/`, `docs/architecture/`, and `docs/guide/` trees in favor of the canonical localized docs
+- Removed the legacy `/advanced` and `/digital-human` app aliases so the product runtime has a single `/app` entry
+- Removed deprecated module-level dialogue orchestrator wrappers and kept orchestration instance-scoped
 - Stopped exposing changelog navigation in the landing page and docs site
 - Corrected stale docs and Pages copy that still claimed Docker, Render, CLI scaffolds, templates, and old backend paths
 - Consolidated historical notes from the removed `changelog/` directory into this file

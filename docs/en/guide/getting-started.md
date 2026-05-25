@@ -186,8 +186,8 @@ Interactive docs at **http://localhost:8000/docs**
 
 - **[Installation Guide](./installation.md)** — Detailed setup instructions
 - **[Configuration](./configuration.md)** — All environment variables
-- **[API Reference](../api/)** — Backend API documentation
-- **[Architecture](../architecture/)** — System design
+- **[API Reference](../api/overview.md)** — Backend API documentation
+- **[Architecture](../architecture/overview.md)** — System design
 
 ---
 

@@ -20,8 +20,8 @@ export default defineConfig({
     hostname: 'https://lessup.github.io/meta-human/',
   },
 
-  // 忽略本地开发链接和某些相对链接
-  ignoreDeadLinks: [/localhost/, /\.\.\/api\//, /\.\.\/architecture\//],
+  // 忽略本地开发链接
+  ignoreDeadLinks: [/localhost/],
 
   locales: {
     zh: {

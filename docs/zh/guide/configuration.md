@@ -323,5 +323,5 @@ LOG_LEVEL=warning
 ---
 
 <p align="center">
-  <a href="../architecture/">Next: Architecture →</a>
+  <a href="../architecture/overview.md">Next: Architecture →</a>
 </p>
