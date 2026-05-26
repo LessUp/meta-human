@@ -53,6 +53,31 @@ const DEFAULT_CAPABILITIES: DeviceCapabilities = {
 
 let cachedCapabilities: DeviceCapabilities | null = null;
 
+function createCapabilitiesSnapshot(
+  overrides: Partial<DeviceCapabilities> = {},
+): DeviceCapabilities {
+  return {
+    ...DEFAULT_CAPABILITIES,
+    detectedAt: Date.now(),
+    ...overrides,
+  };
+}
+
+function safeGetCanvasContext(
+  canvas: HTMLCanvasElement,
+  contextId: 'webgl2' | 'webgl' | 'experimental-webgl',
+): RenderingContext | null {
+  try {
+    return canvas.getContext(contextId);
+  } catch {
+    return null;
+  }
+}
+
+function isCanvasProbeUnavailable(): boolean {
+  return typeof navigator !== 'undefined' && /\bjsdom\b/i.test(navigator.userAgent);
+}
+
 /**
  * Detect WebGL support and versions
  */
@@ -61,18 +86,22 @@ function detectWebGLSupport(): { supported: boolean; version: 1 | 2 | null } {
     return { supported: false, version: null };
   }
 
+  if (isCanvasProbeUnavailable()) {
+    return { supported: false, version: null };
+  }
+
   const canvas = document.createElement('canvas');
 
   // Try WebGL 2 first
-  const gl2 = canvas.getContext('webgl2');
+  const gl2 = safeGetCanvasContext(canvas, 'webgl2');
   if (gl2) {
     return { supported: true, version: 2 };
   }
 
   // Fall back to WebGL 1
   const gl1 =
-    canvas.getContext('webgl') ||
-    (canvas.getContext('experimental-webgl') as WebGLRenderingContext | null);
+    safeGetCanvasContext(canvas, 'webgl') ||
+    (safeGetCanvasContext(canvas, 'experimental-webgl') as WebGLRenderingContext | null);
   if (gl1) {
     return { supported: true, version: 1 };
   }
@@ -207,25 +236,30 @@ export function detectDeviceCapabilities(): DeviceCapabilities {
     const { supported, version } = detectWebGLSupport();
 
     if (!supported) {
-      logger.warn('WebGL not supported, using fallback capabilities');
-      cachedCapabilities = {
-        ...DEFAULT_CAPABILITIES,
+      if (!isCanvasProbeUnavailable()) {
+        logger.warn('WebGL not supported, using fallback capabilities');
+      }
+      cachedCapabilities = createCapabilitiesSnapshot({
         supportsWebGL2: false,
         tier: 'low',
-        detectedAt: Date.now(),
-      };
+      });
       return cachedCapabilities;
     }
 
     // Create temporary canvas for detailed detection
     const canvas = document.createElement('canvas');
     const gl =
-      (canvas.getContext('webgl2') as WebGL2RenderingContext | null) ||
-      (canvas.getContext('webgl') as WebGLRenderingContext | null);
+      (safeGetCanvasContext(canvas, 'webgl2') as WebGL2RenderingContext | null) ||
+      (safeGetCanvasContext(canvas, 'webgl') as WebGLRenderingContext | null);
 
     if (!gl) {
-      logger.warn('Could not get WebGL context');
-      cachedCapabilities = DEFAULT_CAPABILITIES;
+      if (!isCanvasProbeUnavailable()) {
+        logger.warn('Could not get WebGL context');
+      }
+      cachedCapabilities = createCapabilitiesSnapshot({
+        supportsWebGL2: false,
+        tier: 'low',
+      });
       return cachedCapabilities;
     }
 
@@ -234,7 +268,7 @@ export function detectDeviceCapabilities(): DeviceCapabilities {
     const tier = detectDeviceTier(version, gpuMemory, dpr);
     const tierSettings = getTierSettings(tier);
 
-    cachedCapabilities = {
+    cachedCapabilities = createCapabilitiesSnapshot({
       tier,
       supportsWebGL2: version === 2,
       estimatedGPUMemoryMB: gpuMemory,
@@ -245,8 +279,7 @@ export function detectDeviceCapabilities(): DeviceCapabilities {
       enablePostProcessing: tierSettings.enablePostProcessing!,
       maxShadowMapSize: tierSettings.maxShadowMapSize!,
       prefersReducedMotion: getPrefersReducedMotion(),
-      detectedAt: Date.now(),
-    };
+    });
 
     logger.info('Device capabilities detected:', {
       tier,
@@ -258,7 +291,7 @@ export function detectDeviceCapabilities(): DeviceCapabilities {
     return cachedCapabilities;
   } catch (error) {
     logger.error('Error detecting device capabilities:', error);
-    cachedCapabilities = DEFAULT_CAPABILITIES;
+    cachedCapabilities = createCapabilitiesSnapshot();
     return cachedCapabilities;
   }
 }

@@ -138,6 +138,10 @@ export class PresetActionRunner {
   }
 
   private scheduleReset(delay: number, fn: () => void): void {
-    this.timers.push(setTimeout(fn, delay));
+    const timer = setTimeout(() => {
+      this.timers.splice(this.timers.indexOf(timer), 1);
+      fn();
+    }, delay);
+    this.timers.push(timer);
   }
 }

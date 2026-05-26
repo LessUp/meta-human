@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 export type Theme = 'light' | 'dark' | 'system';
 type ResolvedTheme = 'light' | 'dark';
+const VALID_THEMES: ReadonlySet<Theme> = new Set(['light', 'dark', 'system']);
 
 function getSystemTheme(): ResolvedTheme {
   if (typeof window === 'undefined') return 'dark';
@@ -12,9 +13,14 @@ function resolveTheme(theme: Theme): ResolvedTheme {
   return theme === 'system' ? getSystemTheme() : theme;
 }
 
+function isValidTheme(value: string | null): value is Theme {
+  return value !== null && VALID_THEMES.has(value as Theme);
+}
+
 function getStoredTheme(): Theme {
   try {
-    return (localStorage.getItem('theme') as Theme) || 'system';
+    const storedTheme = localStorage.getItem('theme');
+    return isValidTheme(storedTheme) ? storedTheme : 'system';
   } catch {
     return 'system';
   }

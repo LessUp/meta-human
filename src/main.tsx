@@ -13,26 +13,28 @@ if (import.meta.env.DEV) {
 
 // 处理从 404.html 重定向回来的情况
 (function handleRedirect() {
+  const redirectData = sessionStorage.getItem('spa_redirect');
+  if (!redirectData) {
+    return;
+  }
+
   try {
-    const redirectData = sessionStorage.getItem('spa_redirect');
-    if (redirectData) {
-      const { path } = JSON.parse(redirectData);
-      sessionStorage.removeItem('spa_redirect');
+    sessionStorage.removeItem('spa_redirect');
+    const parsed = JSON.parse(redirectData) as { path?: unknown };
 
-      // HashRouter 使用 hash 来管理路由
-      // 构建目标 hash 路径
-      const targetHash = path || '/';
-      const allowedRoutes = new Set(['/', '/app']);
+    // HashRouter 使用 hash 来管理路由
+    // 构建目标 hash 路径
+    const targetHash = typeof parsed.path === 'string' ? parsed.path : '/';
+    const allowedRoutes = new Set(['/', '/app']);
 
-      // 设置 hash 路由
-      if (targetHash !== '/' && allowedRoutes.has(targetHash)) {
-        window.location.hash = targetHash;
-      }
-
-      logger.info('Restored route from redirect:', targetHash);
+    // 设置 hash 路由
+    if (targetHash !== '/' && allowedRoutes.has(targetHash)) {
+      window.location.hash = targetHash;
     }
-  } catch (_e) {
-    // 忽略解析错误
+
+    logger.info('Restored route from redirect:', targetHash);
+  } catch (error) {
+    logger.warn('Failed to restore route from redirect:', error);
   }
 })();
 

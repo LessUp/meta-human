@@ -6,6 +6,7 @@ import {
   meetsMinimumTier,
   getAdaptiveQuality,
 } from '../core/performance/deviceCapability';
+import { loggers } from '../lib/logger';
 
 describe('Device Capability Detection', () => {
   beforeEach(() => {
@@ -85,6 +86,33 @@ describe('Device Capability Detection', () => {
     // Should be different objects with same values
     expect(caps1).not.toBe(caps2);
     expect(caps1.tier).toBe(caps2.tier);
+  });
+
+  it('falls back to low-tier capabilities when canvas probing throws', () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => {
+      throw new Error('canvas unavailable');
+    });
+    const errorSpy = vi.spyOn(loggers.core, 'error');
+
+    const caps = detectDeviceCapabilities();
+
+    expect(caps.tier).toBe('low');
+    expect(caps.supportsWebGL2).toBe(false);
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it('creates a fresh fallback snapshot after a failed capability probe', () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => {
+      throw new Error('canvas unavailable');
+    });
+
+    const caps1 = detectDeviceCapabilities();
+    refreshDeviceCapabilities();
+    const caps2 = detectDeviceCapabilities();
+
+    expect(caps1).not.toBe(caps2);
+    expect(caps2.tier).toBe('low');
+    expect(caps2.supportsWebGL2).toBe(false);
   });
 
   describe('meetsMinimumTier', () => {
