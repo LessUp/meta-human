@@ -14,6 +14,8 @@ import { usePlaybackController } from './usePlaybackController';
 import { useSessionManager } from './useSessionManager';
 import { useVoiceCommandHandler } from './useVoiceCommandHandler';
 import type { UserEmotion } from '@/core/vision/visionMapper';
+import { requestImmersiveArSession } from '@/core/performance/arSession';
+import { revokeCustomAvatarObjectUrl } from '@/core/avatar/avatarSourceAdapter';
 
 export function useAdvancedDigitalHumanController() {
   // 子 hooks
@@ -25,10 +27,21 @@ export function useAdvancedDigitalHumanController() {
   const toggleAutoRotate = useDigitalHumanStore((s) => s.toggleAutoRotate);
   const toggleMute = useDigitalHumanStore((s) => s.toggleMute);
   const setRecording = useDigitalHumanStore((s) => s.setRecording);
+  const avatarSource = useDigitalHumanStore((s) => s.avatarSource);
+  const setCustomAvatar = useDigitalHumanStore((s) => s.setCustomAvatar);
+  const activateProceduralAvatar = useDigitalHumanStore((s) => s.useProceduralAvatar);
+  const setAvatarLoadState = useDigitalHumanStore((s) => s.setAvatarLoadState);
+  const recordVisionEmotion = useDigitalHumanStore((s) => s.recordVisionEmotion);
+  const recordVisionMotion = useDigitalHumanStore((s) => s.recordVisionMotion);
   const error = useSystemStore((s) => s.error);
   const clearError = useSystemStore((s) => s.clearError);
   const setConnectionStatus = useSystemStore((s) => s.setConnectionStatus);
   const setError = useSystemStore((s) => s.setError);
+  const immersiveMode = useSystemStore((s) => s.immersiveMode);
+  const immersiveSession = useSystemStore((s) => s.immersiveSession);
+  const startImmersiveAr = useSystemStore((s) => s.startImmersiveAr);
+  const setImmersiveSession = useSystemStore((s) => s.setImmersiveSession);
+  const clearImmersiveSession = useSystemStore((s) => s.clearImmersiveSession);
 
   // 服务
   const engine = useEngine();
@@ -78,8 +91,85 @@ export function useAdvancedDigitalHumanController() {
 
   // 模型加载回调
   const handleModelLoad = useCallback(() => {
-    // toast.success('数字人接口已上线');
-  }, []);
+    setAvatarLoadState('ready');
+  }, [setAvatarLoadState]);
+
+  const handleAvatarUpload = useCallback(
+    (file: File) => {
+      const nextModelUrl = URL.createObjectURL(file);
+      revokeCustomAvatarObjectUrl(avatarSource, URL.revokeObjectURL);
+      setCustomAvatar({
+        modelUrl: nextModelUrl,
+        fileName: file.name,
+      });
+      setAvatarLoadState('idle');
+      toast.success('已切换到自定义头像');
+    },
+    [avatarSource, setAvatarLoadState, setCustomAvatar],
+  );
+
+  const handleUseBuiltInAvatar = useCallback(() => {
+    revokeCustomAvatarObjectUrl(avatarSource, URL.revokeObjectURL);
+    activateProceduralAvatar();
+    setAvatarLoadState('ready');
+    toast.success('已切换到内置头像');
+  }, [activateProceduralAvatar, avatarSource, setAvatarLoadState]);
+
+  const handleAvatarLoad = useCallback(
+    (model: unknown) => {
+      if (
+        model &&
+        typeof model === 'object' &&
+        'type' in model &&
+        (model as { type: unknown }).type === 'procedural-fallback'
+      ) {
+        const error =
+          'error' in model && typeof (model as { error?: unknown }).error === 'string'
+            ? (model as { error: string }).error
+            : '自定义头像加载失败';
+        revokeCustomAvatarObjectUrl(avatarSource, URL.revokeObjectURL);
+        activateProceduralAvatar();
+        setAvatarLoadState('error', error);
+        setError(error);
+        return;
+      }
+
+      handleModelLoad();
+    },
+    [activateProceduralAvatar, avatarSource, handleModelLoad, setAvatarLoadState, setError],
+  );
+
+  const handleToggleImmersiveAr = useCallback(async () => {
+    if (immersiveMode === 'ar-active' && immersiveSession) {
+      await immersiveSession.end();
+      clearImmersiveSession();
+      toast.info('已退出 AR 模式');
+      return;
+    }
+
+    startImmersiveAr();
+
+    try {
+      const session = await requestImmersiveArSession();
+      session.addEventListener('end', () => {
+        clearImmersiveSession();
+      });
+      setImmersiveSession(session);
+      toast.success('已进入 AR 模式');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '进入 AR 模式失败';
+      clearImmersiveSession(message);
+      setError(message);
+      toast.info(message);
+    }
+  }, [
+    clearImmersiveSession,
+    immersiveMode,
+    immersiveSession,
+    setError,
+    setImmersiveSession,
+    startImmersiveAr,
+  ]);
 
   // 录音控制
   const handleToggleRecording = useCallback(() => {
@@ -118,17 +208,19 @@ export function useAdvancedDigitalHumanController() {
   // 情绪控制
   const handleEmotionChange = useCallback(
     (emotion: UserEmotion) => {
+      recordVisionEmotion(emotion);
       engine.setEmotion(emotion);
     },
-    [engine],
+    [engine, recordVisionEmotion],
   );
 
   // 头部动作
   const handleHeadMotion = useCallback(
     (motion: 'nod' | 'shakeHead' | 'raiseHand' | 'waveHand') => {
+      recordVisionMotion(motion);
       engine.playAnimation(motion);
     },
-    [engine],
+    [engine, recordVisionMotion],
   );
 
   // 语音命令处理（需要外部传入 handleChatSend）
@@ -151,7 +243,11 @@ export function useAdvancedDigitalHumanController() {
       handleEmotionChange,
       handleExpressionChange,
       handleHeadMotion,
-      handleModelLoad,
+      handleToggleImmersiveAr,
+      handleAvatarLoad,
+      handleAvatarUpload,
+      handleModelLoad: handleAvatarLoad,
+      handleUseBuiltInAvatar,
       handleToggleRecording,
       handleVoiceCommand,
       setActiveTab,
@@ -175,7 +271,10 @@ export function useAdvancedDigitalHumanController() {
       handleEmotionChange,
       handleExpressionChange,
       handleHeadMotion,
-      handleModelLoad,
+      handleToggleImmersiveAr,
+      handleAvatarLoad,
+      handleAvatarUpload,
+      handleUseBuiltInAvatar,
       handleToggleRecording,
       handleVoiceCommand,
       toggleAutoRotate,

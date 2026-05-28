@@ -6,9 +6,13 @@ import { useAdvancedDigitalHumanController } from '@/hooks/useAdvancedDigitalHum
 import { useChatStream } from '@/hooks/useChatStream';
 import { useConnectionHealth } from '@/hooks/useConnectionHealth';
 import { useDigitalHumanStore } from '@/store/digitalHumanStore';
+import { getAvatarViewerModelUrl } from '@/core/avatar/avatarSourceAdapter';
 
 export default function AdvancedDigitalHumanPage() {
   const isMuted = useDigitalHumanStore((s) => s.isMuted);
+  const avatarSource = useDigitalHumanStore((s) => s.avatarSource);
+  const avatarLoadStatus = useDigitalHumanStore((s) => s.avatarLoadStatus);
+  const avatarLoadError = useDigitalHumanStore((s) => s.avatarLoadError);
 
   // 控制器 hook（不含聊天流）
   const {
@@ -16,6 +20,7 @@ export default function AdvancedDigitalHumanPage() {
     autoRotate,
     closeSettings,
     handleBehaviorChange,
+    handleAvatarUpload,
     handleEmotionChange,
     handleExpressionChange,
     handleHeadMotion,
@@ -23,7 +28,9 @@ export default function AdvancedDigitalHumanPage() {
     handleNewSession,
     handlePlayPause,
     handleReset,
+    handleToggleImmersiveAr,
     handleToggleRecording,
+    handleUseBuiltInAvatar,
     handleVoiceCommand,
     setActiveTab,
     showSettings,
@@ -55,6 +62,7 @@ export default function AdvancedDigitalHumanPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80 z-10 pointer-events-none" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-black/0 to-black/0 z-0 pointer-events-none" />
         <DigitalHumanViewer
+          modelUrl={getAvatarViewerModelUrl(avatarSource)}
           autoRotate={autoRotate}
           showControls={false}
           onModelLoad={handleModelLoad}
@@ -65,6 +73,7 @@ export default function AdvancedDigitalHumanPage() {
         onToggleSettings={toggleSettings}
         onReconnect={reconnect}
         onNewSession={handleNewSession}
+        onToggleImmersiveAr={handleToggleImmersiveAr}
       />
 
       <SettingsDrawer
@@ -81,6 +90,11 @@ export default function AdvancedDigitalHumanPage() {
         onChatSend={handleChatSend}
         onExpressionChange={handleExpressionChange}
         onBehaviorChange={handleBehaviorChange}
+        onAvatarUpload={handleAvatarUpload}
+        onUseBuiltInAvatar={handleUseBuiltInAvatar}
+        avatarFileName={avatarSource.kind === 'custom' ? avatarSource.fileName : null}
+        avatarLoadStatus={avatarLoadStatus}
+        avatarLoadError={avatarLoadError}
         onEmotionChange={handleEmotionChange}
         onHeadMotion={handleHeadMotion}
       />

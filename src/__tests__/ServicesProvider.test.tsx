@@ -1,73 +1,106 @@
 import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ServicesProvider, useDialogue } from '@/core/services';
+import type { ServiceComposition } from '@/core/serviceComposition';
+import type { Services } from '@/core/servicesContext';
 
-const createServicesMock = vi.fn();
-const disposeMock = vi.fn();
-const resetMock = vi.fn();
-
-vi.mock('@/core/createServices', () => ({
-  createServices: () => createServicesMock(),
-}));
+function buildServices(overrides: Partial<Services> = {}): Services {
+  return {
+    engine: {
+      dispose: vi.fn(),
+    } as unknown as Services['engine'],
+    tts: {
+      dispose: vi.fn(),
+    } as unknown as Services['tts'],
+    asr: {
+      dispose: vi.fn(),
+    } as unknown as Services['asr'],
+    dialogue: {
+      abortPendingTurn: vi.fn(),
+      isTurnPending: vi.fn(() => false),
+      reset: vi.fn(),
+      runDialogueTurn: vi.fn(),
+      runDialogueTurnStream: vi.fn(),
+    } as unknown as Services['dialogue'],
+    ...overrides,
+  };
+}
 
 describe('ServicesProvider', () => {
   afterEach(() => {
-    createServicesMock.mockReset();
-    disposeMock.mockReset();
-    resetMock.mockReset();
+    vi.restoreAllMocks();
   });
 
-  it('disposes provider-owned services on unmount', async () => {
-    createServicesMock.mockReturnValue({
-      engine: {
-        dispose: disposeMock,
-      },
-      tts: {
-        dispose: disposeMock,
-      },
-      asr: {
-        dispose: disposeMock,
-      },
-      dialogue: {
-        reset: resetMock,
-      },
-    });
+  it('delegates provider-owned lifecycle cleanup to the composition seam', () => {
+    const composition: ServiceComposition = {
+      services: buildServices(),
+      dispose: vi.fn(),
+    };
+    const createComposition = vi.fn(() => composition);
 
-    const { ServicesProvider } = await import('@/core/ServicesProvider');
     const { unmount } = render(
-      <ServicesProvider>
+      <ServicesProvider createComposition={createComposition}>
         <div>child</div>
       </ServicesProvider>,
     );
 
+    expect(createComposition).toHaveBeenCalledTimes(1);
+
     unmount();
 
-    expect(resetMock).toHaveBeenCalledTimes(1);
-    expect(disposeMock).toHaveBeenCalledTimes(3);
+    expect(composition.dispose).toHaveBeenCalledTimes(1);
   });
 
-  it('exposes provider-owned dialogue runtime through service hooks', async () => {
+  it('does not recreate a provider-owned composition on parent rerender', () => {
+    const firstComposition: ServiceComposition = {
+      services: buildServices(),
+      dispose: vi.fn(),
+    };
+    const secondComposition: ServiceComposition = {
+      services: buildServices(),
+      dispose: vi.fn(),
+    };
+    const createComposition = vi
+      .fn<() => ServiceComposition>()
+      .mockReturnValueOnce(firstComposition)
+      .mockReturnValueOnce(secondComposition);
+
+    function Parent({ version }: { version: number }) {
+      return (
+        <ServicesProvider createComposition={() => createComposition()}>
+          <div>{version}</div>
+        </ServicesProvider>
+      );
+    }
+
+    const { rerender, unmount } = render(<Parent version={1} />);
+
+    expect(createComposition).toHaveBeenCalledTimes(1);
+
+    rerender(<Parent version={2} />);
+
+    expect(createComposition).toHaveBeenCalledTimes(1);
+    expect(firstComposition.dispose).not.toHaveBeenCalled();
+    expect(secondComposition.dispose).not.toHaveBeenCalled();
+
+    unmount();
+
+    expect(firstComposition.dispose).toHaveBeenCalledTimes(1);
+    expect(secondComposition.dispose).not.toHaveBeenCalled();
+  });
+
+  it('exposes provider-owned dialogue runtime through service hooks', () => {
     const dialogue = {
       abortPendingTurn: vi.fn(),
       isTurnPending: vi.fn(() => false),
-      reset: resetMock,
+      reset: vi.fn(),
       runDialogueTurn: vi.fn(),
       runDialogueTurnStream: vi.fn(),
-    };
-
-    createServicesMock.mockReturnValue({
-      engine: {
-        dispose: disposeMock,
-      },
-      tts: {
-        dispose: disposeMock,
-      },
-      asr: {
-        dispose: disposeMock,
-      },
-      dialogue,
-    });
-
-    const { ServicesProvider, useDialogue } = await import('@/core/services');
+    } as unknown as Services['dialogue'];
+    const createComposition = vi.fn(() => ({
+      services: buildServices({ dialogue }),
+      dispose: vi.fn(),
+    }));
     const captured = { current: null as unknown };
 
     function Consumer() {
@@ -76,7 +109,7 @@ describe('ServicesProvider', () => {
     }
 
     render(
-      <ServicesProvider>
+      <ServicesProvider createComposition={createComposition}>
         <Consumer />
       </ServicesProvider>,
     );

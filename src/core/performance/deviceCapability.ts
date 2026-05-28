@@ -32,6 +32,10 @@ export interface DeviceCapabilities {
   maxShadowMapSize: number;
   /** Whether to use reduced motion */
   prefersReducedMotion: boolean;
+  /** Whether the device primarily uses touch input */
+  supportsTouchInput: boolean;
+  /** Whether WebXR is available in the current runtime */
+  supportsWebXR: boolean;
   /** Timestamp of capability detection */
   detectedAt: number;
 }
@@ -48,6 +52,8 @@ const DEFAULT_CAPABILITIES: DeviceCapabilities = {
   enablePostProcessing: false,
   maxShadowMapSize: 1024,
   prefersReducedMotion: false,
+  supportsTouchInput: false,
+  supportsWebXR: false,
   detectedAt: Date.now(),
 };
 
@@ -218,6 +224,22 @@ function getPrefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
+function getSupportsTouchInput(): boolean {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return false;
+  }
+
+  return navigator.maxTouchPoints > 0 || 'ontouchstart' in window;
+}
+
+function getSupportsWebXR(): boolean {
+  if (typeof navigator === 'undefined') {
+    return false;
+  }
+
+  return Boolean((navigator as Navigator & { xr?: unknown }).xr);
+}
+
 /**
  * Detect device capabilities
  */
@@ -242,6 +264,8 @@ export function detectDeviceCapabilities(): DeviceCapabilities {
       cachedCapabilities = createCapabilitiesSnapshot({
         supportsWebGL2: false,
         tier: 'low',
+        supportsTouchInput: getSupportsTouchInput(),
+        supportsWebXR: getSupportsWebXR(),
       });
       return cachedCapabilities;
     }
@@ -259,6 +283,8 @@ export function detectDeviceCapabilities(): DeviceCapabilities {
       cachedCapabilities = createCapabilitiesSnapshot({
         supportsWebGL2: false,
         tier: 'low',
+        supportsTouchInput: getSupportsTouchInput(),
+        supportsWebXR: getSupportsWebXR(),
       });
       return cachedCapabilities;
     }
@@ -279,6 +305,8 @@ export function detectDeviceCapabilities(): DeviceCapabilities {
       enablePostProcessing: tierSettings.enablePostProcessing!,
       maxShadowMapSize: tierSettings.maxShadowMapSize!,
       prefersReducedMotion: getPrefersReducedMotion(),
+      supportsTouchInput: getSupportsTouchInput(),
+      supportsWebXR: getSupportsWebXR(),
     });
 
     logger.info('Device capabilities detected:', {
@@ -291,7 +319,10 @@ export function detectDeviceCapabilities(): DeviceCapabilities {
     return cachedCapabilities;
   } catch (error) {
     logger.error('Error detecting device capabilities:', error);
-    cachedCapabilities = createCapabilitiesSnapshot();
+    cachedCapabilities = createCapabilitiesSnapshot({
+      supportsTouchInput: getSupportsTouchInput(),
+      supportsWebXR: getSupportsWebXR(),
+    });
     return cachedCapabilities;
   }
 }

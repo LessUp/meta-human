@@ -354,9 +354,11 @@ See [CHANGELOG.md](CHANGELOG.md) for released features and [GitHub Projects](htt
 - [x] Voice interaction (TTS/ASR)
 - [x] Visual perception (MediaPipe)
 - [x] Streaming dialogue
-- [ ] Mobile AR support
-- [ ] Custom avatar upload
-- [ ] Multi-language TTS
+- [x] Service discovery and endpoint failover
+- [x] Mobile AR readiness detection
+- [x] Mobile AR support
+- [x] Custom avatar upload
+- [x] Multi-language TTS
 
 ---
 

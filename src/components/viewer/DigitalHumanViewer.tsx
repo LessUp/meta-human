@@ -17,6 +17,7 @@ import { getDeviceCapabilities } from '@/core/performance';
 import { loggers } from '@/lib/logger';
 import { Scene } from './Scene';
 import { PerformanceTracker } from './PerformanceTracker';
+import { ImmersiveSessionBridge } from './ImmersiveSessionBridge';
 
 const logger = loggers.app;
 
@@ -46,6 +47,7 @@ export default function DigitalHumanViewer({
   const startModelLoad = useSystemStore((s) => s.startModelLoad);
   const completeModelLoad = useSystemStore((s) => s.completeModelLoad);
   const failModelLoad = useSystemStore((s) => s.failModelLoad);
+  const immersiveSession = useSystemStore((s) => s.immersiveSession);
   const loadStartTimeRef = useRef<number | null>(null);
 
   // 使用 ref 存储回调以避免重新触发加载效果
@@ -185,6 +187,7 @@ export default function DigitalHumanViewer({
           alpha: true,
         }}
       >
+        <ImmersiveSessionBridge session={immersiveSession} />
         {(loadStatus === 'loading' || loadStatus === 'error') && (
           <Html center>
             <div className="px-4 py-2 rounded-xl bg-black/70 text-white text-sm border border-white/10 shadow-lg">

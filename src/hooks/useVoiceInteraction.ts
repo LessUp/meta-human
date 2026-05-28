@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTTS, useASR } from '@/core/services';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
+import { useI18n } from './useI18n';
 
 export interface UseVoiceInteractionOptions {
   /** Called when a transcript is received from ASR */
@@ -66,18 +67,17 @@ export function useVoiceInteraction(
   const { onTranscript, onSpeak } = options;
   const tts = useTTS();
   const asr = useASR();
+  const { lang } = useI18n();
 
   const isRecording = useDigitalHumanStore((s) => s.isRecording);
   const isMuted = useDigitalHumanStore((s) => s.isMuted);
   const setRecording = useDigitalHumanStore((s) => s.setRecording);
   const toggleMute = useDigitalHumanStore((s) => s.toggleMute);
+  const speechConfig = useDigitalHumanStore((s) => s.speechConfig);
+  const setSpeechConfig = useDigitalHumanStore((s) => s.setSpeechConfig);
 
   const [isSupported, setIsSupported] = useState(false);
   const [transcript, setTranscript] = useState('');
-  const [volume, setVolume] = useState(0.8);
-  const [pitch, setPitch] = useState(1.0);
-  const [rate, setRate] = useState(1.0);
-  const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   // Track if component is mounted
@@ -106,14 +106,18 @@ export function useVoiceInteraction(
 
     if (hasSpeechSynthesis) {
       const voices = tts.getVoices();
+      const languagePrefix = lang.toLowerCase().split('-')[0];
       if (mountedRef.current) {
         setAvailableVoices(voices);
-        // Prefer Chinese voice
-        const chineseVoice = voices.find((v) => v.lang.includes('zh'));
-        if (chineseVoice) {
-          setVoice(chineseVoice);
-        } else if (voices.length > 0) {
-          setVoice(voices[0]);
+        const savedVoice = speechConfig.voiceName
+          ? voices.find((v) => v.name === speechConfig.voiceName)
+          : null;
+        if (!savedVoice) {
+          const matchingVoice = voices.find((v) => v.lang.toLowerCase().startsWith(languagePrefix));
+          const nextVoice = matchingVoice ?? voices[0] ?? null;
+          if (nextVoice) {
+            setSpeechConfig({ voiceName: nextVoice.name });
+          }
         }
       }
     }
@@ -121,7 +125,18 @@ export function useVoiceInteraction(
     return () => {
       asr.stop();
     };
-  }, [asr, tts]);
+  }, [asr, lang, speechConfig.voiceName, setSpeechConfig, tts]);
+
+  const voice =
+    availableVoices.find((candidate) => candidate.name === speechConfig.voiceName) ?? null;
+
+  const setVolume = useCallback((volume: number) => setSpeechConfig({ volume }), [setSpeechConfig]);
+  const setPitch = useCallback((pitch: number) => setSpeechConfig({ pitch }), [setSpeechConfig]);
+  const setRate = useCallback((rate: number) => setSpeechConfig({ rate }), [setSpeechConfig]);
+  const setVoice = useCallback(
+    (voice: SpeechSynthesisVoice | null) => setSpeechConfig({ voiceName: voice?.name ?? null }),
+    [setSpeechConfig],
+  );
 
   // Start recording
   const startRecording = useCallback(() => {
@@ -158,16 +173,16 @@ export function useVoiceInteraction(
       if (isMuted) return;
 
       tts.speakWithOptions(text, {
-        lang: 'zh-CN',
-        volume,
-        pitch,
-        rate,
+        lang,
+        volume: speechConfig.volume,
+        pitch: speechConfig.pitch,
+        rate: speechConfig.rate,
         voiceName: voice?.name,
       });
 
       onSpeakRef.current?.(text);
     },
-    [isMuted, volume, pitch, rate, voice, tts],
+    [isMuted, lang, speechConfig.pitch, speechConfig.rate, speechConfig.volume, tts, voice],
   );
 
   return {
@@ -177,9 +192,9 @@ export function useVoiceInteraction(
     transcript,
     availableVoices,
     voice,
-    volume,
-    pitch,
-    rate,
+    volume: speechConfig.volume,
+    pitch: speechConfig.pitch,
+    rate: speechConfig.rate,
     setVolume,
     setPitch,
     setRate,

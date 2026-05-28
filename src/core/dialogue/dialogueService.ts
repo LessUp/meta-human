@@ -1,6 +1,8 @@
 import { sleep } from '../../lib/utils';
 import { loggers } from '../../lib/logger';
 import type { EmotionType } from '../../store/digitalHumanStore';
+import { useSystemStore } from '../../store/systemStore';
+import { parseApiEndpoints } from './endpointDiscovery';
 
 export interface ChatRequestPayload {
   sessionId?: string;
@@ -42,8 +44,6 @@ export class DialogueApiError extends Error {
 
 const logger = loggers.dialogue;
 
-const API_BASE_URL = validateApiUrl(import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000');
-
 /**
  * Validates and normalizes an API URL.
  * Throws an error if the URL is malformed.
@@ -58,6 +58,25 @@ function validateApiUrl(url: string): string {
     // Return a safe default that will fail gracefully
     return 'http://localhost:8000';
   }
+}
+
+const API_BASE_URLS = parseApiEndpoints(
+  validateApiUrl(import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'),
+  import.meta.env.VITE_API_BASE_URL_FALLBACKS || '',
+);
+let activeApiBaseUrl = API_BASE_URLS[0] || 'http://localhost:8000';
+
+function getApiBaseUrlCandidates(): string[] {
+  return [activeApiBaseUrl, ...API_BASE_URLS.filter((baseUrl) => baseUrl !== activeApiBaseUrl)];
+}
+
+function setActiveApiBaseUrl(baseUrl: string): void {
+  const didFailover = activeApiBaseUrl !== baseUrl;
+  activeApiBaseUrl = baseUrl;
+  useSystemStore.getState().recordEndpointRouting({
+    activeEndpoint: baseUrl,
+    didFailover,
+  });
 }
 
 // Named constants for configuration
@@ -161,16 +180,23 @@ export { buildEmptyResponse };
 
 // 检查服务器连接状态
 export async function checkServerHealth(): Promise<boolean> {
-  try {
-    const response = await fetchWithTimeout(
-      `${API_BASE_URL}/health`,
-      { method: 'GET' },
-      HEALTH_CHECK_TIMEOUT_MS,
-    );
-    return response.ok;
-  } catch {
-    return false;
+  for (const baseUrl of getApiBaseUrlCandidates()) {
+    try {
+      const response = await fetchWithTimeout(
+        `${baseUrl}/health`,
+        { method: 'GET' },
+        HEALTH_CHECK_TIMEOUT_MS,
+      );
+      if (response.ok) {
+        setActiveApiBaseUrl(baseUrl);
+        return true;
+      }
+    } catch {
+      // Try next candidate endpoint.
+    }
   }
+
+  return false;
 }
 
 // 清理远程会话历史（best-effort，不影响前端流程）
@@ -178,7 +204,7 @@ export async function clearRemoteSession(sessionId: string): Promise<void> {
   if (!sessionId) return;
   try {
     await fetchWithTimeout(
-      `${API_BASE_URL}/v1/session/${encodeURIComponent(sessionId)}`,
+      `${activeApiBaseUrl}/v1/session/${encodeURIComponent(sessionId)}`,
       { method: 'DELETE' },
       SESSION_DELETE_TIMEOUT_MS,
     );
@@ -197,7 +223,7 @@ export async function sendUserInput(
 
   let lastError: Error | null = null;
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+  attemptLoop: for (let attempt = 0; attempt <= maxRetries; attempt++) {
     if (signal?.aborted) {
       return {
         response: buildEmptyResponse(),
@@ -206,62 +232,78 @@ export async function sendUserInput(
       };
     }
 
-    try {
-      const response = await fetchWithTimeout(
-        `${API_BASE_URL}/v1/chat`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+    const candidateBaseUrls = getApiBaseUrlCandidates();
+
+    for (let candidateIndex = 0; candidateIndex < candidateBaseUrls.length; candidateIndex++) {
+      const baseUrl = candidateBaseUrls[candidateIndex];
+
+      try {
+        const response = await fetchWithTimeout(
+          `${baseUrl}/v1/chat`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
           },
-          body: JSON.stringify(payload),
-        },
-        timeout,
-        signal,
-      );
+          timeout,
+          signal,
+        );
 
-      if (!response.ok) {
-        const isRetryable = isRetryableError(response.status);
-        const errorMsg = getErrorMessage(response.status, `服务错误: ${response.status}`);
+        if (!response.ok) {
+          const isRetryable = isRetryableError(response.status);
+          const errorMsg = getErrorMessage(response.status, `服务错误: ${response.status}`);
+          lastError = new DialogueApiError(errorMsg, response.status, isRetryable);
 
-        if (isRetryable && attempt < maxRetries) {
-          lastError = new DialogueApiError(errorMsg, response.status, true);
-          await sleep(retryDelay * (attempt + 1));
+          if (isRetryable && candidateIndex < candidateBaseUrls.length - 1) {
+            continue;
+          }
+
+          if (isRetryable && attempt < maxRetries) {
+            await sleep(retryDelay * (attempt + 1));
+            continue attemptLoop;
+          }
+
+          throw new DialogueApiError(errorMsg, response.status, false);
+        }
+
+        const data = await response.json();
+        setActiveApiBaseUrl(baseUrl);
+
+        return {
+          response: {
+            replyText: data.replyText ?? '',
+            emotion: data.emotion ?? 'neutral',
+            action: data.action ?? 'idle',
+          },
+          connectionStatus: 'connected',
+          error: null,
+        };
+      } catch (error: unknown) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+
+        if (lastError.name === 'AbortError') {
+          lastError = new DialogueApiError('请求超时，请重试', 408, true);
+        }
+
+        if (lastError instanceof TypeError && lastError.message.includes('fetch')) {
+          lastError = new DialogueApiError('网络连接失败，请检查网络', 0, true);
+        }
+
+        const canRetry = lastError instanceof DialogueApiError ? lastError.isRetryable : true;
+
+        if (canRetry && candidateIndex < candidateBaseUrls.length - 1) {
           continue;
         }
 
-        throw new DialogueApiError(errorMsg, response.status, false);
+        if (!canRetry || attempt >= maxRetries) {
+          break attemptLoop;
+        }
+
+        await sleep(retryDelay * (attempt + 1));
+        continue attemptLoop;
       }
-
-      const data = await response.json();
-
-      return {
-        response: {
-          replyText: data.replyText ?? '',
-          emotion: data.emotion ?? 'neutral',
-          action: data.action ?? 'idle',
-        },
-        connectionStatus: 'connected',
-        error: null,
-      };
-    } catch (error: unknown) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-
-      if (lastError.name === 'AbortError') {
-        lastError = new DialogueApiError('请求超时，请重试', 408, true);
-      }
-
-      if (lastError instanceof TypeError && lastError.message.includes('fetch')) {
-        lastError = new DialogueApiError('网络连接失败，请检查网络', 0, true);
-      }
-
-      const canRetry = lastError instanceof DialogueApiError ? lastError.isRetryable : true;
-
-      if (!canRetry || attempt >= maxRetries) {
-        break;
-      }
-
-      await sleep(retryDelay * (attempt + 1));
     }
   }
 
@@ -292,10 +334,11 @@ export async function* streamUserInput(
   callbacks: StreamCallbacks = {},
   signal?: AbortSignal,
 ): AsyncGenerator<string, DialogueServiceResult, unknown> {
-  const { timeout } = { ...DEFAULT_CONFIG, ...config };
+  const { timeout, maxRetries, retryDelay } = { ...DEFAULT_CONFIG, ...config };
 
   let finalResponse: ChatResponsePayload | null = null;
   let streamError: string | null = null;
+  let lastError: Error | null = null;
 
   // Check if already aborted
   if (signal?.aborted) {
@@ -306,37 +349,110 @@ export async function* streamUserInput(
     };
   }
 
-  try {
-    const response = await fetchWithTimeout(
-      `${API_BASE_URL}/v1/chat/stream`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      },
-      timeout,
-      signal,
-    );
+  attemptLoop: for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const candidateBaseUrls = getApiBaseUrlCandidates();
 
-    if (!response.ok || !response.body) {
-      throw new DialogueApiError(
-        getErrorMessage(response.status, `流式服务错误: ${response.status}`),
-        response.status,
-        false,
-      );
-    }
+    for (let candidateIndex = 0; candidateIndex < candidateBaseUrls.length; candidateIndex++) {
+      const baseUrl = candidateBaseUrls[candidateIndex];
 
-    callbacks.onConnected?.();
+      try {
+        const response = await fetchWithTimeout(
+          `${baseUrl}/v1/chat/stream`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          },
+          timeout,
+          signal,
+        );
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
+        if (!response.ok || !response.body) {
+          const errorMsg = getErrorMessage(response.status, `流式服务错误: ${response.status}`);
+          const isRetryable = isRetryableError(response.status) || !response.body;
+          lastError = new DialogueApiError(errorMsg, response.status, isRetryable);
 
-    try {
-      while (true) {
-        // Check for abort during streaming
-        if (signal?.aborted) {
-          reader.cancel().catch(() => undefined);
+          if (isRetryable && candidateIndex < candidateBaseUrls.length - 1) {
+            continue;
+          }
+
+          if (isRetryable && attempt < maxRetries) {
+            await sleep(retryDelay * (attempt + 1));
+            continue attemptLoop;
+          }
+
+          throw new DialogueApiError(errorMsg, response.status, false);
+        }
+
+        setActiveApiBaseUrl(baseUrl);
+        callbacks.onConnected?.();
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        try {
+          while (true) {
+            if (signal?.aborted) {
+              reader.cancel().catch(() => undefined);
+              return {
+                response: finalResponse ?? buildEmptyResponse(),
+                connectionStatus: 'error',
+                error: '请求被取消',
+              };
+            }
+
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+
+            const lines = buffer.split('\n\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) continue;
+              const raw = line.slice(6).trim();
+              if (!raw) continue;
+
+              try {
+                const event = JSON.parse(raw);
+                if (event.type === 'token' && event.content) {
+                  yield event.content;
+                } else if (event.type === 'error') {
+                  streamError = event.message || '流式响应错误';
+                } else if (event.type === 'done') {
+                  finalResponse = {
+                    replyText: event.replyText ?? '',
+                    emotion: event.emotion ?? 'neutral',
+                    action: event.action ?? 'idle',
+                  };
+                  callbacks.onDone?.(finalResponse);
+                }
+              } catch {
+                logger.warn('SSE 事件解析失败:', raw);
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock();
+        }
+
+        if (streamError) {
+          callbacks.onError?.(streamError);
+        }
+
+        if (!finalResponse) {
+          finalResponse = { replyText: '', emotion: 'neutral', action: 'idle' };
+        }
+
+        return {
+          response: finalResponse,
+          connectionStatus: streamError ? 'error' : 'connected',
+          error: streamError,
+        };
+      } catch (error) {
+        if (signal?.aborted || (error instanceof DOMException && error.name === 'AbortError')) {
           return {
             response: finalResponse ?? buildEmptyResponse(),
             connectionStatus: 'error',
@@ -344,74 +460,39 @@ export async function* streamUserInput(
           };
         }
 
-        const { done, value } = await reader.read();
-        if (done) break;
+        lastError = error instanceof Error ? error : new Error(String(error));
 
-        buffer += decoder.decode(value, { stream: true });
-
-        const lines = buffer.split('\n\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const raw = line.slice(6).trim();
-          if (!raw) continue;
-
-          try {
-            const event = JSON.parse(raw);
-            if (event.type === 'token' && event.content) {
-              yield event.content;
-            } else if (event.type === 'error') {
-              streamError = event.message || '流式响应错误';
-            } else if (event.type === 'done') {
-              finalResponse = {
-                replyText: event.replyText ?? '',
-                emotion: event.emotion ?? 'neutral',
-                action: event.action ?? 'idle',
-              };
-              callbacks.onDone?.(finalResponse);
-            }
-          } catch {
-            logger.warn('SSE 事件解析失败:', raw);
-          }
+        if (lastError.name === 'AbortError') {
+          lastError = new DialogueApiError('请求超时，请重试', 408, true);
         }
+
+        if (lastError instanceof TypeError && lastError.message.includes('fetch')) {
+          lastError = new DialogueApiError('网络连接失败，请检查网络', 0, true);
+        }
+
+        const canRetry = lastError instanceof DialogueApiError ? lastError.isRetryable : true;
+
+        if (canRetry && candidateIndex < candidateBaseUrls.length - 1) {
+          continue;
+        }
+
+        if (!canRetry || attempt >= maxRetries) {
+          break attemptLoop;
+        }
+
+        await sleep(retryDelay * (attempt + 1));
+        continue attemptLoop;
       }
-    } finally {
-      reader.releaseLock();
     }
-
-    if (streamError) {
-      callbacks.onError?.(streamError);
-    }
-  } catch (error) {
-    // Check if aborted
-    if (signal?.aborted || (error instanceof DOMException && error.name === 'AbortError')) {
-      return {
-        response: finalResponse ?? buildEmptyResponse(),
-        connectionStatus: 'error',
-        error: '请求被取消',
-      };
-    }
-
-    logger.warn('流式请求失败，降级到普通请求:', error);
-    const fallback = await sendUserInput(payload, config, signal);
-    if (fallback.response.replyText) {
-      yield fallback.response.replyText;
-    }
-    // Mark as error since stream failed, even if fallback succeeded
-    return {
-      ...fallback,
-      connectionStatus: fallback.connectionStatus === 'error' ? 'error' : 'connected',
-    };
   }
 
-  if (!finalResponse) {
-    finalResponse = { replyText: '', emotion: 'neutral', action: 'idle' };
+  logger.warn('流式请求失败，降级到普通请求:', lastError);
+  const fallback = await sendUserInput(payload, config, signal);
+  if (fallback.response.replyText) {
+    yield fallback.response.replyText;
   }
-
   return {
-    response: finalResponse,
-    connectionStatus: streamError ? 'error' : 'connected',
-    error: streamError,
+    ...fallback,
+    connectionStatus: fallback.connectionStatus === 'error' ? 'error' : 'connected',
   };
 }

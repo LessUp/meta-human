@@ -7,6 +7,7 @@ import BehaviorControlPanel from './BehaviorControlPanel';
 import VisionMirrorPanel from './VisionMirrorPanel';
 import VoiceInteractionPanel from './VoiceInteractionPanel';
 import type { UserEmotion } from '../core/vision/visionMapper';
+import { getAvatarStatusLabel } from '../core/avatar/avatarSourceAdapter';
 
 interface SettingsDrawerProps {
   show: boolean;
@@ -22,11 +23,16 @@ interface SettingsDrawerProps {
   onChatSend: (text?: string) => void;
   onExpressionChange: (expression: string, intensity: number) => void;
   onBehaviorChange: (behavior: string, params: Record<string, unknown>) => void;
+  onAvatarUpload: (file: File) => void;
+  onUseBuiltInAvatar: () => void;
+  avatarFileName: string | null;
+  avatarLoadStatus: 'idle' | 'ready' | 'error';
+  avatarLoadError: string | null;
   onEmotionChange: (emotion: UserEmotion) => void;
   onHeadMotion: (motion: 'nod' | 'shakeHead' | 'raiseHand' | 'waveHand') => void;
 }
 
-const TABS = ['basic', 'expression', 'behavior', 'vision', 'voice'] as const;
+const TABS = ['basic', 'expression', 'behavior', 'avatar', 'vision', 'voice'] as const;
 
 export default function SettingsDrawer({
   show,
@@ -42,6 +48,11 @@ export default function SettingsDrawer({
   onChatSend,
   onExpressionChange,
   onBehaviorChange,
+  onAvatarUpload,
+  onUseBuiltInAvatar,
+  avatarFileName,
+  avatarLoadStatus,
+  avatarLoadError,
   onEmotionChange,
   onHeadMotion,
 }: SettingsDrawerProps) {
@@ -146,6 +157,64 @@ export default function SettingsDrawer({
                 currentBehavior={currentBehavior}
                 onBehaviorChange={onBehaviorChange}
               />
+            )}
+            {activeTab === 'avatar' && (
+              <div className="space-y-4 rounded-xl border border-white/10 bg-white/5 p-4">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-medium text-white">Avatar Source</h3>
+                  <p className="text-xs text-gray-400">
+                    Upload a GLB/GLTF avatar. If loading fails, the built-in procedural avatar stays
+                    available.
+                  </p>
+                </div>
+
+                <div className="rounded-lg border border-dashed border-white/15 bg-black/20 p-3 text-xs text-gray-300">
+                  当前头像: {avatarFileName ?? '内置程序化头像'}
+                </div>
+
+                <label className="block text-sm font-medium text-gray-300" htmlFor="avatar-upload">
+                  上传自定义头像
+                </label>
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  accept=".glb,.gltf,model/gltf-binary,model/gltf+json"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) {
+                      return;
+                    }
+                    onAvatarUpload(file);
+                    event.currentTarget.value = '';
+                  }}
+                  className="block w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-gray-200 file:mr-3 file:rounded-md file:border-0 file:bg-blue-500/20 file:px-3 file:py-1 file:text-blue-200 hover:file:bg-blue-500/30"
+                />
+
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  <span className="text-gray-400">
+                    状态:
+                    <span className="ml-2 text-white">
+                      {getAvatarStatusLabel(avatarLoadStatus)}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={onUseBuiltInAvatar}
+                    className="rounded-lg border border-white/10 px-3 py-1.5 text-gray-200 transition-colors hover:bg-white/10"
+                  >
+                    使用内置头像
+                  </button>
+                </div>
+
+                {avatarLoadError && (
+                  <div
+                    className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200"
+                    role="alert"
+                  >
+                    {avatarLoadError}
+                  </div>
+                )}
+              </div>
             )}
             {activeTab === 'vision' && (
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-gray-400">

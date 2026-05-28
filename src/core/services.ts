@@ -13,6 +13,16 @@ export { ServicesProvider } from './ServicesProvider';
 
 // 工厂函数（供测试使用）
 export { createServices } from './createServices';
+export {
+  createDefaultServiceAdapters,
+  createDefaultServiceFactories,
+  createServiceComposition,
+  disposeServices,
+  type CreateServiceCompositionOptions,
+  type ServiceAdapters,
+  type ServiceComposition,
+  type ServiceFactories,
+} from './serviceComposition';
 
 // Hooks
 export { useServices, useEngine, useTTS, useASR, useDialogue } from './serviceHooks';

@@ -1,11 +1,17 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '@/App';
 
-const createServicesMock = vi.fn();
+const { servicesProviderRenderSpy } = vi.hoisted(() => ({
+  servicesProviderRenderSpy: vi.fn(),
+}));
 
-vi.mock('@/core/createServices', () => ({
-  createServices: () => createServicesMock(),
+vi.mock('@/core/services', () => ({
+  ServicesProvider: ({ children }: { children: ReactNode }) => {
+    servicesProviderRenderSpy();
+    return <div data-testid="services-provider">{children}</div>;
+  },
 }));
 
 vi.mock('@/pages/LandingPage', () => ({
@@ -16,35 +22,26 @@ vi.mock('@/pages/AdvancedDigitalHumanPage', () => ({
   default: () => <div data-testid="advanced-page" />,
 }));
 
-function buildServices() {
-  return {
-    engine: { dispose: vi.fn() },
-    tts: { dispose: vi.fn() },
-    asr: { dispose: vi.fn() },
-    dialogue: { reset: vi.fn() },
-  };
-}
-
 describe('App routing', () => {
   beforeEach(() => {
-    createServicesMock.mockReset();
-    createServicesMock.mockReturnValue(buildServices());
+    servicesProviderRenderSpy.mockReset();
     window.location.hash = '#/';
   });
 
-  it('does not create app services for the landing route', async () => {
+  it('does not render the app services provider for the landing route', async () => {
     render(<App />);
 
     expect(await screen.findByTestId('landing-page')).toBeInTheDocument();
-    await waitFor(() => expect(createServicesMock).not.toHaveBeenCalled());
+    await waitFor(() => expect(servicesProviderRenderSpy).not.toHaveBeenCalled());
   });
 
-  it('creates app services for the app route', async () => {
+  it('renders the app services provider for the app route', async () => {
     window.location.hash = '#/app';
 
     render(<App />);
 
     expect(await screen.findByTestId('advanced-page')).toBeInTheDocument();
-    await waitFor(() => expect(createServicesMock).toHaveBeenCalledTimes(1));
+    expect(await screen.findByTestId('services-provider')).toBeInTheDocument();
+    await waitFor(() => expect(servicesProviderRenderSpy).toHaveBeenCalledTimes(1));
   });
 });

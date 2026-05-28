@@ -4,13 +4,21 @@ import AdvancedDigitalHumanPage from '@/pages/AdvancedDigitalHumanPage';
 import { useDigitalHumanStore } from '@/store/digitalHumanStore';
 
 const useChatStreamMock = vi.fn();
+const digitalHumanViewerMock = vi.fn();
+const topHUDMock = vi.fn();
 
 vi.mock('@/components/viewer', () => ({
-  DigitalHumanViewer: () => <div data-testid="viewer" />,
+  DigitalHumanViewer: (props: unknown) => {
+    digitalHumanViewerMock(props);
+    return <div data-testid="viewer" />;
+  },
 }));
 
 vi.mock('@/components/TopHUD', () => ({
-  default: () => <div data-testid="top-hud" />,
+  default: (props: unknown) => {
+    topHUDMock(props);
+    return <div data-testid="top-hud" />;
+  },
 }));
 
 vi.mock('@/components/SettingsDrawer', () => ({
@@ -32,6 +40,7 @@ vi.mock('@/hooks/useAdvancedDigitalHumanController', () => ({
     activeTab: 'basic',
     autoRotate: false,
     closeSettings: vi.fn(),
+    handleAvatarUpload: vi.fn(),
     handleBehaviorChange: vi.fn(),
     handleEmotionChange: vi.fn(),
     handleExpressionChange: vi.fn(),
@@ -40,7 +49,9 @@ vi.mock('@/hooks/useAdvancedDigitalHumanController', () => ({
     handleNewSession: vi.fn(),
     handlePlayPause: vi.fn(),
     handleReset: vi.fn(),
+    handleToggleImmersiveAr: vi.fn(),
     handleToggleRecording: vi.fn(),
+    handleUseBuiltInAvatar: vi.fn(),
     handleVoiceCommand: vi.fn(),
     setActiveTab: vi.fn(),
     showSettings: false,
@@ -61,6 +72,8 @@ vi.mock('@/hooks/useChatStream', () => ({
 describe('AdvancedDigitalHumanPage', () => {
   beforeEach(() => {
     useChatStreamMock.mockReset();
+    digitalHumanViewerMock.mockReset();
+    topHUDMock.mockReset();
     useChatStreamMock.mockReturnValue({
       chatInput: '',
       setChatInput: vi.fn(),
@@ -79,6 +92,35 @@ describe('AdvancedDigitalHumanPage', () => {
     expect(useChatStreamMock).toHaveBeenCalledWith(
       expect.objectContaining({
         isMuted: true,
+      }),
+    );
+  });
+
+  it('passes the active custom avatar model url into the viewer', () => {
+    useDigitalHumanStore.setState({
+      ...(useDigitalHumanStore.getState() as unknown as Record<string, unknown>),
+      avatarSource: {
+        kind: 'custom',
+        fileName: 'avatar.glb',
+        modelUrl: 'blob:avatar-1',
+      },
+    } as unknown as Partial<ReturnType<typeof useDigitalHumanStore.getState>>);
+
+    render(<AdvancedDigitalHumanPage />);
+
+    expect(digitalHumanViewerMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        modelUrl: 'blob:avatar-1',
+      }),
+    );
+  });
+
+  it('passes the immersive ar toggle handler into the HUD', () => {
+    render(<AdvancedDigitalHumanPage />);
+
+    expect(topHUDMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        onToggleImmersiveAr: expect.any(Function),
       }),
     );
   });

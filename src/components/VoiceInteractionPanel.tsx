@@ -1,4 +1,5 @@
 import { useVoiceInteraction } from '../hooks/useVoiceInteraction';
+import { useI18n } from '../hooks/useI18n';
 import { Mic, MicOff, Volume2, VolumeX, Play } from 'lucide-react';
 
 interface VoiceInteractionPanelProps {
@@ -10,14 +11,29 @@ export default function VoiceInteractionPanel({
   onTranscript,
   onSpeak,
 }: VoiceInteractionPanelProps) {
+  const { lang, setLang } = useI18n();
   const voice = useVoiceInteraction({
     onTranscript,
     onSpeak,
   });
 
   const testVoice = () => {
-    voice.speak('您好！这是数字人语音交互系统的测试。');
+    voice.speak(
+      lang === 'en'
+        ? 'Hello! This is a test of the digital human voice system.'
+        : '您好！这是数字人语音交互系统的测试。',
+    );
   };
+
+  const quickTestTexts =
+    lang === 'en'
+      ? [
+          'Hello! I am your digital human assistant.',
+          'The weather is wonderful today!',
+          'How can I help you today?',
+          'Thank you for trying the demo!',
+        ]
+      : ['您好！我是数字人助手。', '今天天气真不错！', '有什么可以帮助您的吗？', '感谢您的使用！'];
 
   if (!voice.isSupported) {
     return (
@@ -100,6 +116,28 @@ export default function VoiceInteractionPanel({
           </button>
         </div>
 
+        <div>
+          <label
+            htmlFor="voice-language"
+            className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1"
+          >
+            Language
+          </label>
+          <select
+            id="voice-language"
+            value={lang}
+            onChange={(e) => setLang(e.target.value === 'en' ? 'en' : 'zh-CN')}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="zh-CN" className="bg-gray-800 text-gray-100">
+              中文
+            </option>
+            <option value="en" className="bg-gray-800 text-gray-100">
+              English
+            </option>
+          </select>
+        </div>
+
         {/* 语音选择 */}
         <div>
           <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
@@ -176,12 +214,7 @@ export default function VoiceInteractionPanel({
           快速测试文本
         </label>
         <div className="grid grid-cols-2 gap-2">
-          {[
-            '您好！我是数字人助手。',
-            '今天天气真不错！',
-            '有什么可以帮助您的吗？',
-            '感谢您的使用！',
-          ].map((text, index) => (
+          {quickTestTexts.map((text, index) => (
             <button
               key={index}
               onClick={() => voice.speak(text)}

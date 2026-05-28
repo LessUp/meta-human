@@ -1,8 +1,13 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { ChatTransportMode } from '../core/dialogue/chatTransport';
+import {
+  createIdleDialogueTurnSnapshot,
+  type DialogueTurnSnapshot,
+} from '../core/dialogue/dialogueTurnLifecycle';
 
 export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'error';
+export type ImmersiveMode = 'standard' | 'entering-ar' | 'ar-active';
 
 export interface ChatPerformanceMetrics {
   status: 'idle' | 'pending' | 'completed' | 'failed';
@@ -36,6 +41,12 @@ export interface ConnectionDiagnostics {
   lastDegradedAt: number | null;
   /** Latest degraded reason surfaced to the operator */
   lastDegradedReason: string | null;
+  /** Currently active dialogue service endpoint */
+  activeEndpoint: string | null;
+  /** Number of successful failovers during this runtime */
+  failoverCount: number;
+  /** Timestamp of the latest failover */
+  lastFailoverAt: number | null;
 }
 
 export interface ModelLoadMetrics {
@@ -64,8 +75,12 @@ interface SystemState {
   chatTransportMode: Exclude<ChatTransportMode, 'auto'>;
   connectionDiagnostics: ConnectionDiagnostics;
   chatPerformance: ChatPerformanceMetrics;
+  dialogueTurn: DialogueTurnSnapshot;
   renderPerformance: RenderPerformanceMetrics;
   modelLoadMetrics: ModelLoadMetrics;
+  immersiveMode: ImmersiveMode;
+  immersiveSession: XRSession | null;
+  immersiveError: string | null;
   setConnected: (connected: boolean) => void;
   setConnectionStatus: (status: ConnectionStatus) => void;
   setLoading: (loading: boolean) => void;
@@ -77,15 +92,24 @@ interface SystemState {
     latencyMs?: number | null;
     degradedReason?: string | null;
   }) => void;
+  recordEndpointRouting: (input: {
+    activeEndpoint: string;
+    didFailover?: boolean;
+    recordedAt?: number;
+  }) => void;
   startChatPerformanceTrace: () => void;
   markChatFirstToken: () => void;
   finalizeChatPerformanceTrace: (status?: 'completed' | 'failed') => void;
+  setDialogueTurn: (snapshot: DialogueTurnSnapshot) => void;
   // Render performance tracking
   updateRenderPerformance: (metrics: Partial<RenderPerformanceMetrics>) => void;
   // Model load tracking
   startModelLoad: (modelUrl: string) => void;
   completeModelLoad: (loadTimeMs: number, modelSizeBytes?: number) => void;
   failModelLoad: (error: string) => void;
+  startImmersiveAr: () => void;
+  setImmersiveSession: (session: XRSession) => void;
+  clearImmersiveSession: (error?: string | null) => void;
   clearError: () => void;
   resetSystemState: () => void;
 }
@@ -98,6 +122,9 @@ const createInitialConnectionDiagnostics = (): ConnectionDiagnostics => ({
   lastHealthCheckLatencyMs: null,
   lastDegradedAt: null,
   lastDegradedReason: null,
+  activeEndpoint: null,
+  failoverCount: 0,
+  lastFailoverAt: null,
 });
 
 const createInitialRenderPerformance = (): RenderPerformanceMetrics => ({
@@ -138,8 +165,12 @@ export const useSystemStore = create<SystemState>()(
       chatTransportMode: 'sse',
       connectionDiagnostics: createInitialConnectionDiagnostics(),
       chatPerformance: createInitialChatPerformance(),
+      dialogueTurn: createIdleDialogueTurnSnapshot(),
       renderPerformance: createInitialRenderPerformance(),
       modelLoadMetrics: createInitialModelLoadMetrics(),
+      immersiveMode: 'standard',
+      immersiveSession: null,
+      immersiveError: null,
 
       setConnected: (connected) => set({ isConnected: connected }),
 
@@ -153,7 +184,12 @@ export const useSystemStore = create<SystemState>()(
 
       setChatTransportMode: (chatTransportMode) => set({ chatTransportMode }),
 
-      recordConnectionHealth: ({ status, checkedAt = Date.now(), latencyMs = null, degradedReason }) =>
+      recordConnectionHealth: ({
+        status,
+        checkedAt = Date.now(),
+        latencyMs = null,
+        degradedReason,
+      }) =>
         set((state) => {
           const isDegraded = status === 'disconnected' || status === 'error';
 
@@ -161,17 +197,28 @@ export const useSystemStore = create<SystemState>()(
             connectionStatus: status,
             isConnected: status === 'connected',
             connectionDiagnostics: {
+              ...state.connectionDiagnostics,
               lastHealthCheckAt: checkedAt,
               lastHealthCheckLatencyMs: latencyMs,
-              lastDegradedAt: isDegraded
-                ? checkedAt
-                : state.connectionDiagnostics.lastDegradedAt,
+              lastDegradedAt: isDegraded ? checkedAt : state.connectionDiagnostics.lastDegradedAt,
               lastDegradedReason: isDegraded
-                ? degradedReason ?? state.connectionDiagnostics.lastDegradedReason
+                ? (degradedReason ?? state.connectionDiagnostics.lastDegradedReason)
                 : state.connectionDiagnostics.lastDegradedReason,
             },
           };
         }),
+
+      recordEndpointRouting: ({ activeEndpoint, didFailover = false, recordedAt = Date.now() }) =>
+        set((state) => ({
+          connectionDiagnostics: {
+            ...state.connectionDiagnostics,
+            activeEndpoint,
+            failoverCount: didFailover
+              ? state.connectionDiagnostics.failoverCount + 1
+              : state.connectionDiagnostics.failoverCount,
+            lastFailoverAt: didFailover ? recordedAt : state.connectionDiagnostics.lastFailoverAt,
+          },
+        })),
 
       startChatPerformanceTrace: () =>
         set({
@@ -221,6 +268,8 @@ export const useSystemStore = create<SystemState>()(
           };
         }),
 
+      setDialogueTurn: (dialogueTurn) => set({ dialogueTurn }),
+
       updateRenderPerformance: (metrics) =>
         set((state) => ({
           renderPerformance: {
@@ -263,6 +312,26 @@ export const useSystemStore = create<SystemState>()(
           },
         })),
 
+      startImmersiveAr: () =>
+        set({
+          immersiveMode: 'entering-ar',
+          immersiveError: null,
+        }),
+
+      setImmersiveSession: (immersiveSession) =>
+        set({
+          immersiveMode: 'ar-active',
+          immersiveSession,
+          immersiveError: null,
+        }),
+
+      clearImmersiveSession: (immersiveError = null) =>
+        set({
+          immersiveMode: 'standard',
+          immersiveSession: null,
+          immersiveError,
+        }),
+
       setError: (error) => {
         if (!error) {
           set({ error: null, lastErrorTime: null });
@@ -291,8 +360,12 @@ export const useSystemStore = create<SystemState>()(
           chatTransportMode: 'sse',
           connectionDiagnostics: createInitialConnectionDiagnostics(),
           chatPerformance: createInitialChatPerformance(),
+          dialogueTurn: createIdleDialogueTurnSnapshot(),
           renderPerformance: createInitialRenderPerformance(),
           modelLoadMetrics: createInitialModelLoadMetrics(),
+          immersiveMode: 'standard',
+          immersiveSession: null,
+          immersiveError: null,
         }),
     }),
     { name: 'system-store', enabled: ENABLE_DEVTOOLS },
@@ -304,5 +377,6 @@ export const selectConnectionDiagnostics = (s: SystemState) => s.connectionDiagn
 export const selectIsLoading = (s: SystemState) => s.isLoading;
 export const selectError = (s: SystemState) => s.error;
 export const selectChatPerformance = (s: SystemState) => s.chatPerformance;
+export const selectDialogueTurn = (s: SystemState) => s.dialogueTurn;
 export const selectRenderPerformance = (s: SystemState) => s.renderPerformance;
 export const selectModelLoadMetrics = (s: SystemState) => s.modelLoadMetrics;

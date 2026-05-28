@@ -4,8 +4,8 @@
  * 通过 React Context 提供应用级单例服务。
  */
 
-import { useEffect, useMemo, type ReactNode } from 'react';
-import { createServices } from './createServices';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { createServiceComposition, type ServiceComposition } from './serviceComposition';
 import { ServicesContext } from './servicesContext';
 
 // ============================================================================
@@ -14,23 +14,41 @@ import { ServicesContext } from './servicesContext';
 
 interface ServicesProviderProps {
   children: ReactNode;
+  composition?: ServiceComposition;
+  createComposition?: () => ServiceComposition;
 }
 
 /**
  * 提供应用级服务单例。
  * 在应用根组件包装使用。
  */
-export function ServicesProvider({ children }: ServicesProviderProps) {
-  const services = useMemo(() => createServices(), []);
+export function ServicesProvider({
+  children,
+  composition,
+  createComposition,
+}: ServicesProviderProps) {
+  const ownedCompositionRef = useRef<ServiceComposition | null>(null);
+
+  if (composition === undefined && ownedCompositionRef.current === null) {
+    ownedCompositionRef.current = createComposition?.() ?? createServiceComposition();
+  }
+
+  const serviceComposition = composition ?? ownedCompositionRef.current!;
 
   useEffect(() => {
-    return () => {
-      services.asr.dispose();
-      services.tts.dispose();
-      services.engine.dispose();
-      services.dialogue.reset();
-    };
-  }, [services]);
+    if (composition) {
+      return;
+    }
 
-  return <ServicesContext.Provider value={services}>{children}</ServicesContext.Provider>;
+    return () => {
+      ownedCompositionRef.current?.dispose();
+      ownedCompositionRef.current = null;
+    };
+  }, [composition]);
+
+  return (
+    <ServicesContext.Provider value={serviceComposition.services}>
+      {children}
+    </ServicesContext.Provider>
+  );
 }

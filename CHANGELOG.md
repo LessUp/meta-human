@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ✨ Runtime Capabilities
+
+- Added structured dialogue request metadata so language preference, speech configuration, and recent vision context travel together with each chat turn
+- Persisted speech preferences and recent vision context in `digitalHumanStore`, and localized the voice interaction panel for multi-language TTS flows
+- Added custom avatar upload, replacement, fallback-to-built-in handling, and avatar management controls in the settings drawer
+- Added endpoint discovery with primary/backup failover for health checks, standard chat requests, and streaming chat requests
+- Added touch/WebXR readiness detection and surfaced an `AR Ready` platform indicator in the HUD
+- Added immersive WebXR AR session entry/exit flow, persisted immersive session state, and a viewer bridge that forwards the active XR session to the Three.js renderer
+- Added operator-facing endpoint routing diagnostics so the HUD now surfaces the active service endpoint and failover count
+- Added a shared avatar source adapter so page composition, settings UI, and controller fallback logic reuse the same source/status/object-URL decisions
+
 ### 🧹 Repository Simplification
 
 - Removed repository-scoped AI workflow frameworks and generated automation from `.trellis/`, `.claude/`, and `.opencode/`

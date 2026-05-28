@@ -3,6 +3,7 @@ import { useSystemStore } from '../store/systemStore';
 import type { ConnectionStatus } from '../store/systemStore';
 import { checkServerHealth } from '../core/dialogue/dialogueService';
 import { resolveChatTransportMode } from '../core/dialogue/chatTransport';
+import { evaluateConnectionRecovery } from '../core/dialogue/connectionRecovery';
 import { toast } from 'sonner';
 
 const DEGRADED_CONNECTION_MESSAGE = '服务器连接不稳定，部分功能可能受限';
@@ -17,84 +18,101 @@ export function useConnectionHealth() {
   const clearError = useSystemStore((s) => s.clearError);
   const lastStatusRef = useRef<string | null>(null);
 
-  const syncTransportMode = useCallback(
-    async (forceProbe = false) => {
-      try {
-        const mode = await resolveChatTransportMode(undefined, { forceProbe });
-        setChatTransportMode(mode);
-        return true;
-      } catch {
-        setError(TRANSPORT_PROBE_FAILURE_MESSAGE);
-        return false;
+  const runRecovery = useCallback(
+    (options: {
+      unhealthyStatus: Extract<ConnectionStatus, 'disconnected' | 'error'>;
+      unhealthyReason: string;
+      forceTransportProbe?: boolean;
+    }) =>
+      evaluateConnectionRecovery(
+        {
+          ...options,
+          transportProbeFailureMessage: TRANSPORT_PROBE_FAILURE_MESSAGE,
+        },
+        {
+          checkServerHealth,
+          resolveTransportMode: ({ forceProbe }) =>
+            resolveChatTransportMode(undefined, { forceProbe }),
+        },
+      ),
+    [],
+  );
+
+  const applyRecovery = useCallback(
+    (result: {
+      status: ConnectionStatus;
+      checkedAt: number;
+      latencyMs: number;
+      degradedReason: string | null;
+      transportMode: ReturnType<typeof useSystemStore.getState>['chatTransportMode'] | null;
+      transportIssue: string | null;
+    }) => {
+      recordConnectionHealth({
+        status: result.status,
+        checkedAt: result.checkedAt,
+        latencyMs: result.latencyMs,
+        degradedReason: result.degradedReason,
+      });
+
+      if (result.transportMode) {
+        setChatTransportMode(result.transportMode);
       }
+
+      if (result.status === 'connected') {
+        if (result.transportIssue) {
+          setError(result.transportIssue);
+        } else {
+          clearError();
+        }
+      } else {
+        setError(result.degradedReason);
+      }
+
+      lastStatusRef.current = result.status;
+      return result;
     },
-    [setChatTransportMode, setError],
+    [clearError, recordConnectionHealth, setChatTransportMode, setError],
   );
 
   const checkConnection = useCallback(async () => {
-    const startedAt = performance.now();
-    const isHealthy = await checkServerHealth();
-    const nextStatus = isHealthy ? 'connected' : 'disconnected';
     const previousStatus = lastStatusRef.current;
-    const checkedAt = Date.now();
-    const latencyMs = Math.max(0, Math.round(performance.now() - startedAt));
+    const result = applyRecovery(
+      await runRecovery({
+        unhealthyStatus: 'disconnected',
+        unhealthyReason: DEGRADED_CONNECTION_MESSAGE,
+      }),
+    );
 
-    recordConnectionHealth({
-      status: nextStatus as ConnectionStatus,
-      checkedAt,
-      latencyMs,
-      degradedReason: isHealthy ? null : DEGRADED_CONNECTION_MESSAGE,
-    });
-
-    if (!isHealthy && previousStatus !== 'disconnected') {
+    if (result.status === 'disconnected' && previousStatus !== 'disconnected') {
       toast.warning(DEGRADED_CONNECTION_MESSAGE);
     }
 
-    if (isHealthy && previousStatus && previousStatus !== 'connected') {
+    if (result.status === 'connected' && previousStatus && previousStatus !== 'connected') {
       toast.success('服务器连接已恢复');
     }
-
-    if (isHealthy) {
-      clearError();
-      void syncTransportMode();
-    } else {
-      setError(DEGRADED_CONNECTION_MESSAGE);
-    }
-
-    lastStatusRef.current = nextStatus;
-  }, [clearError, recordConnectionHealth, setError, syncTransportMode]);
+  }, [applyRecovery, runRecovery]);
 
   const reconnect = useCallback(async () => {
     setConnectionStatus('connecting');
     const toastId = toast.loading('正在重新连接...');
-    const startedAt = performance.now();
-    const isHealthy = await checkServerHealth();
-    const nextStatus = isHealthy ? 'connected' : 'error';
-    const checkedAt = Date.now();
-    const latencyMs = Math.max(0, Math.round(performance.now() - startedAt));
+    const result = applyRecovery(
+      await runRecovery({
+        unhealthyStatus: 'error',
+        unhealthyReason: RECONNECT_FAILURE_MESSAGE,
+        forceTransportProbe: true,
+      }),
+    );
 
-    recordConnectionHealth({
-      status: nextStatus as ConnectionStatus,
-      checkedAt,
-      latencyMs,
-      degradedReason: isHealthy ? null : RECONNECT_FAILURE_MESSAGE,
-    });
-    lastStatusRef.current = nextStatus;
-
-    if (isHealthy) {
-      clearError();
-      const transportSynced = await syncTransportMode(true);
-
-      if (transportSynced) {
-        toast.success('连接成功', { id: toastId });
+    if (result.status === 'connected') {
+      if (result.transportIssue) {
+        toast.error(result.transportIssue, { id: toastId });
       } else {
-        toast.error(TRANSPORT_PROBE_FAILURE_MESSAGE, { id: toastId });
+        toast.success('连接成功', { id: toastId });
       }
     } else {
-      setError(RECONNECT_FAILURE_MESSAGE);
       toast.error(RECONNECT_FAILURE_MESSAGE, { id: toastId });
     }
-  }, [clearError, recordConnectionHealth, setConnectionStatus, setError, syncTransportMode]);
+  }, [applyRecovery, runRecovery, setConnectionStatus]);
 
   useEffect(() => {
     void checkConnection();

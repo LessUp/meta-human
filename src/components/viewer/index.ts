@@ -8,5 +8,6 @@ export { default as DigitalHumanViewer } from './DigitalHumanViewer';
 export { KeyboardControls } from './KeyboardControls';
 export { PerformanceTracker } from './PerformanceTracker';
 export { CyberAvatar } from './CyberAvatar';
+export { ImmersiveSessionBridge } from './ImmersiveSessionBridge';
 export { Scene } from './Scene';
 export * from './utils/cameraControls';

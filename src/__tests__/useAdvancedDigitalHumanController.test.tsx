@@ -24,6 +24,9 @@ const mocks = vi.hoisted(() => ({
   digitalHumanSetExpressionMock: vi.fn(),
   digitalHumanSetExpressionIntensityMock: vi.fn(),
   digitalHumanSetBehaviorMock: vi.fn(),
+  createObjectUrlMock: vi.fn(),
+  revokeObjectUrlMock: vi.fn(),
+  requestImmersiveArSessionMock: vi.fn(),
 }));
 
 vi.mock('../hooks/useChatStream', () => ({
@@ -107,6 +110,10 @@ vi.mock('../core/dialogue/dialogueService', () => ({
   clearRemoteSession: (...args: unknown[]) => mocks.clearRemoteSessionMock(...args),
 }));
 
+vi.mock('../core/performance/arSession', () => ({
+  requestImmersiveArSession: (...args: unknown[]) => mocks.requestImmersiveArSessionMock(...args),
+}));
+
 vi.mock('sonner', () => ({
   toast: {
     success: mocks.toastSuccessMock,
@@ -136,7 +143,19 @@ describe('useAdvancedDigitalHumanController', () => {
     mocks.digitalHumanSetExpressionMock.mockReset();
     mocks.digitalHumanSetExpressionIntensityMock.mockReset();
     mocks.digitalHumanSetBehaviorMock.mockReset();
+    mocks.createObjectUrlMock.mockReset();
+    mocks.revokeObjectUrlMock.mockReset();
+    mocks.requestImmersiveArSessionMock.mockReset();
     mocks.asrStartMock.mockReturnValue(true);
+    mocks.createObjectUrlMock.mockReturnValue('blob:new-avatar');
+    mocks.requestImmersiveArSessionMock.mockResolvedValue({
+      addEventListener: vi.fn(),
+      end: vi.fn(),
+    });
+    vi.stubGlobal('URL', {
+      createObjectURL: mocks.createObjectUrlMock,
+      revokeObjectURL: mocks.revokeObjectUrlMock,
+    });
 
     useDigitalHumanStore.setState({
       isPlaying: false,
@@ -148,6 +167,9 @@ describe('useAdvancedDigitalHumanController', () => {
       currentExpression: 'neutral',
       expressionIntensity: 0.8,
       currentBehavior: 'idle',
+      avatarSource: { kind: 'procedural' },
+      avatarLoadStatus: 'ready',
+      avatarLoadError: null,
     });
     useChatSessionStore.setState({
       sessionId: 'session_old',
@@ -160,6 +182,9 @@ describe('useAdvancedDigitalHumanController', () => {
       error: null,
       lastErrorTime: null,
       chatTransportMode: 'sse',
+      immersiveMode: 'standard',
+      immersiveSession: null,
+      immersiveError: null,
     });
   });
 
@@ -237,6 +262,82 @@ describe('useAdvancedDigitalHumanController', () => {
     expect(mocks.toastInfoMock).toHaveBeenCalledWith('录音已停止');
   });
 
+  it('records the latest vision emotion and motion for later dialogue context', () => {
+    const { result } = renderHook(() => useAdvancedDigitalHumanController());
+
+    act(() => {
+      result.current.handleEmotionChange('happy');
+      result.current.handleHeadMotion('nod');
+    });
+
+    expect(useDigitalHumanStore.getState() as unknown as Record<string, unknown>).toMatchObject({
+      visionContext: expect.objectContaining({
+        emotion: 'happy',
+        motion: 'nod',
+        updatedAt: expect.any(Number),
+      }),
+    });
+  });
+
+  it('uploads a custom avatar and revokes the previous custom model url', () => {
+    useDigitalHumanStore.setState({
+      avatarSource: {
+        kind: 'custom',
+        fileName: 'old.glb',
+        modelUrl: 'blob:old-avatar',
+      },
+    });
+    const { result } = renderHook(() => useAdvancedDigitalHumanController());
+    const file = new File(['avatar'], 'next.glb', { type: 'model/gltf-binary' });
+
+    act(() => {
+      result.current.handleAvatarUpload(file);
+    });
+
+    expect(mocks.createObjectUrlMock).toHaveBeenCalledWith(file);
+    expect(mocks.revokeObjectUrlMock).toHaveBeenCalledWith('blob:old-avatar');
+    expect(useDigitalHumanStore.getState() as unknown as Record<string, unknown>).toMatchObject({
+      avatarSource: {
+        kind: 'custom',
+        fileName: 'next.glb',
+        modelUrl: 'blob:new-avatar',
+      },
+      avatarLoadStatus: 'idle',
+      avatarLoadError: null,
+    });
+    expect(mocks.toastSuccessMock).toHaveBeenCalledWith('已切换到自定义头像');
+  });
+
+  it('falls back to the built-in avatar when custom model loading fails', () => {
+    useDigitalHumanStore.setState({
+      avatarSource: {
+        kind: 'custom',
+        fileName: 'broken.glb',
+        modelUrl: 'blob:broken-avatar',
+      },
+      avatarLoadStatus: 'idle',
+      avatarLoadError: null,
+    });
+    const { result } = renderHook(() => useAdvancedDigitalHumanController());
+
+    act(() => {
+      result.current.handleModelLoad({
+        type: 'procedural-fallback',
+        error: 'bad avatar',
+      });
+    });
+
+    expect(mocks.revokeObjectUrlMock).toHaveBeenCalledWith('blob:broken-avatar');
+    expect(useDigitalHumanStore.getState() as unknown as Record<string, unknown>).toMatchObject({
+      avatarSource: {
+        kind: 'procedural',
+      },
+      avatarLoadStatus: 'error',
+      avatarLoadError: 'bad avatar',
+    });
+    expect(useSystemStore.getState().error).toBe('bad avatar');
+  });
+
   it('clears transient errors after five seconds', () => {
     vi.useFakeTimers();
     useSystemStore.setState({ error: 'temporary error', lastErrorTime: Date.now() });
@@ -256,5 +357,25 @@ describe('useAdvancedDigitalHumanController', () => {
     unmount();
 
     expect(mocks.digitalHumanDisposeMock).not.toHaveBeenCalled();
+  });
+
+  it('requests an immersive ar session and records it in system state', async () => {
+    const session = {
+      addEventListener: vi.fn(),
+      end: vi.fn(),
+    };
+    mocks.requestImmersiveArSessionMock.mockResolvedValue(session);
+    const { result } = renderHook(() => useAdvancedDigitalHumanController());
+
+    await act(async () => {
+      await result.current.handleToggleImmersiveAr();
+    });
+
+    expect(mocks.requestImmersiveArSessionMock).toHaveBeenCalledTimes(1);
+    expect(useSystemStore.getState() as unknown as Record<string, unknown>).toMatchObject({
+      immersiveMode: 'ar-active',
+      immersiveSession: session,
+      immersiveError: null,
+    });
   });
 });

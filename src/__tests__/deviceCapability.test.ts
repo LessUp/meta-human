@@ -32,6 +32,8 @@ describe('Device Capability Detection', () => {
     expect(caps).toHaveProperty('enablePostProcessing');
     expect(caps).toHaveProperty('maxShadowMapSize');
     expect(caps).toHaveProperty('prefersReducedMotion');
+    expect(caps).toHaveProperty('supportsTouchInput');
+    expect(caps).toHaveProperty('supportsWebXR');
     expect(caps).toHaveProperty('detectedAt');
 
     // Validate tier is one of the allowed values
@@ -113,6 +115,17 @@ describe('Device Capability Detection', () => {
     expect(caps1).not.toBe(caps2);
     expect(caps2.tier).toBe('low');
     expect(caps2.supportsWebGL2).toBe(false);
+  });
+
+  it('detects touch readiness signals when they are available', () => {
+    Object.defineProperty(navigator, 'maxTouchPoints', {
+      configurable: true,
+      value: 5,
+    });
+
+    const caps = detectDeviceCapabilities();
+
+    expect(caps.supportsTouchInput).toBe(true);
   });
 
   describe('meetsMinimumTier', () => {

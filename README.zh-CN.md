@@ -354,9 +354,11 @@ npm run test:ui          # Vitest UI 模式
 - [x] 语音交互（TTS/ASR）
 - [x] 视觉感知（MediaPipe）
 - [x] 流式对话
-- [ ] 移动端 AR 支持
-- [ ] 自定义形象上传
-- [ ] 多语言 TTS
+- [x] 服务发现与端点故障切换
+- [x] 移动端 AR readiness 检测
+- [x] 移动端 AR 支持
+- [x] 自定义形象上传
+- [x] 多语言 TTS
 
 ---
 

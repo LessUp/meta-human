@@ -3,6 +3,7 @@ import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { useChatSessionStore } from '../store/chatSessionStore';
 import { useSystemStore, type ConnectionStatus } from '../store/systemStore';
 import type { ChatTransportMode } from '../core/dialogue/chatTransport';
+import { getDeviceCapabilities } from '../core/performance';
 
 const TRANSPORT_LABELS: Record<Exclude<ChatTransportMode, 'auto'>, string> = {
   websocket: 'WebSocket',
@@ -21,20 +22,41 @@ interface TopHUDProps {
   onToggleSettings: () => void;
   onReconnect: () => void;
   onNewSession: () => void;
+  onToggleImmersiveAr: () => void;
 }
 
-export default function TopHUD({ onToggleSettings, onReconnect, onNewSession }: TopHUDProps) {
+export default function TopHUD({
+  onToggleSettings,
+  onReconnect,
+  onNewSession,
+  onToggleImmersiveAr,
+}: TopHUDProps) {
+  const deviceCapabilities = getDeviceCapabilities();
   const connectionStatus = useSystemStore((s) => s.connectionStatus);
   const chatTransportMode = useSystemStore((s) => s.chatTransportMode);
   const chatPerformance = useSystemStore((s) => s.chatPerformance);
+  const connectionDiagnostics = useSystemStore((s) => s.connectionDiagnostics);
+  const immersiveMode = useSystemStore((s) => s.immersiveMode);
   const currentBehavior = useDigitalHumanStore((s) => s.currentBehavior);
   const chatHistory = useChatSessionStore((s) => s.chatHistory);
 
   const transportLabel = TRANSPORT_LABELS[chatTransportMode];
   const statusText = CONNECTION_STATUS_TEXT[connectionStatus];
+  const activeEndpointLabel = connectionDiagnostics.activeEndpoint
+    ? (() => {
+        try {
+          return new URL(connectionDiagnostics.activeEndpoint).host;
+        } catch {
+          return connectionDiagnostics.activeEndpoint;
+        }
+      })()
+    : null;
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-4 pt-3 sm:px-6 sm:pt-6" role="banner">
+    <div
+      className="pointer-events-none absolute inset-x-0 top-0 z-20 px-4 pt-3 sm:px-6 sm:pt-6"
+      role="banner"
+    >
       <div className="mx-auto flex max-w-7xl flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="pointer-events-auto max-w-3xl rounded-2xl border border-white/10 bg-black/35 px-4 py-3 shadow-2xl shadow-black/20 backdrop-blur-md">
           <h1 className="flex flex-wrap items-center gap-3 text-lg font-light tracking-widest text-blue-100/80 uppercase sm:text-2xl">
@@ -43,6 +65,11 @@ export default function TopHUD({ onToggleSettings, onReconnect, onNewSession }: 
             <span className="rounded border border-blue-500/30 bg-blue-500/20 px-2 py-0.5 text-xs text-blue-300">
               CORE 1.0
             </span>
+            {deviceCapabilities.supportsTouchInput && deviceCapabilities.supportsWebXR && (
+              <span className="rounded border border-emerald-500/30 bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-300">
+                AR Ready
+              </span>
+            )}
           </h1>
 
           <div
@@ -80,13 +107,26 @@ export default function TopHUD({ onToggleSettings, onReconnect, onNewSession }: 
             <span>
               协议: <span className="text-cyan-400">{transportLabel}</span>
             </span>
+            {activeEndpointLabel && (
+              <>
+                <span>
+                  端点: <span className="text-sky-300">{activeEndpointLabel}</span>
+                </span>
+                <span>
+                  切换:{' '}
+                  <span className="text-orange-300">{connectionDiagnostics.failoverCount}次</span>
+                </span>
+              </>
+            )}
             {chatPerformance.responseCompleteMs !== null && (
               <>
                 <span>
-                  首字: <span className="text-amber-400">{chatPerformance.firstTokenMs ?? '-'}ms</span>
+                  首字:{' '}
+                  <span className="text-amber-400">{chatPerformance.firstTokenMs ?? '-'}ms</span>
                 </span>
                 <span>
-                  完整: <span className="text-emerald-400">{chatPerformance.responseCompleteMs}ms</span>
+                  完整:{' '}
+                  <span className="text-emerald-400">{chatPerformance.responseCompleteMs}ms</span>
                 </span>
               </>
             )}
@@ -110,6 +150,20 @@ export default function TopHUD({ onToggleSettings, onReconnect, onNewSession }: 
                 className={`h-5 w-5 text-yellow-400 ${connectionStatus === 'connecting' ? 'animate-spin' : ''}`}
                 aria-hidden="true"
               />
+            </button>
+          )}
+          {deviceCapabilities.supportsTouchInput && deviceCapabilities.supportsWebXR && (
+            <button
+              onClick={onToggleImmersiveAr}
+              className="rounded-full border border-emerald-500/30 bg-emerald-500/20 px-3 py-2 text-xs text-emerald-100 backdrop-blur-md transition-all hover:bg-emerald-500/30 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 sm:px-4 sm:text-sm"
+              aria-label={immersiveMode === 'ar-active' ? '退出 AR 模式' : '进入 AR 模式'}
+              disabled={immersiveMode === 'entering-ar'}
+            >
+              {immersiveMode === 'ar-active'
+                ? '退出 AR'
+                : immersiveMode === 'entering-ar'
+                  ? 'AR 连接中'
+                  : '进入 AR'}
             </button>
           )}
           <button

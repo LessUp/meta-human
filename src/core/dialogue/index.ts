@@ -26,6 +26,11 @@ export type {
   StreamCallbacks,
 } from './dialogueService';
 export type { ChatTransport, ChatTransportCapabilities, ChatTransportMode } from './chatTransport';
+export type {
+  DialogueTurnMode,
+  DialogueTurnSnapshot,
+  DialogueTurnStatus,
+} from './dialogueTurnLifecycle';
 
 export { DialogueOrchestrator, handleDialogueResponse } from './dialogueOrchestrator';
 export type { DialogueHandleOptions, DialogueTurnOptions } from './dialogueOrchestrator';

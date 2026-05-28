@@ -5,6 +5,9 @@ import { useSystemStore } from '@/store/systemStore';
 import { useTTS, useEngine, useDialogue } from '@/core/services';
 import { toast } from 'sonner';
 import { loggers } from '@/lib/logger';
+import { createIdleDialogueTurnSnapshot } from '@/core/dialogue/dialogueTurnLifecycle';
+import { buildDialogueRequestMeta } from '@/core/dialogue/dialogueRequestMeta';
+import { getCurrentLanguage } from '@/lib/i18n';
 
 const logger = loggers.chat;
 
@@ -27,17 +30,31 @@ export function useChatStream(options: UseChatStreamOptions) {
   const markChatFirstToken = useSystemStore((s) => s.markChatFirstToken);
   const finalizeChatPerformanceTrace = useSystemStore((s) => s.finalizeChatPerformanceTrace);
   const setLoading = useSystemStore((s) => s.setLoading);
+  const setDialogueTurn = useSystemStore((s) => s.setDialogueTurn);
   const isLoading = useSystemStore((s) => s.isLoading);
   const [chatInput, setChatInput] = useState('');
   const { sessionId, isMuted, onConnectionChange, onClearError, onError } = options;
-  const activeTurnRef = useRef<{ token: symbol; sessionId: string } | null>(null);
+  const activeTurnRef = useRef<{
+    token: symbol;
+    sessionId: string;
+    settleForTeardown: () => void;
+  } | null>(null);
 
   useEffect(() => {
+    setDialogueTurn(dialogue.getTurnSnapshot());
+
+    const unsubscribe = dialogue.subscribeTurnSnapshot((snapshot) => {
+      setDialogueTurn(snapshot);
+    });
+
     return () => {
+      dialogue.reset();
+      activeTurnRef.current?.settleForTeardown();
+      unsubscribe();
+      setDialogueTurn(createIdleDialogueTurnSnapshot());
       activeTurnRef.current = null;
-      dialogue.abortPendingTurn();
     };
-  }, [dialogue, sessionId]);
+  }, [dialogue, sessionId, setDialogueTurn]);
 
   const handleChatSend = useCallback(
     async (text?: string) => {
@@ -52,8 +69,6 @@ export function useChatStream(options: UseChatStreamOptions) {
       const turnConnection = { status: 'connected' as 'connected' | 'error' };
       const turnSessionId = sessionId;
       const turnToken = Symbol('chat-stream-turn');
-
-      activeTurnRef.current = { token: turnToken, sessionId: turnSessionId };
 
       const ownsCurrentTurn = () =>
         activeTurnRef.current?.token === turnToken &&
@@ -121,12 +136,28 @@ export function useChatStream(options: UseChatStreamOptions) {
         addChatMessage('assistant', replyText);
       };
 
+      activeTurnRef.current = {
+        token: turnToken,
+        sessionId: turnSessionId,
+        settleForTeardown: () => {
+          finalizeAssistantMessage(true);
+          finalizePerformanceTrace('failed');
+        },
+      };
+
       try {
         startChatPerformanceTrace();
+        const runtimeState = useDigitalHumanStore.getState();
 
         const result = await dialogue.runDialogueTurnStream(content, {
           sessionId,
-          meta: { timestamp: Date.now() },
+          meta: buildDialogueRequestMeta({
+            timestamp: Date.now(),
+            language: getCurrentLanguage(),
+            speech: runtimeState.speechConfig,
+            vision:
+              runtimeState.visionContext.updatedAt === null ? null : runtimeState.visionContext,
+          }),
           engine,
           isMuted,
           speakWith: (textToSpeak) => tts.speak(textToSpeak),
