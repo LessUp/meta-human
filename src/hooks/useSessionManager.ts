@@ -8,7 +8,7 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { useChatSessionStore } from '@/store/chatSessionStore';
 import { useSystemStore } from '@/store/systemStore';
-import { useDialogue } from '@/core/services';
+import { useDialogue } from '@/services';
 import { clearRemoteSession } from '@/core/dialogue/dialogueService';
 
 export function useSessionManager() {

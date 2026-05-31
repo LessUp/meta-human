@@ -24,4 +24,35 @@ describe('core architecture', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('does not export React-facing service hooks from src/core', () => {
+    const coreServicesPath = 'src/core/services.ts';
+    const source = readFileSync(coreServicesPath, 'utf8');
+
+    // Check for React-facing exports from @/services
+    const exportsFromServices = /export\s+\{[^}]*\}\s+from\s+['"]@\/services['"]/g.test(source);
+
+    // Check for specific React-facing identifiers
+    const reactFacingIdentifiers = [
+      'ServicesProvider',
+      'ServicesContext',
+      'useServices',
+      'useEngine',
+      'useTTS',
+      'useASR',
+      'useDialogue',
+    ];
+
+    const exportsReactIdentifiers = reactFacingIdentifiers.some((identifier) =>
+      new RegExp(`export\\s+(?:type\\s+)?\\{[^}]*\\b${identifier}\\b[^}]*\\}`).test(source),
+    );
+
+    if (exportsFromServices || exportsReactIdentifiers) {
+      throw new Error(
+        `${coreServicesPath} must not export React-facing hooks or providers. ` +
+          `Found exports from @/services or React-facing identifiers. ` +
+          `Use @/services directly for React hooks.`,
+      );
+    }
+  });
 });

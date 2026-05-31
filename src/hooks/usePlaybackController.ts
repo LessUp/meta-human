@@ -6,7 +6,7 @@
 
 import { useCallback } from 'react';
 import { toast } from 'sonner';
-import { useEngine } from '@/core/services';
+import { useEngine } from '@/services';
 import { useDigitalHumanStore } from '@/store/digitalHumanStore';
 
 export function usePlaybackController() {

@@ -1,13 +1,10 @@
 /**
  * 服务实例导出。
  *
- * 通过 ServicesProvider + useServices() hooks 使用服务。
+ * 运行时服务组合工厂和类型。
+ * React 服务提供者和 hooks 请使用 @/services。
  * 测试时应使用 ServicesProvider 注入 mock 服务。
  */
-
-// React service container - re-exported from @/services
-export { ServicesContext, ServicesProvider } from '@/services';
-export { useServices, useEngine, useTTS, useASR, useDialogue } from '@/services';
 
 // Runtime types and composition - exported from local modules
 export type { Services } from './serviceComposition';

@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ServicesProvider, useDialogue, type Services } from '@/core/services';
+import { ServicesProvider, useDialogue } from '@/services';
+import type { Services } from '@/core/services';
 import type { ServiceComposition } from '@/core/serviceComposition';
 
 function buildServices(overrides: Partial<Services> = {}): Services {

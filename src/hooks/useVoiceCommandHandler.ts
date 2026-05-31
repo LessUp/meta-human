@@ -6,7 +6,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
-import { useEngine, useASR, useTTS } from '@/core/services';
+import { useEngine, useASR, useTTS } from '@/services';
 import { VoiceCommandExecutor } from '@/core/voiceCommand';
 
 interface UseVoiceCommandHandlerOptions {

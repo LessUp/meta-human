@@ -1,7 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ServicesProvider, type Services } from '@/core/services';
+import { ServicesProvider } from '@/services';
+import type { Services } from '@/core/services';
 import type { ServiceComposition } from '@/core/serviceComposition';
 import { useVoiceInteraction } from '@/hooks/useVoiceInteraction';
 

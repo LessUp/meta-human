@@ -9,7 +9,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useDigitalHumanStore } from '@/store/digitalHumanStore';
 import { useSystemStore } from '@/store/systemStore';
-import { useEngine, useASR } from '@/core/services';
+import { useEngine, useASR } from '@/services';
 import { usePlaybackController } from './usePlaybackController';
 import { useSessionManager } from './useSessionManager';
 import { useVoiceCommandHandler } from './useVoiceCommandHandler';

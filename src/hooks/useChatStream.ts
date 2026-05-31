@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useDigitalHumanStore } from '@/store/digitalHumanStore';
 import { useChatSessionStore } from '@/store/chatSessionStore';
 import { useSystemStore } from '@/store/systemStore';
-import { useTTS, useEngine, useDialogue } from '@/core/services';
+import { useTTS, useEngine, useDialogue } from '@/services';
 import { toast } from 'sonner';
 import { loggers } from '@/lib/logger';
 import { createIdleDialogueTurnSnapshot } from '@/core/dialogue/dialogueTurnLifecycle';

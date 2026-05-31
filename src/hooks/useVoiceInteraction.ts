@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useTTS, useASR } from '@/core/services';
+import { useTTS, useASR } from '@/services';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
 import { useI18n } from './useI18n';
 
