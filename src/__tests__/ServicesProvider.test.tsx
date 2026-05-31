@@ -116,4 +116,21 @@ describe('ServicesProvider', () => {
 
     expect(captured.current).toBe(dialogue);
   });
+
+  it('does not dispose externally provided composition on unmount', () => {
+    const composition: ServiceComposition = {
+      services: buildServices(),
+      dispose: vi.fn(),
+    };
+
+    const { unmount } = render(
+      <ServicesProvider composition={composition}>
+        <div>child</div>
+      </ServicesProvider>,
+    );
+
+    unmount();
+
+    expect(composition.dispose).not.toHaveBeenCalled();
+  });
 });

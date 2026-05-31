@@ -19,7 +19,21 @@ describe('core architecture', () => {
   it('keeps React imports out of src/core', () => {
     const offenders = collectSourceFiles('src/core').filter((file) => {
       const source = readFileSync(file, 'utf8');
-      return /from ['"]react['"]|import React/.test(source);
+
+      // Strip comments to avoid false positives
+      const sourceWithoutComments = source
+        .replace(/\/\*[\s\S]*?\*\//g, '') // Remove block comments
+        .replace(/\/\/.*$/gm, ''); // Remove line comments
+
+      // Match all forms of React imports:
+      // - import React from 'react'
+      // - import { ... } from 'react'
+      // - import type { ... } from 'react'
+      // - import type * as React from 'react'
+      // Handles multi-line imports by using [\s\S] to match any character including newlines
+      const reactImportPattern = /\bimport\s+(?:type\s+)?(?:[\s\S]*?)\s+from\s+['"]react['"]/;
+
+      return reactImportPattern.test(sourceWithoutComments);
     });
 
     expect(offenders).toEqual([]);
