@@ -5,11 +5,11 @@
  */
 
 import { useContext } from 'react';
-import { DigitalHumanEngine } from './avatar/DigitalHumanEngine';
-import { TTSService, ASRService } from './audio/audioService';
-import { DialogueOrchestrator } from './dialogue/dialogueOrchestrator';
+import { DigitalHumanEngine } from '@/core/avatar/DigitalHumanEngine';
+import { TTSService, ASRService } from '@/core/audio/audioService';
+import { DialogueOrchestrator } from '@/core/dialogue/dialogueOrchestrator';
 import { ServicesContext } from './servicesContext';
-import type { Services } from './servicesContext';
+import type { Services } from '@/core/serviceComposition';
 
 // ============================================================================
 // Hooks

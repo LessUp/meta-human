@@ -1,9 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ServicesProvider } from '@/core/services';
+import { ServicesProvider, type Services } from '@/core/services';
 import type { ServiceComposition } from '@/core/serviceComposition';
-import type { Services } from '@/core/servicesContext';
 import { useVoiceInteraction } from '@/hooks/useVoiceInteraction';
 
 function createVoice(name: string, lang: string): SpeechSynthesisVoice {

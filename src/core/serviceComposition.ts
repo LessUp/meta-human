@@ -9,7 +9,20 @@ import {
 import { TTSService, ASRService } from './audio/audioService';
 import { DigitalHumanEngine } from './avatar/DigitalHumanEngine';
 import { DialogueOrchestrator } from './dialogue/dialogueOrchestrator';
-import type { Services } from './servicesContext';
+
+// ============================================================================
+// Services Interface
+// ============================================================================
+
+/**
+ * Runtime services container interface.
+ */
+export interface Services {
+  engine: DigitalHumanEngine;
+  tts: TTSService;
+  asr: ASRService;
+  dialogue: DialogueOrchestrator;
+}
 
 export interface ServiceAdapters {
   ttsCallbacks: TTSCallbacks;

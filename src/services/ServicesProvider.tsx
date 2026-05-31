@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useRef, type ReactNode } from 'react';
-import { createServiceComposition, type ServiceComposition } from './serviceComposition';
+import { createServiceComposition, type ServiceComposition } from '@/core/serviceComposition';
 import { ServicesContext } from './servicesContext';
 
 // ============================================================================

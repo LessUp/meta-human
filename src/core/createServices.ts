@@ -7,8 +7,8 @@
 import {
   createServiceComposition,
   type CreateServiceCompositionOptions,
+  type Services,
 } from './serviceComposition';
-import type { Services } from './servicesContext';
 
 // ============================================================================
 // 服务工厂
