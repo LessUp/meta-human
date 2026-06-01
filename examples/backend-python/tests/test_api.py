@@ -8,6 +8,7 @@ import os
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 SERVER_ROOT = Path(__file__).resolve().parents[1]
 if str(SERVER_ROOT) not in sys.path:
@@ -51,6 +52,42 @@ class TestChat(unittest.TestCase):
         r = self.c.post("/v1/chat", json={"userText": "   "})
         self.assertEqual(r.status_code, 400)
 
+    def test_chat_accepts_messages_without_user_text(self):
+        r = self.c.post(
+            "/v1/chat",
+            json={"messages": [{"role": "user", "content": "你好"}]},
+        )
+        self.assertEqual(r.status_code, 200)
+
+    def test_chat_rejects_invalid_message_role(self):
+        r = self.c.post(
+            "/v1/chat",
+            json={"messages": [{"role": "invalid", "content": "test"}]},
+        )
+        self.assertEqual(r.status_code, 400)
+
+    def test_chat_merges_metadata_and_context(self):
+        fake_result = {
+            "replyText": "ok",
+            "emotion": "neutral",
+            "action": "idle",
+        }
+        with patch("app.api.chat.dialogue_service.generate_reply", AsyncMock(return_value=fake_result)) as mock_generate:
+            r = self.c.post(
+                "/v1/chat",
+                json={
+                    "messages": [{"role": "user", "content": "请帮我"}],
+                    "metadata": {"source": "web"},
+                    "context": {"locale": "zh-CN"},
+                },
+            )
+
+        self.assertEqual(r.status_code, 200)
+        called = mock_generate.await_args.kwargs
+        self.assertEqual(called["user_text"], "请帮我")
+        self.assertEqual(called["meta"]["source"], "web")
+        self.assertEqual(called["meta"]["context"]["locale"], "zh-CN")
+
     def test_chat_stream_sse(self):
         r = self.c.post("/v1/chat/stream", json={"userText": "你好"})
         self.assertEqual(r.status_code, 200)
@@ -59,6 +96,13 @@ class TestChat(unittest.TestCase):
         self.assertTrue(len(lines) >= 2)
         last = json.loads(lines[-1].replace("data: ", ""))
         self.assertEqual(last["type"], "done")
+
+    def test_chat_stream_accepts_messages_without_user_text(self):
+        r = self.c.post(
+            "/v1/chat/stream",
+            json={"messages": [{"role": "user", "content": "流式你好"}]},
+        )
+        self.assertEqual(r.status_code, 200)
 
 
 class TestSession(unittest.TestCase):
