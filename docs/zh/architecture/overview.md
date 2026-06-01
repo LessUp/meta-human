@@ -9,8 +9,15 @@ System design and data flow for MetaHuman Engine.
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         UI Layer                                 │
-│   Pages → Components → Hooks → Store                            │
+│   Pages → Components → Hooks → Services                         │
 │   React · TypeScript · Tailwind CSS                             │
+└─────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Service Container Layer                       │
+│   ServicesProvider · useServices · useEngine · useDialogue      │
+│   React Context for runtime services                            │
 └─────────────────────────────────────────────────────────────────┘
                                │
                                ▼
@@ -18,19 +25,20 @@ System design and data flow for MetaHuman Engine.
 │                      Core Engine Layer                           │
 │   Avatar · Dialogue · Vision · Audio · Performance              │
 │   Three.js · Web Speech API · MediaPipe                         │
+│   (No React imports - pure runtime logic)                       │
 └─────────────────────────────────────────────────────────────────┘
                                │
                                ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                        State Layer                               │
 │   chatSessionStore · systemStore · digitalHumanStore            │
-│   Zustand · Immer · Persist                                     │
+│   Zustand 5                                                      │
 └─────────────────────────────────────────────────────────────────┘
                                │
                                ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                      External Services                           │
-│   OpenAI API · Edge TTS · Whisper ASR · FastAPI                 │
+│   Browser TTS/ASR (primary) · Optional FastAPI backend          │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -54,17 +62,35 @@ System design and data flow for MetaHuman Engine.
 
 ### Core Engine Layer
 
-**Responsibility:** Business logic and domain-specific operations
+**Responsibility:** Business logic and domain-specific operations (pure runtime, no React)
 
 **Modules:**
 
-| Module      | Entry Point                            | Purpose                          |
-| ----------- | -------------------------------------- | -------------------------------- |
-| Avatar      | `core/avatar/DigitalHumanEngine.ts`    | 3D rendering and animation       |
-| Dialogue    | `core/dialogue/dialogueService.ts`     | Chat transport and orchestration |
-| Vision      | `core/vision/visionService.ts`         | Face and pose detection          |
-| Audio       | `core/audio/ttsService.ts`             | Speech synthesis and recognition |
-| Performance | `core/performance/deviceCapability.ts` | Hardware optimization            |
+| Module             | Entry Point                               | Purpose                             |
+| ------------------ | ----------------------------------------- | ----------------------------------- |
+| Avatar             | `core/avatar/DigitalHumanEngine.ts`       | 3D rendering and animation          |
+| AvatarContract     | `core/avatar/avatarContract.ts`           | Canonical emotion/action vocabulary |
+| Dialogue           | `core/dialogue/dialogueService.ts`        | Chat transport and orchestration    |
+| DialogueRouter     | `core/dialogue/dialogueEndpointRouter.ts` | Endpoint failover management        |
+| DialogueHttpClient | `core/dialogue/dialogueHttpClient.ts`     | HTTP/SSE request execution          |
+| Vision             | `core/vision/visionService.ts`            | Face and pose detection             |
+| Audio              | `core/audio/audioService.ts`              | Speech synthesis and recognition    |
+| Performance        | `core/performance/deviceCapability.ts`    | Hardware optimization               |
+
+### Service Container Layer
+
+**Responsibility:** React service container seam for UI components
+
+**Entry Point:** `src/services/index.ts`
+
+| Export             | Purpose                                   |
+| ------------------ | ----------------------------------------- |
+| `ServicesProvider` | React provider that owns service lifetime |
+| `useServices`      | Hook to access all services               |
+| `useEngine`        | Hook to access DigitalHumanEngine         |
+| `useTTS`           | Hook to access TTSService                 |
+| `useASR`           | Hook to access ASRService                 |
+| `useDialogue`      | Hook to access DialogueOrchestrator       |
 
 ### State Layer
 
@@ -360,32 +386,29 @@ const store = useDigitalHumanStore();
 
 ### Fallback Matrix
 
-| Operation | Primary    | Fallback          | Last Resort   |
-| --------- | ---------- | ----------------- | ------------- |
-| Chat API  | OpenAI     | Local mock        | Error message |
-| 3D Model  | GLB file   | Procedural avatar | Placeholder   |
-| TTS       | Web Speech | Silent (text)     | —             |
-| Vision    | MediaPipe  | Panel disabled    | —             |
+| Operation | Primary                   | Fallback                | Last Resort   |
+| --------- | ------------------------- | ----------------------- | ------------- |
+| TTS       | Browser Web Speech        | Silent (text)           | —             |
+| ASR       | Browser SpeechRecognition | Disabled                | —             |
+| Dialogue  | Configured backend        | Local frontend response | Error message |
+| Avatar    | Custom GLB/GLTF           | Procedural avatar       | Placeholder   |
+| Vision    | MediaPipe models          | Panel disabled          | —             |
 
 ---
 
 ## Extension Points
 
-### Adding New Emotion
+### Adding New Emotion or Action
 
-1. Add type to `store/digitalHumanStore.ts`
-2. Add mapping in `core/avatar/constants.ts`
-3. Add UI option in `ExpressionControlPanel.tsx`
-
-### Adding New Animation
-
-1. Add type to `store/digitalHumanStore.ts`
-2. Implement in `DigitalHumanViewer.tsx` CyberAvatar component
-3. Add trigger in `DigitalHumanEngine.ts`
+1. Update vocabulary in `core/avatar/avatarContract.ts`
+2. Update animation mapping in `core/avatar/constants.ts` if needed
+3. Update animation rendering in `components/viewer/CyberAvatar.tsx` if visual behavior changes
+4. Update optional backend response contract in `examples/backend-python/app/services/dialogue.py` if backend should emit it
+5. Add/adjust tests at the contract seam
 
 ### Adding New Transport
 
-1. Implement `ChatTransport` interface
+1. Implement `ChatTransport` interface in `core/dialogue/chatTransport.ts`
 2. Add to transport registry
 3. Update auto-selection logic
 
