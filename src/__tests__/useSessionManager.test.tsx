@@ -8,7 +8,7 @@ const abortPendingTurnMock = vi.fn();
 const clearRemoteSessionMock = vi.fn();
 const toastSuccessMock = vi.fn();
 
-vi.mock('@/core/services', () => ({
+vi.mock('@/services', () => ({
   useDialogue: () => ({
     abortPendingTurn: () => abortPendingTurnMock(),
   }),

@@ -44,7 +44,7 @@ vi.mock('../hooks/useConnectionHealth', () => ({
   }),
 }));
 
-vi.mock('../core/services', () => ({
+vi.mock('@/services', () => ({
   asrService: {
     start: mocks.asrStartMock,
     stop: mocks.asrStopMock,

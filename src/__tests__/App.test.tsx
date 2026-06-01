@@ -7,7 +7,7 @@ const { servicesProviderRenderSpy } = vi.hoisted(() => ({
   servicesProviderRenderSpy: vi.fn(),
 }));
 
-vi.mock('@/core/services', () => ({
+vi.mock('@/services', () => ({
   ServicesProvider: ({ children }: { children: ReactNode }) => {
     servicesProviderRenderSpy();
     return <div data-testid="services-provider">{children}</div>;

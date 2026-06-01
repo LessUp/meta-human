@@ -87,6 +87,25 @@ describe('chatTransport', () => {
     expect(streamUserInputMock).toHaveBeenCalledTimes(1);
   });
 
+  it('passes endpoint override to dialogue service calls', async () => {
+    const result: DialogueServiceResult = {
+      response: { replyText: 'override', emotion: 'neutral', action: 'idle' },
+      connectionStatus: 'connected',
+      error: null,
+    };
+    sendUserInputMock.mockResolvedValue(result);
+
+    const { httpChatTransport } = await import('../core/dialogue/chatTransport');
+    httpChatTransport.setEndpoint?.('http://backup:8000');
+    await httpChatTransport.send({ userText: 'hi' });
+
+    expect(sendUserInputMock).toHaveBeenCalledWith(
+      { userText: 'hi' },
+      expect.objectContaining({ endpoint: 'http://backup:8000' }),
+      undefined,
+    );
+  });
+
   it('websocket transport falls back to HTTP when connect fails', async () => {
     wsConnectMock.mockRejectedValue(new Error('ws unavailable'));
 

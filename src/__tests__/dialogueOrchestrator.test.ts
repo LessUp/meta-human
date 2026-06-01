@@ -4,6 +4,7 @@ import {
   handleDialogueResponse,
 } from '../core/dialogue/dialogueOrchestrator';
 import type { DialogueTurnSnapshot } from '../core/dialogue/dialogueTurnLifecycle';
+import type { ChatTransport } from '../core/dialogue/chatTransport';
 
 // Mock transport to control turn behavior
 vi.mock('../core/dialogue/chatTransport', () => {
@@ -123,6 +124,36 @@ describe('dialogue turn lifecycle seam', () => {
     orchestrator = new DialogueOrchestrator();
     const { __resetMockTransport } = (await import('../core/dialogue/chatTransport')) as any;
     __resetMockTransport();
+  });
+
+  it('uses injected chat transport resolver when provided', async () => {
+    const send = vi.fn().mockResolvedValue({
+      response: { replyText: 'injected', emotion: 'neutral', action: 'idle' },
+      connectionStatus: 'connected',
+      error: null,
+    });
+    const stream: ChatTransport['stream'] = async function* () {
+      yield* [];
+      return {
+        response: { replyText: 'injected', emotion: 'neutral', action: 'idle' },
+        connectionStatus: 'connected',
+        error: null,
+      };
+    };
+    const injectedTransport: ChatTransport = {
+      mode: 'http',
+      send,
+      stream,
+    };
+
+    const injectedOrchestrator = new DialogueOrchestrator({
+      getChatTransport: () => injectedTransport,
+    });
+
+    await expect(injectedOrchestrator.runDialogueTurn('hello')).resolves.toMatchObject({
+      replyText: 'injected',
+    });
+    expect(send).toHaveBeenCalledTimes(1);
   });
 
   it('publishes sending then complete for standard turns', async () => {

@@ -5,6 +5,7 @@ import {
   checkServerHealth,
   clearRemoteSession,
   DialogueApiError,
+  resetDialogueServiceRoutingForTests,
 } from '../core/dialogue/dialogueService';
 
 // ---------------------------------------------------------------------------
@@ -86,6 +87,7 @@ describe('DialogueApiError', () => {
 
 describe('sendUserInput', () => {
   beforeEach(() => {
+    resetDialogueServiceRoutingForTests();
     global.fetch = vi.fn();
   });
 
@@ -115,6 +117,39 @@ describe('sendUserInput', () => {
     expect(result.response.replyText).toBe('');
     expect(result.response.emotion).toBe('neutral');
     expect(result.response.action).toBe('idle');
+  });
+
+  it('normalizes messages and metadata payload fields before request', async () => {
+    mockFetchOk({ replyText: 'ok', emotion: 'neutral', action: 'idle' });
+
+    await sendUserInput(
+      {
+        userText: '   ',
+        messages: [
+          { role: 'assistant', content: '历史回复' },
+          { role: 'user', content: ' 当前问题 ' },
+        ],
+        metadata: { source: 'web' },
+        context: { locale: 'zh-CN' },
+      },
+      { maxRetries: 0 },
+    );
+
+    const [, options] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    const body = JSON.parse((options as RequestInit).body as string) as {
+      userText: string;
+      messages: Array<{ role: string; content: string }>;
+      metadata: Record<string, unknown>;
+      meta: Record<string, unknown>;
+    };
+
+    expect(body.userText).toBe('当前问题');
+    expect(body.messages).toEqual([
+      { role: 'assistant', content: '历史回复' },
+      { role: 'user', content: ' 当前问题 ' },
+    ]);
+    expect(body.metadata).toMatchObject({ source: 'web', context: { locale: 'zh-CN' } });
+    expect(body.meta).toEqual(body.metadata);
   });
 
   // ----- non-retryable errors (4xx except 429/408) -----
@@ -226,6 +261,7 @@ describe('sendUserInput', () => {
 
 describe('checkServerHealth', () => {
   beforeEach(() => {
+    resetDialogueServiceRoutingForTests();
     global.fetch = vi.fn();
   });
 
@@ -257,6 +293,7 @@ describe('checkServerHealth', () => {
 
 describe('clearRemoteSession', () => {
   beforeEach(() => {
+    resetDialogueServiceRoutingForTests();
     global.fetch = vi.fn();
   });
 
@@ -291,6 +328,7 @@ describe('clearRemoteSession', () => {
 
 describe('streamUserInput', () => {
   beforeEach(() => {
+    resetDialogueServiceRoutingForTests();
     global.fetch = vi.fn();
   });
 
