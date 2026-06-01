@@ -5,7 +5,7 @@
  * No I/O dependencies - can be unit tested in isolation.
  */
 
-import type { ExpressionType } from '../../store/digitalHumanStore';
+import type { ExpressionType } from '../avatar/avatarContract';
 import type { VoiceCommandResult } from './types';
 
 /**

@@ -9,6 +9,7 @@ import {
 } from './dialogueService';
 import { MetaHumanWSClient, probeWebSocketEndpoint, type WSServerEvent } from './wsClient';
 import { loggers } from '../../lib/logger';
+import { normalizeAvatarEmotion } from '../avatar/avatarContract';
 
 const logger = loggers.transport;
 
@@ -16,6 +17,7 @@ export type ChatTransportMode = 'auto' | 'http' | 'sse' | 'websocket';
 
 export interface ChatTransport {
   mode: Exclude<ChatTransportMode, 'auto'>;
+  setEndpoint?: (endpoint: string) => void;
   send: (
     payload: ChatRequestPayload,
     config?: DialogueServiceConfig,
@@ -40,12 +42,8 @@ export interface ChatTransportCapabilities {
 
 const DEFAULT_TIMEOUT_MS = 15000;
 
-const VALID_EMOTIONS = ['neutral', 'happy', 'surprised', 'sad', 'angry'] as const;
-
 const validateEmotion = (emotion: string): ChatResponsePayload['emotion'] => {
-  return VALID_EMOTIONS.includes(emotion as (typeof VALID_EMOTIONS)[number])
-    ? (emotion as ChatResponsePayload['emotion'])
-    : 'neutral';
+  return normalizeAvatarEmotion(emotion) as ChatResponsePayload['emotion'];
 };
 
 const buildEmptyResponse = (): ChatResponsePayload => ({
@@ -54,11 +52,32 @@ const buildEmptyResponse = (): ChatResponsePayload => ({
   action: 'idle',
 });
 
+function withEndpointConfig(
+  config: DialogueServiceConfig | undefined,
+  endpointOverride: string | undefined,
+): DialogueServiceConfig | undefined {
+  if (!endpointOverride) {
+    return config;
+  }
+
+  return {
+    ...(config ?? {}),
+    endpoint: config?.endpoint ?? endpointOverride,
+  };
+}
+
+let httpEndpointOverride: string | undefined;
+let sseEndpointOverride: string | undefined;
+let webSocketEndpointOverride: string | undefined;
+
 export const httpChatTransport: ChatTransport = {
   mode: 'http',
+  setEndpoint(endpoint) {
+    httpEndpointOverride = endpoint;
+  },
 
   send(payload, config, signal) {
-    return sendUserInput(payload, config, signal);
+    return sendUserInput(payload, withEndpointConfig(config, httpEndpointOverride), signal);
   },
 
   async *stream(
@@ -67,7 +86,11 @@ export const httpChatTransport: ChatTransport = {
     callbacks: StreamCallbacks = {},
     signal?: AbortSignal,
   ): AsyncGenerator<string, DialogueServiceResult, unknown> {
-    const result = await sendUserInput(payload, config, signal);
+    const result = await sendUserInput(
+      payload,
+      withEndpointConfig(config, httpEndpointOverride),
+      signal,
+    );
 
     if (result.connectionStatus === 'connected') {
       callbacks.onConnected?.();
@@ -88,13 +111,21 @@ export const httpChatTransport: ChatTransport = {
 
 export const sseChatTransport: ChatTransport = {
   mode: 'sse',
+  setEndpoint(endpoint) {
+    sseEndpointOverride = endpoint;
+  },
 
   send(payload, config, signal) {
-    return sendUserInput(payload, config, signal);
+    return sendUserInput(payload, withEndpointConfig(config, sseEndpointOverride), signal);
   },
 
   stream(payload, config, callbacks, signal) {
-    return streamUserInput(payload, config, callbacks, signal);
+    return streamUserInput(
+      payload,
+      withEndpointConfig(config, sseEndpointOverride),
+      callbacks,
+      signal,
+    );
   },
 };
 
@@ -251,10 +282,14 @@ async function* streamOverWebSocket(
 
 export const webSocketChatTransport: ChatTransport = {
   mode: 'websocket',
+  setEndpoint(endpoint) {
+    webSocketEndpointOverride = endpoint;
+  },
 
   async send(payload, config, signal) {
-    const timeout = config?.timeout ?? DEFAULT_TIMEOUT_MS;
-    const iterator = this.stream(payload, config, undefined, signal);
+    const resolvedConfig = withEndpointConfig(config, webSocketEndpointOverride);
+    const timeout = resolvedConfig?.timeout ?? DEFAULT_TIMEOUT_MS;
+    const iterator = this.stream(payload, resolvedConfig, undefined, signal);
     let finalResult: DialogueServiceResult | undefined;
 
     // Create a timeout promise
@@ -301,7 +336,12 @@ export const webSocketChatTransport: ChatTransport = {
   },
 
   stream(payload, config, callbacks, signal) {
-    return streamOverWebSocket(payload, config, callbacks, signal);
+    return streamOverWebSocket(
+      payload,
+      withEndpointConfig(config, webSocketEndpointOverride),
+      callbacks,
+      signal,
+    );
   },
 };
 

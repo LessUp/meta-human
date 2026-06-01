@@ -4,7 +4,16 @@ export {
   clearRemoteSession,
   streamUserInput,
   DialogueApiError,
+  resetDialogueServiceRoutingForTests,
 } from './dialogueService';
+export { DialogueEndpointRouter } from './dialogueEndpointRouter';
+export { normalizeDialogueRequestPayload } from './dialoguePayload';
+export {
+  sendDialogueHttpRequest,
+  sendDialogueStreamRequest,
+  normalizeDialogueError,
+  fetchWithTimeout,
+} from './dialogueHttpClient';
 export {
   getCachedChatTransportCapabilities,
   getChatTransport,
@@ -25,6 +34,11 @@ export type {
   DialogueServiceConfig,
   StreamCallbacks,
 } from './dialogueService';
+export type {
+  DialogueMessage,
+  DialogueMessageRole,
+  DialogueRequestPayload,
+} from './dialoguePayload';
 export type { ChatTransport, ChatTransportCapabilities, ChatTransportMode } from './chatTransport';
 export type {
   DialogueTurnMode,
@@ -33,4 +47,8 @@ export type {
 } from './dialogueTurnLifecycle';
 
 export { DialogueOrchestrator, handleDialogueResponse } from './dialogueOrchestrator';
-export type { DialogueHandleOptions, DialogueTurnOptions } from './dialogueOrchestrator';
+export type {
+  DialogueHandleOptions,
+  DialogueTurnOptions,
+  DialogueOrchestratorDependencies,
+} from './dialogueOrchestrator';

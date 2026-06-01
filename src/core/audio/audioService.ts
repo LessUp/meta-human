@@ -1,10 +1,17 @@
 import { loggers } from '../../lib/logger';
 import { VoiceCommandExecutor } from '../voiceCommand';
-import type { TTSCallbacks, ASRStateAdapter } from '../adapters';
+import type { TTSCallbacks, ASRStateAdapter } from './audioAdapters';
 import type { DialogueOrchestrator } from '../dialogue/dialogueOrchestrator';
 
 // Re-export for backward compatibility
-export type { TTSCallbacks, ASRStateAdapter } from '../adapters';
+export type {
+  TTSCallbacks,
+  ASRStateAdapter,
+  SpeechRecognitionStateAdapter,
+  SpeechPlaybackStateAdapter,
+  SpeechAvatarStateAdapter,
+  SpeechDialogueStateAdapter,
+} from './audioAdapters';
 
 const logger = loggers.audio;
 

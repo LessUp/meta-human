@@ -4,7 +4,7 @@
  * 管理对话轮次的生命周期，处理并发控制和状态管理。
  */
 import { ChatResponsePayload, type StreamCallbacks } from './dialogueService';
-import { getDefaultChatTransport } from './chatTransport';
+import { getDefaultChatTransport, type ChatTransport } from './chatTransport';
 import type { DigitalHumanEngine } from '../avatar/DigitalHumanEngine';
 import { loggers } from '../../lib/logger';
 import {
@@ -45,6 +45,10 @@ interface PendingDialogueTurn {
   streamGenerator?: AsyncGenerator<string, unknown, unknown>;
 }
 
+export interface DialogueOrchestratorDependencies {
+  getChatTransport?: () => ChatTransport;
+}
+
 /**
  * 对话编排器类。
  *
@@ -55,6 +59,11 @@ export class DialogueOrchestrator {
   private nextTurnId = 0;
   private turnSnapshot: DialogueTurnSnapshot = createIdleDialogueTurnSnapshot();
   private turnSnapshotListeners = new Set<(snapshot: DialogueTurnSnapshot) => void>();
+  private readonly getChatTransport: () => ChatTransport;
+
+  constructor(dependencies: DialogueOrchestratorDependencies = {}) {
+    this.getChatTransport = dependencies.getChatTransport ?? getDefaultChatTransport;
+  }
 
   /**
    * 重置编排器状态。
@@ -138,7 +147,7 @@ export class DialogueOrchestrator {
     this.pendingTurn = pendingTurn;
 
     const execute = async (): Promise<ChatResponsePayload | undefined> => {
-      const chatTransport = getDefaultChatTransport();
+      const chatTransport = this.getChatTransport();
 
       try {
         const result = await chatTransport.send(
@@ -274,7 +283,7 @@ export class DialogueOrchestrator {
     this.pendingTurn = pendingTurn;
 
     const execute = async (): Promise<ChatResponsePayload | undefined> => {
-      const chatTransport = getDefaultChatTransport();
+      const chatTransport = this.getChatTransport();
       let accumulatedText = '';
 
       try {

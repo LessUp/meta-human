@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { UserEmotion } from '@/core/vision/visionMapper';
+import type {
+  AvatarAction,
+  BehaviorType,
+  EmotionType,
+  ExpressionType,
+} from '@/core/avatar/avatarContract';
 
 // Named constants
 const RECORDING_TIMEOUT_MS = 30000;
@@ -10,37 +16,16 @@ const ENABLE_DEVTOOLS =
   import.meta.env?.DEV === true &&
   import.meta.env?.MODE !== 'test';
 
-// 表情类型定义
-export type EmotionType = 'neutral' | 'happy' | 'surprised' | 'sad' | 'angry';
-export type ExpressionType =
-  | 'neutral'
-  | 'smile'
-  | 'laugh'
-  | 'surprise'
-  | 'sad'
-  | 'angry'
-  | 'blink'
-  | 'eyebrow_raise'
-  | 'eye_blink'
-  | 'mouth_open'
-  | 'head_nod';
-export type BehaviorType =
-  | 'idle'
-  | 'greeting'
-  | 'listening'
-  | 'thinking'
-  | 'speaking'
-  | 'excited'
-  | 'wave'
-  | 'greet'
-  | 'think'
-  | 'nod'
-  | 'shakeHead'
-  | 'dance'
-  | 'speak'
-  | 'waveHand'
-  | 'raiseHand';
-export type VisionMotionType = 'nod' | 'shakeHead' | 'raiseHand' | 'waveHand';
+export type {
+  AvatarAction,
+  BehaviorType,
+  EmotionType,
+  ExpressionType,
+} from '@/core/avatar/avatarContract';
+export type VisionMotionType = Extract<
+  AvatarAction,
+  'nod' | 'shakeHead' | 'raiseHand' | 'waveHand'
+>;
 
 export interface VisionContextSnapshot {
   emotion: UserEmotion;

@@ -3,18 +3,21 @@ import { loggers } from '../../lib/logger';
 import type { EmotionType } from '../../store/digitalHumanStore';
 import { useSystemStore } from '../../store/systemStore';
 import { parseApiEndpoints } from './endpointDiscovery';
+import { DialogueEndpointRouter } from './dialogueEndpointRouter';
+import {
+  DialogueApiError,
+  fetchWithTimeout,
+  normalizeDialogueError,
+  sendDialogueHttpRequest,
+  sendDialogueStreamRequest,
+  type DialogueHttpRequestPayload,
+  type DialogueHttpResponsePayload,
+} from './dialogueHttpClient';
+import { normalizeDialogueRequestPayload } from './dialoguePayload';
 
-export interface ChatRequestPayload {
-  sessionId?: string;
-  userText: string;
-  meta?: Record<string, unknown>;
-}
+export type ChatRequestPayload = DialogueHttpRequestPayload;
 
-export interface ChatResponsePayload {
-  replyText: string;
-  emotion: EmotionType;
-  action: string;
-}
+export type ChatResponsePayload = DialogueHttpResponsePayload;
 
 export interface DialogueServiceResult {
   response: ChatResponsePayload;
@@ -22,32 +25,15 @@ export interface DialogueServiceResult {
   error: string | null;
 }
 
-// 对话服务配置
 export interface DialogueServiceConfig {
   maxRetries?: number;
   retryDelay?: number;
   timeout?: number;
-}
-
-// API 错误类
-export class DialogueApiError extends Error {
-  status: number;
-  isRetryable: boolean;
-
-  constructor(message: string, status: number, isRetryable = false) {
-    super(message);
-    this.name = 'DialogueApiError';
-    this.status = status;
-    this.isRetryable = isRetryable;
-  }
+  endpoint?: string;
 }
 
 const logger = loggers.dialogue;
 
-/**
- * Validates and normalizes an API URL.
- * Throws an error if the URL is malformed.
- */
 function validateApiUrl(url: string): string {
   const normalized = url.replace(/\/+$/, '');
   try {
@@ -55,7 +41,6 @@ function validateApiUrl(url: string): string {
     return normalized;
   } catch {
     logger.error(`Invalid API URL: ${url}`);
-    // Return a safe default that will fail gracefully
     return 'http://localhost:8000';
   }
 }
@@ -64,98 +49,55 @@ const API_BASE_URLS = parseApiEndpoints(
   validateApiUrl(import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'),
   import.meta.env.VITE_API_BASE_URL_FALLBACKS || '',
 );
-let activeApiBaseUrl = API_BASE_URLS[0] || 'http://localhost:8000';
+const endpointRouter = new DialogueEndpointRouter(API_BASE_URLS);
 
-function getApiBaseUrlCandidates(): string[] {
-  return [activeApiBaseUrl, ...API_BASE_URLS.filter((baseUrl) => baseUrl !== activeApiBaseUrl)];
-}
-
-function setActiveApiBaseUrl(baseUrl: string): void {
-  const didFailover = activeApiBaseUrl !== baseUrl;
-  activeApiBaseUrl = baseUrl;
-  useSystemStore.getState().recordEndpointRouting({
-    activeEndpoint: baseUrl,
-    didFailover,
-  });
-}
-
-// Named constants for configuration
-const DEFAULT_CONFIG: Required<DialogueServiceConfig> = {
+const DEFAULT_CONFIG: Required<Omit<DialogueServiceConfig, 'endpoint'>> = {
   maxRetries: 3,
   retryDelay: 1000,
   timeout: 15000,
 };
 
-// Named constants for timeouts and thresholds
 const HEALTH_CHECK_TIMEOUT_MS = 5000;
 const SESSION_DELETE_TIMEOUT_MS = 5000;
 
-// 带超时的 fetch
-async function fetchWithTimeout(
-  url: string,
-  options: RequestInit,
-  timeout: number,
-  externalSignal?: AbortSignal,
-): Promise<Response> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+function recordRoutingState(activeEndpoint: string, didFailover = false): void {
+  useSystemStore.getState().recordEndpointRouting({
+    activeEndpoint,
+    didFailover,
+  });
+}
 
-  // If external signal is already aborted, return early
-  if (externalSignal?.aborted) {
-    clearTimeout(timeoutId);
-    throw new DOMException('The operation was aborted.', 'AbortError');
-  }
+function reportEndpointSuccess(endpoint: string): void {
+  const routing = endpointRouter.reportSuccess(endpoint);
+  recordRoutingState(routing.activeEndpoint, routing.didFailover);
+}
 
-  // Listen to external signal to abort our controller too
-  let abortHandler: (() => void) | null = null;
-  if (externalSignal) {
-    abortHandler = () => controller.abort();
-    externalSignal.addEventListener('abort', abortHandler, { once: true });
-  }
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    return response;
-  } finally {
-    clearTimeout(timeoutId);
-    // Clean up the event listener if fetch completes before external signal aborts
-    if (abortHandler && externalSignal) {
-      externalSignal.removeEventListener('abort', abortHandler);
-    }
+function reportEndpointFailure(endpoint: string): void {
+  const routing = endpointRouter.reportFailure(endpoint);
+  if (routing.didFailover) {
+    recordRoutingState(routing.activeEndpoint, true);
   }
 }
 
-// 判断错误是否可重试
-function isRetryableError(status: number): boolean {
-  // 5xx 服务器错误和 429 (Rate Limit) 可重试
-  return status >= 500 || status === 429 || status === 408;
+function getEndpointCandidates(preferredEndpoint?: string): string[] {
+  return endpointRouter.getCandidateEndpoints(preferredEndpoint);
 }
 
-// 获取用户友好的错误消息
-function getErrorMessage(status: number, defaultMessage: string): string {
-  const messages: Record<number, string> = {
-    400: '请求格式错误，请重试',
-    401: '认证失败，请刷新页面',
-    403: '访问被拒绝',
-    404: '服务不可用，请稍后重试',
-    408: '请求超时，请重试',
-    429: '请求过于频繁，请稍后重试',
-    500: '服务器内部错误，请稍后重试',
-    502: '网关错误，请稍后重试',
-    503: '服务暂时不可用，请稍后重试',
-    504: '网关超时，请稍后重试',
-  };
-  return messages[status] || defaultMessage;
+function getActiveEndpoint(): string {
+  return endpointRouter.selectPrimaryEndpoint();
 }
 
-// 本地降级响应
+function isRetryableDialogueError(error: Error): boolean {
+  if (error instanceof DialogueApiError) {
+    return error.isRetryable;
+  }
+
+  return true;
+}
+
 function getFallbackResponse(userText: string): ChatResponsePayload {
-  // 简单的本地响应逻辑
   const greetings = ['你好', '您好', 'hello', 'hi', '嗨'];
-  const isGreeting = greetings.some((g) => userText.toLowerCase().includes(g));
+  const isGreeting = greetings.some((greeting) => userText.toLowerCase().includes(greeting));
 
   if (isGreeting) {
     return {
@@ -172,55 +114,94 @@ function getFallbackResponse(userText: string): ChatResponsePayload {
   };
 }
 
+function toChatResponsePayload(response: DialogueHttpResponsePayload): ChatResponsePayload {
+  return {
+    replyText: response.replyText,
+    emotion: response.emotion as EmotionType,
+    action: response.action,
+  };
+}
+
+function buildFallbackResult(
+  payload: ChatRequestPayload,
+  error: Error | null,
+): DialogueServiceResult {
+  return {
+    response: getFallbackResponse(payload.userText),
+    connectionStatus: 'error',
+    error: error?.message || '对话服务不可用',
+  };
+}
+
+function maybeNormalizeError(error: unknown): Error {
+  return normalizeDialogueError(error);
+}
+
+function shouldAbort(error: unknown, signal?: AbortSignal): boolean {
+  return (
+    signal?.aborted === true ||
+    (error instanceof DOMException && error.name === 'AbortError') ||
+    (error instanceof Error &&
+      error.message === '请求被取消' &&
+      error instanceof DialogueApiError &&
+      error.status === 408)
+  );
+}
+
 function buildEmptyResponse(): ChatResponsePayload {
   return { replyText: '', emotion: 'neutral', action: 'idle' };
 }
 
-export { buildEmptyResponse };
+export { buildEmptyResponse, DialogueApiError };
 
-// 检查服务器连接状态
+export function resetDialogueServiceRoutingForTests(): void {
+  endpointRouter.resetActiveEndpoint(API_BASE_URLS[0]);
+}
+
 export async function checkServerHealth(): Promise<boolean> {
-  for (const baseUrl of getApiBaseUrlCandidates()) {
+  const candidates = getEndpointCandidates();
+
+  for (const endpoint of candidates) {
     try {
       const response = await fetchWithTimeout(
-        `${baseUrl}/health`,
+        `${endpoint}/health`,
         { method: 'GET' },
         HEALTH_CHECK_TIMEOUT_MS,
       );
       if (response.ok) {
-        setActiveApiBaseUrl(baseUrl);
+        reportEndpointSuccess(endpoint);
         return true;
       }
+      reportEndpointFailure(endpoint);
     } catch {
-      // Try next candidate endpoint.
+      reportEndpointFailure(endpoint);
     }
   }
 
   return false;
 }
 
-// 清理远程会话历史（best-effort，不影响前端流程）
 export async function clearRemoteSession(sessionId: string): Promise<void> {
   if (!sessionId) return;
+
   try {
     await fetchWithTimeout(
-      `${activeApiBaseUrl}/v1/session/${encodeURIComponent(sessionId)}`,
+      `${getActiveEndpoint()}/v1/session/${encodeURIComponent(sessionId)}`,
       { method: 'DELETE' },
       SESSION_DELETE_TIMEOUT_MS,
     );
   } catch {
-    // 静默失败，不影响前端新会话的创建
+    // Best-effort cleanup.
   }
 }
 
-// 主发送函数 - 带重试和降级
 export async function sendUserInput(
   payload: ChatRequestPayload,
   config: DialogueServiceConfig = {},
   signal?: AbortSignal,
 ): Promise<DialogueServiceResult> {
-  const { maxRetries, retryDelay, timeout } = { ...DEFAULT_CONFIG, ...config };
-
+  const normalizedPayload = normalizeDialogueRequestPayload(payload);
+  const { maxRetries, retryDelay, timeout, endpoint } = { ...DEFAULT_CONFIG, ...config };
   let lastError: Error | null = null;
 
   attemptLoop: for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -232,72 +213,45 @@ export async function sendUserInput(
       };
     }
 
-    const candidateBaseUrls = getApiBaseUrlCandidates();
+    const candidateEndpoints = getEndpointCandidates(endpoint);
 
-    for (let candidateIndex = 0; candidateIndex < candidateBaseUrls.length; candidateIndex++) {
-      const baseUrl = candidateBaseUrls[candidateIndex];
+    for (let candidateIndex = 0; candidateIndex < candidateEndpoints.length; candidateIndex++) {
+      const candidateEndpoint = candidateEndpoints[candidateIndex];
 
       try {
-        const response = await fetchWithTimeout(
-          `${baseUrl}/v1/chat`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-          },
+        const response = await sendDialogueHttpRequest(normalizedPayload, {
+          endpoint: candidateEndpoint,
           timeout,
           signal,
-        );
-
-        if (!response.ok) {
-          const isRetryable = isRetryableError(response.status);
-          const errorMsg = getErrorMessage(response.status, `服务错误: ${response.status}`);
-          lastError = new DialogueApiError(errorMsg, response.status, isRetryable);
-
-          if (isRetryable && candidateIndex < candidateBaseUrls.length - 1) {
-            continue;
-          }
-
-          if (isRetryable && attempt < maxRetries) {
-            await sleep(retryDelay * (attempt + 1));
-            continue attemptLoop;
-          }
-
-          throw new DialogueApiError(errorMsg, response.status, false);
-        }
-
-        const data = await response.json();
-        setActiveApiBaseUrl(baseUrl);
+        });
+        reportEndpointSuccess(candidateEndpoint);
 
         return {
-          response: {
-            replyText: data.replyText ?? '',
-            emotion: data.emotion ?? 'neutral',
-            action: data.action ?? 'idle',
-          },
+          response: toChatResponsePayload(response),
           connectionStatus: 'connected',
           error: null,
         };
       } catch (error: unknown) {
-        lastError = error instanceof Error ? error : new Error(String(error));
+        lastError = maybeNormalizeError(error);
 
-        if (lastError.name === 'AbortError') {
-          lastError = new DialogueApiError('请求超时，请重试', 408, true);
+        if (signal?.aborted || shouldAbort(lastError, signal)) {
+          return {
+            response: buildEmptyResponse(),
+            connectionStatus: 'error',
+            error: '请求被取消',
+          };
         }
 
-        if (lastError instanceof TypeError && lastError.message.includes('fetch')) {
-          lastError = new DialogueApiError('网络连接失败，请检查网络', 0, true);
+        const retryable = isRetryableDialogueError(lastError);
+        if (retryable) {
+          reportEndpointFailure(candidateEndpoint);
         }
 
-        const canRetry = lastError instanceof DialogueApiError ? lastError.isRetryable : true;
-
-        if (canRetry && candidateIndex < candidateBaseUrls.length - 1) {
+        if (retryable && candidateIndex < candidateEndpoints.length - 1) {
           continue;
         }
 
-        if (!canRetry || attempt >= maxRetries) {
+        if (!retryable || attempt >= maxRetries) {
           break attemptLoop;
         }
 
@@ -308,16 +262,9 @@ export async function sendUserInput(
   }
 
   logger.error('对话服务所有重试都失败:', lastError);
-  const errorMsg = lastError?.message || '对话服务不可用';
-
-  return {
-    response: getFallbackResponse(payload.userText),
-    connectionStatus: 'error',
-    error: errorMsg,
-  };
+  return buildFallbackResult(normalizedPayload, lastError);
 }
 
-// 流式对话（SSE）
 export interface StreamCallbacks {
   onConnected?: () => void;
   onError?: (message: string) => void;
@@ -334,13 +281,13 @@ export async function* streamUserInput(
   callbacks: StreamCallbacks = {},
   signal?: AbortSignal,
 ): AsyncGenerator<string, DialogueServiceResult, unknown> {
-  const { timeout, maxRetries, retryDelay } = { ...DEFAULT_CONFIG, ...config };
+  const normalizedPayload = normalizeDialogueRequestPayload(payload);
+  const { timeout, maxRetries, retryDelay, endpoint } = { ...DEFAULT_CONFIG, ...config };
 
   let finalResponse: ChatResponsePayload | null = null;
   let streamError: string | null = null;
   let lastError: Error | null = null;
 
-  // Check if already aborted
   if (signal?.aborted) {
     return {
       response: buildEmptyResponse(),
@@ -350,44 +297,22 @@ export async function* streamUserInput(
   }
 
   attemptLoop: for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const candidateBaseUrls = getApiBaseUrlCandidates();
+    const candidateEndpoints = getEndpointCandidates(endpoint);
 
-    for (let candidateIndex = 0; candidateIndex < candidateBaseUrls.length; candidateIndex++) {
-      const baseUrl = candidateBaseUrls[candidateIndex];
+    for (let candidateIndex = 0; candidateIndex < candidateEndpoints.length; candidateIndex++) {
+      const candidateEndpoint = candidateEndpoints[candidateIndex];
 
       try {
-        const response = await fetchWithTimeout(
-          `${baseUrl}/v1/chat/stream`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          },
+        const response = await sendDialogueStreamRequest(normalizedPayload, {
+          endpoint: candidateEndpoint,
           timeout,
           signal,
-        );
+        });
 
-        if (!response.ok || !response.body) {
-          const errorMsg = getErrorMessage(response.status, `流式服务错误: ${response.status}`);
-          const isRetryable = isRetryableError(response.status) || !response.body;
-          lastError = new DialogueApiError(errorMsg, response.status, isRetryable);
-
-          if (isRetryable && candidateIndex < candidateBaseUrls.length - 1) {
-            continue;
-          }
-
-          if (isRetryable && attempt < maxRetries) {
-            await sleep(retryDelay * (attempt + 1));
-            continue attemptLoop;
-          }
-
-          throw new DialogueApiError(errorMsg, response.status, false);
-        }
-
-        setActiveApiBaseUrl(baseUrl);
+        reportEndpointSuccess(candidateEndpoint);
         callbacks.onConnected?.();
 
-        const reader = response.body.getReader();
+        const reader = response.body!.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
 
@@ -406,7 +331,6 @@ export async function* streamUserInput(
             if (done) break;
 
             buffer += decoder.decode(value, { stream: true });
-
             const lines = buffer.split('\n\n');
             buffer = lines.pop() || '';
 
@@ -451,8 +375,8 @@ export async function* streamUserInput(
           connectionStatus: streamError ? 'error' : 'connected',
           error: streamError,
         };
-      } catch (error) {
-        if (signal?.aborted || (error instanceof DOMException && error.name === 'AbortError')) {
+      } catch (error: unknown) {
+        if (signal?.aborted || shouldAbort(error, signal)) {
           return {
             response: finalResponse ?? buildEmptyResponse(),
             connectionStatus: 'error',
@@ -460,23 +384,17 @@ export async function* streamUserInput(
           };
         }
 
-        lastError = error instanceof Error ? error : new Error(String(error));
-
-        if (lastError.name === 'AbortError') {
-          lastError = new DialogueApiError('请求超时，请重试', 408, true);
+        lastError = maybeNormalizeError(error);
+        const retryable = isRetryableDialogueError(lastError);
+        if (retryable) {
+          reportEndpointFailure(candidateEndpoint);
         }
 
-        if (lastError instanceof TypeError && lastError.message.includes('fetch')) {
-          lastError = new DialogueApiError('网络连接失败，请检查网络', 0, true);
-        }
-
-        const canRetry = lastError instanceof DialogueApiError ? lastError.isRetryable : true;
-
-        if (canRetry && candidateIndex < candidateBaseUrls.length - 1) {
+        if (retryable && candidateIndex < candidateEndpoints.length - 1) {
           continue;
         }
 
-        if (!canRetry || attempt >= maxRetries) {
+        if (!retryable || attempt >= maxRetries) {
           break attemptLoop;
         }
 
@@ -487,10 +405,11 @@ export async function* streamUserInput(
   }
 
   logger.warn('流式请求失败，降级到普通请求:', lastError);
-  const fallback = await sendUserInput(payload, config, signal);
+  const fallback = await sendUserInput(normalizedPayload, { ...config, endpoint }, signal);
   if (fallback.response.replyText) {
     yield fallback.response.replyText;
   }
+
   return {
     ...fallback,
     connectionStatus: fallback.connectionStatus === 'error' ? 'error' : 'connected',
