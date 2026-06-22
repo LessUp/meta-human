@@ -61,6 +61,8 @@ export class TTSService {
   private callbacks: TTSCallbacks;
   private currentUtterance: SpeechSynthesisUtterance | null = null;
   private voiceLoadHandler: (() => void) | null = null;
+  private visemeTimer: ReturnType<typeof setInterval> | null = null;
+  private visemeStartTime = 0;
 
   constructor(config: TTSConfig = {}, callbacks: TTSCallbacks = {}) {
     this.synth =
@@ -104,6 +106,7 @@ export class TTSService {
       this.synth.onvoiceschanged = null;
       this.voiceLoadHandler = null;
     }
+    this.stopVisemeLoop();
     this.stop();
   }
 
@@ -159,16 +162,19 @@ export class TTSService {
 
       utterance.onstart = () => {
         this.callbacks.onSpeakStart?.();
+        this.startVisemeLoop();
       };
 
       utterance.onend = () => {
         this.currentUtterance = null;
+        this.stopVisemeLoop();
         this.callbacks.onSpeakEnd?.();
         resolve();
       };
 
       utterance.onerror = (event) => {
         this.currentUtterance = null;
+        this.stopVisemeLoop();
         logger.error('语音合成错误:', event);
         this.callbacks.onError?.(`语音合成失败: ${event.error}`);
         reject(new Error(event.error));
@@ -221,15 +227,18 @@ export class TTSService {
 
     utterance.onstart = () => {
       this.callbacks.onSpeakStart?.();
+      this.startVisemeLoop();
     };
 
     utterance.onend = () => {
       this.currentUtterance = null;
+      this.stopVisemeLoop();
       this.callbacks.onSpeakEnd?.();
     };
 
     utterance.onerror = (event) => {
       this.currentUtterance = null;
+      this.stopVisemeLoop();
       logger.error('语音合成错误:', event);
       this.callbacks.onError?.('语音合成失败');
     };
@@ -246,6 +255,34 @@ export class TTSService {
       this.currentUtterance.onerror = null;
       this.currentUtterance = null;
     }
+    this.stopVisemeLoop();
+  }
+
+  /**
+   * 启动嘴型驱动循环。
+   * Web Speech API 的 boundary 事件兼容性差，改用基于时间的正弦+随机扰动
+   * 模拟音节开合，~16Hz 更新 mouthOpen（0-1）。
+   */
+  private startVisemeLoop(): void {
+    this.stopVisemeLoop();
+    this.visemeStartTime = Date.now();
+    this.visemeTimer = setInterval(() => {
+      const elapsed = (Date.now() - this.visemeStartTime) / 1000;
+      // 主频 ~5Hz 模拟音节，叠加慢速起伏 + 随机扰动
+      const base = Math.abs(Math.sin(elapsed * Math.PI * 5));
+      const wobble = 0.3 * Math.sin(elapsed * Math.PI * 1.5);
+      const noise = (Math.random() - 0.5) * 0.2;
+      const open = Math.max(0, Math.min(1, base * 0.7 + wobble * 0.2 + noise + 0.1));
+      this.callbacks.onViseme?.(open);
+    }, 60);
+  }
+
+  private stopVisemeLoop(): void {
+    if (this.visemeTimer) {
+      clearInterval(this.visemeTimer);
+      this.visemeTimer = null;
+    }
+    this.callbacks.onViseme?.(0);
   }
 
   stop(): void {

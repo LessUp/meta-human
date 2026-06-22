@@ -19,6 +19,7 @@ export type DialogueRequestMetaInput = {
   language: Language;
   speech: DialogueSpeechContext;
   vision: DialogueVisionContext | null;
+  characterId?: string;
 };
 
 export function buildDialogueRequestMeta({
@@ -26,8 +27,9 @@ export function buildDialogueRequestMeta({
   language,
   speech,
   vision,
+  characterId,
 }: DialogueRequestMetaInput): Record<string, unknown> {
-  return {
+  const meta: Record<string, unknown> = {
     timestamp,
     language,
     speech: {
@@ -38,4 +40,8 @@ export function buildDialogueRequestMeta({
     },
     vision,
   };
+  if (characterId) {
+    meta.characterId = characterId;
+  }
+  return meta;
 }

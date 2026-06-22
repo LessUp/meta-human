@@ -352,12 +352,11 @@ class StreamErrorFallbackTest(unittest.IsolatedAsyncioTestCase):
     get_settings.cache_clear()
     self.service = DialogueService()
 
+    # 真流式：LLM 先输出 replyText 纯文本，再输出 marker + meta JSON
     async def fake_stream_success(messages):
-      yield json.dumps({
-        "replyText": "好的",
-        "emotion": "happy",
-        "action": "nod",
-      })
+      yield "您好！"
+      yield "很高兴见到您。\n"
+      yield '===META==={"emotion":"happy","action":"wave"}'
 
     self.service._call_llm_stream = fake_stream_success  # type: ignore[method-assign]
 
@@ -365,10 +364,110 @@ class StreamErrorFallbackTest(unittest.IsolatedAsyncioTestCase):
     async for event in self.service.generate_reply_stream("test"):
       events.append(json.loads(event))
 
+    token_events = [e for e in events if e["type"] == "token"]
+    done_events = [e for e in events if e["type"] == "done"]
+
+    # 真流式：token 应该是 LLM 原始分块，不是逐字符拆分
+    self.assertEqual(len(token_events), 2)
+    self.assertEqual(token_events[0]["content"], "您好！")
+    self.assertEqual(token_events[1]["content"], "很高兴见到您。\n")
+    self.assertEqual(len(done_events), 1)
+    self.assertEqual(done_events[0]["replyText"], "您好！很高兴见到您。")
+    self.assertEqual(done_events[0]["emotion"], "happy")
+    self.assertEqual(done_events[0]["action"], "wave")
+
+  async def test_stream_marker_split_across_chunks(self) -> None:
+    """marker 跨 chunk 时，hold 住前缀，不误 yield meta 标记。"""
+    os.environ["OPENAI_API_KEY"] = "test-key"
+    get_settings.cache_clear()
+    self.service = DialogueService()
+
+    async def fake_stream_split_marker(messages):
+      yield "回答内容===M"
+      yield "ETA==={\"emotion\":\"surprised\",\"action\":\"nod\"}"
+
+    self.service._call_llm_stream = fake_stream_split_marker  # type: ignore[method-assign]
+
+    events = []
+    async for event in self.service.generate_reply_stream("test"):
+      events.append(json.loads(event))
+
+    token_events = [e for e in events if e["type"] == "token"]
+    done_events = [e for e in events if e["type"] == "done"]
+
+    # marker 被正确识别，replyText 不含 marker 片段
+    self.assertEqual(len(token_events), 1)
+    self.assertEqual(token_events[0]["content"], "回答内容")
+    self.assertEqual(len(done_events), 1)
+    self.assertEqual(done_events[0]["replyText"], "回答内容")
+    self.assertEqual(done_events[0]["emotion"], "surprised")
+    self.assertEqual(done_events[0]["action"], "nod")
+
+  async def test_stream_no_marker_falls_back_to_neutral_meta(self) -> None:
+    """LLM 未输出 marker 时，整段当 replyText，meta 回退 neutral/idle。"""
+    os.environ["OPENAI_API_KEY"] = "test-key"
+    get_settings.cache_clear()
+    self.service = DialogueService()
+
+    async def fake_stream_no_marker(messages):
+      yield "纯文本回复，没有 meta"
+
+    self.service._call_llm_stream = fake_stream_no_marker  # type: ignore[method-assign]
+
+    events = []
+    async for event in self.service.generate_reply_stream("test"):
+      events.append(json.loads(event))
+
+    token_events = [e for e in events if e["type"] == "token"]
+    done_events = [e for e in events if e["type"] == "done"]
+
+    self.assertEqual(len(token_events), 1)
+    self.assertEqual(token_events[0]["content"], "纯文本回复，没有 meta")
+    self.assertEqual(len(done_events), 1)
+    self.assertEqual(done_events[0]["replyText"], "纯文本回复，没有 meta")
+    self.assertEqual(done_events[0]["emotion"], "neutral")
+    self.assertEqual(done_events[0]["action"], "idle")
+
+  async def test_stream_invalid_meta_emotion_normalized(self) -> None:
+    """meta JSON emotion 非法时回退 neutral。"""
+    os.environ["OPENAI_API_KEY"] = "test-key"
+    get_settings.cache_clear()
+    self.service = DialogueService()
+
+    async def fake_stream_bad_emotion(messages):
+      yield "回复\n===META==={\"emotion\":\"excited\",\"action\":\"idle\"}"
+
+    self.service._call_llm_stream = fake_stream_bad_emotion  # type: ignore[method-assign]
+
+    events = []
+    async for event in self.service.generate_reply_stream("test"):
+      events.append(json.loads(event))
+
     done_events = [e for e in events if e["type"] == "done"]
     self.assertEqual(len(done_events), 1)
-    self.assertEqual(done_events[0]["replyText"], "好的")
-    self.assertEqual(done_events[0]["emotion"], "happy")
+    self.assertEqual(done_events[0]["emotion"], "neutral")
+    self.assertEqual(done_events[0]["action"], "idle")
+
+  async def test_stream_malformed_meta_json_falls_back(self) -> None:
+    """meta JSON 解析失败时回退 neutral/idle。"""
+    os.environ["OPENAI_API_KEY"] = "test-key"
+    get_settings.cache_clear()
+    self.service = DialogueService()
+
+    async def fake_stream_bad_json(messages):
+      yield "回复\n===META===not a json"
+
+    self.service._call_llm_stream = fake_stream_bad_json  # type: ignore[method-assign]
+
+    events = []
+    async for event in self.service.generate_reply_stream("test"):
+      events.append(json.loads(event))
+
+    done_events = [e for e in events if e["type"] == "done"]
+    self.assertEqual(len(done_events), 1)
+    self.assertEqual(done_events[0]["replyText"], "回复")
+    self.assertEqual(done_events[0]["emotion"], "neutral")
+    self.assertEqual(done_events[0]["action"], "idle")
 
   async def test_stream_records_history(self) -> None:
     events = []

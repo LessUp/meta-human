@@ -35,4 +35,27 @@ describe('buildDialogueRequestMeta', () => {
       },
     });
   });
+
+  it('includes characterId when provided', () => {
+    const meta = buildDialogueRequestMeta({
+      timestamp: 1_700_000_000_000,
+      language: 'zh-CN',
+      speech: { voiceName: null, rate: 1, pitch: 1, volume: 0.8 },
+      vision: null,
+      characterId: 'serious-advisor',
+    });
+
+    expect(meta.characterId).toBe('serious-advisor');
+  });
+
+  it('omits characterId when not provided', () => {
+    const meta = buildDialogueRequestMeta({
+      timestamp: 1_700_000_000_000,
+      language: 'zh-CN',
+      speech: { voiceName: null, rate: 1, pitch: 1, volume: 0.8 },
+      vision: null,
+    });
+
+    expect('characterId' in meta).toBe(false);
+  });
 });

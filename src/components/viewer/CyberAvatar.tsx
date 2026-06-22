@@ -24,10 +24,12 @@ export function CyberAvatar({ prefersReducedMotion, deviceCaps }: CyberAvatarPro
   const leftEyeRef = useRef<THREE.Mesh>(null);
   const rightEyeRef = useRef<THREE.Mesh>(null);
   const ringsRef = useRef<THREE.Group>(null);
+  const mouthRef = useRef<THREE.Mesh>(null);
 
   // 使用 ref 避免 useFrame 中触发重渲染
   const storeRef = useRef(useDigitalHumanStore.getState());
   const intensityRef = useRef(storeRef.current.expressionIntensity ?? 0.8);
+  const mouthOpenRef = useRef(storeRef.current.mouthOpen ?? 0);
   const isVisibleRef = useIsTabVisibleRef();
 
   // 订阅 store 变化，更新 ref 而不触发重渲染
@@ -35,6 +37,7 @@ export function CyberAvatar({ prefersReducedMotion, deviceCaps }: CyberAvatarPro
     const unsubscribe = useDigitalHumanStore.subscribe((state) => {
       storeRef.current = state;
       intensityRef.current = state.expressionIntensity ?? 0.8;
+      mouthOpenRef.current = state.mouthOpen ?? 0;
     });
     return unsubscribe;
   }, []);
@@ -116,6 +119,15 @@ export function CyberAvatar({ prefersReducedMotion, deviceCaps }: CyberAvatarPro
 
       leftEyeRef.current.scale.y = THREE.MathUtils.lerp(leftEyeRef.current.scale.y, scaleY, 0.2);
       rightEyeRef.current.scale.y = THREE.MathUtils.lerp(rightEyeRef.current.scale.y, scaleY, 0.2);
+    }
+
+    // 嘴型 Lipsync：由 TTS 驱动 mouthOpen（0-1），渲染层平滑跟随
+    if (mouthRef.current?.scale) {
+      const targetMouthY = 0.15 + mouthOpenRef.current * 0.85;
+      mouthRef.current.scale.y = THREE.MathUtils.lerp(mouthRef.current.scale.y, targetMouthY, 0.3);
+      // 嘴部张开时略变窄
+      const targetMouthX = 1 - mouthOpenRef.current * 0.2;
+      mouthRef.current.scale.x = THREE.MathUtils.lerp(mouthRef.current.scale.x, targetMouthX, 0.3);
     }
 
     // 光环动画（低端设备跳过以提升性能）
@@ -201,6 +213,17 @@ export function CyberAvatar({ prefersReducedMotion, deviceCaps }: CyberAvatarPro
             <meshStandardMaterial color="#0ea5e9" emissive="#0ea5e9" emissiveIntensity={4} />
           </mesh>
         </group>
+
+        {/* --- 嘴部（Lipsync 驱动） --- */}
+        <mesh ref={mouthRef} position={[0, -0.35, 0.72]} scale={[1, 0.15, 1]}>
+          <boxGeometry args={[0.4, 0.15, 0.05]} />
+          <meshStandardMaterial
+            color="#0284c7"
+            emissive="#0284c7"
+            emissiveIntensity={1.5}
+            toneMapped={false}
+          />
+        </mesh>
 
         {/* --- 颈部/底座 --- */}
         <mesh position={[0, -1, 0]}>

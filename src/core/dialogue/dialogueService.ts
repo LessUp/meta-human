@@ -49,7 +49,7 @@ const API_BASE_URLS = parseApiEndpoints(
   validateApiUrl(import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'),
   import.meta.env.VITE_API_BASE_URL_FALLBACKS || '',
 );
-const endpointRouter = new DialogueEndpointRouter(API_BASE_URLS);
+let endpointRouter = new DialogueEndpointRouter(API_BASE_URLS);
 
 const DEFAULT_CONFIG: Required<Omit<DialogueServiceConfig, 'endpoint'>> = {
   maxRetries: 3,
@@ -155,7 +155,26 @@ function buildEmptyResponse(): ChatResponsePayload {
 export { buildEmptyResponse, DialogueApiError };
 
 export function resetDialogueServiceRoutingForTests(): void {
+  endpointRouter = new DialogueEndpointRouter(API_BASE_URLS);
   endpointRouter.resetActiveEndpoint(API_BASE_URLS[0]);
+}
+
+/**
+ * 运行时切换对话服务端点（优先于 env 配置）。
+ * 由 UI 配置面板调用，持久化由 systemStore 负责。
+ */
+export function applyRuntimeApiEndpoints(baseUrl: string, fallbacks: string = ''): void {
+  const urls = parseApiEndpoints(baseUrl, fallbacks);
+  if (urls.length > 0) {
+    endpointRouter = new DialogueEndpointRouter(urls);
+  }
+}
+
+/**
+ * 清除运行时端点配置，回退到 env 配置。
+ */
+export function resetRuntimeApiEndpoints(): void {
+  endpointRouter = new DialogueEndpointRouter(API_BASE_URLS);
 }
 
 export async function checkServerHealth(): Promise<boolean> {

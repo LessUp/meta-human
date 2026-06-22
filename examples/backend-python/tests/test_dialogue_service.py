@@ -153,5 +153,76 @@ class DialogueServiceTestCase(unittest.IsolatedAsyncioTestCase):
     self.assertEqual(len(self.service.get_session_history("session-b")), 2)
 
 
+class CharacterPresetTest(unittest.IsolatedAsyncioTestCase):
+  """Tests for character preset system prompt selection."""
+
+  def setUp(self) -> None:
+    self.original_api_key = os.environ.get("OPENAI_API_KEY")
+    os.environ["OPENAI_API_KEY"] = "test-key"
+    get_settings.cache_clear()
+    self.service = DialogueService()
+
+  def tearDown(self) -> None:
+    get_settings.cache_clear()
+    if self.original_api_key is None:
+      os.environ.pop("OPENAI_API_KEY", None)
+    else:
+      os.environ["OPENAI_API_KEY"] = self.original_api_key
+
+  async def test_character_id_selects_matching_prompt(self) -> None:
+    captured: list[dict[str, str]] = []
+
+    async def fake_call(messages: list[dict[str, str]]) -> dict:
+      captured.extend(messages)
+      return {"choices": [{"message": {"content": json.dumps({
+        "replyText": "ok", "emotion": "neutral", "action": "idle"
+      })}}]}
+
+    self.service._call_llm = fake_call  # type: ignore[method-assign]
+
+    await self.service.generate_reply(
+      "test", session_id="c1", meta={"characterId": "serious-advisor"}
+    )
+
+    system_msg = captured[0]["content"]
+    self.assertIn("稳重", system_msg)
+    self.assertNotIn("俏皮", system_msg)
+
+  async def test_unknown_character_id_falls_back_to_default(self) -> None:
+    captured: list[dict[str, str]] = []
+
+    async def fake_call(messages: list[dict[str, str]]) -> dict:
+      captured.extend(messages)
+      return {"choices": [{"message": {"content": json.dumps({
+        "replyText": "ok", "emotion": "neutral", "action": "idle"
+      })}}]}
+
+    self.service._call_llm = fake_call  # type: ignore[method-assign]
+
+    await self.service.generate_reply(
+      "test", session_id="c2", meta={"characterId": "nonexistent"}
+    )
+
+    system_msg = captured[0]["content"]
+    # 默认 lively-assistant 的特征词
+    self.assertIn("活泼", system_msg)
+
+  async def test_no_character_id_uses_default(self) -> None:
+    captured: list[dict[str, str]] = []
+
+    async def fake_call(messages: list[dict[str, str]]) -> dict:
+      captured.extend(messages)
+      return {"choices": [{"message": {"content": json.dumps({
+        "replyText": "ok", "emotion": "neutral", "action": "idle"
+      })}}]}
+
+    self.service._call_llm = fake_call  # type: ignore[method-assign]
+
+    await self.service.generate_reply("test", session_id="c3")
+
+    system_msg = captured[0]["content"]
+    self.assertIn("活泼", system_msg)
+
+
 if __name__ == "__main__":
   unittest.main()

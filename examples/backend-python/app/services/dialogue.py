@@ -12,6 +12,44 @@ from app.stores.session_store import SessionStore, create_session_store
 
 logger = logging.getLogger(__name__)
 
+# 流式协议标记：LLM 先输出 replyText 纯文本，新起一行输出该标记 + meta JSON
+STREAM_META_MARKER = "===META==="
+_VALID_EMOTIONS = {"neutral", "happy", "surprised", "sad", "angry"}
+_VALID_ACTIONS = {"idle", "wave", "greet", "think", "nod", "shakeHead", "dance", "speak"}
+
+# 角色预设 → system prompt 映射。前端只传 characterId，后端控制 prompt（避免注入）。
+CHARACTER_PROMPTS = {
+  "lively-assistant": (
+    "你是一个活泼、友好的虚拟数字人对话大脑，负责驱动屏幕上的数字人。"
+    "必须使用简体中文、自然口语风格回答用户，语气偏轻松、积极。"
+    "你需要根据用户的话尽量多地使用非 neutral 的 emotion 和非 idle 的 action，"
+    "但在严肃、负面话题时要适当收敛，不要过度夸张。"
+  ),
+  "serious-advisor": (
+    "你是一位稳重、专业的虚拟顾问。必须使用简体中文，语气克制、准确、有条理。"
+    "回答要言简意赅，避免夸张表情，emotion 多用 neutral，仅在强调重点时用 surprised，"
+    "负面或警示话题可用 sad/angry。action 多用 nod/think，避免 dance/wave。"
+  ),
+  "cute-companion": (
+    "你是一个俏皮可爱的虚拟伙伴。必须使用简体中文，语气活泼、卖萌、多用语气词。"
+    "尽量多用 happy/surprised 的 emotion 和 wave/greet/dance 的 action，"
+    "让数字人显得灵动。但遇到严肃话题时适当收敛。"
+  ),
+  "pro-service": (
+    "你是一位礼貌、规范的虚拟客服。必须使用简体中文，语气专业、简洁、得体。"
+    "回答直接了当，不卖弄。emotion 多用 neutral，招呼时用 happy，"
+    "action 多用 greet/nod，避免 dance 等娱乐性动作。"
+  ),
+}
+
+DEFAULT_CHARACTER_ID = "lively-assistant"
+
+
+def _get_character_prompt(character_id: Optional[str]) -> str:
+  """根据 characterId 选 system prompt，未识别时回退默认。"""
+  cid = (character_id or "").strip() or DEFAULT_CHARACTER_ID
+  return CHARACTER_PROMPTS.get(cid, CHARACTER_PROMPTS[DEFAULT_CHARACTER_ID])
+
 
 class DialogueService:
   def __init__(self) -> None:
@@ -98,19 +136,8 @@ class DialogueService:
       self._append_turn(session_id, user_text, result["replyText"])
       return result
 
-    system_prompt = (
-      "你是一个活泼、友好的虚拟数字人对话大脑，负责驱动屏幕上的数字人。"
-      "必须使用简体中文、自然口语风格回答用户，语气偏轻松、积极。"
-      "你需要根据用户的话尽量多地使用非 neutral 的 emotion 和非 idle 的 action，"
-      "但在严肃、负面话题时要适当收敛，不要过度夸张。"
-      "请只输出一个 JSON 对象，包含三个字段："
-      "replyText（字符串，给用户的自然语言回答，要友好自然），"
-      "emotion（字符串，取值限定为: neutral, happy, surprised, sad, angry），"
-      "action（字符串，取值限定为: idle, wave, greet, think, nod, shakeHead, dance, speak）。"
-      "emotion 取值建议：正向场景多用 happy；惊喜时用 surprised；负面情绪时用 sad；严肃提醒时用 angry；普通回答用 neutral。"
-      "action 取值建议：招呼告别用 greet/wave；思考用 think/nod；否定用 shakeHead；庆祝用 dance；说话用 speak；静止用 idle。"
-      "严禁输出 JSON 以外的任何文字。"
-    )
+    character_id = (meta or {}).get("characterId") if isinstance(meta, dict) else None
+    system_prompt = self._build_system_prompt(character_id)
 
     history_messages: list[dict[str, str]] = []
     if session_id:
@@ -253,22 +280,52 @@ class DialogueService:
       yield json.dumps({"type": "done", **result}, ensure_ascii=False)
       return
 
-    system_prompt = self._build_system_prompt()
+    system_prompt = self._build_streaming_system_prompt(
+      (meta or {}).get("characterId") if isinstance(meta, dict) else None
+    )
     messages = self._build_messages(session_id, user_text, meta, system_prompt)
 
     try:
-      collected_content = ""
+      collected_reply = ""
+      meta_text = ""
+      buffer = ""
+      in_meta = False
+
+      # 真流式：直接转发 LLM token，扫描 marker 分离 replyText 和 meta
       async for chunk_text in self._call_llm_stream(messages):
-        collected_content += chunk_text
+        if in_meta:
+          meta_text += chunk_text
+          continue
 
-      parsed = self._parse_llm_response(collected_content, user_text)
-      self._append_turn(session_id, user_text, parsed["replyText"])
+        buffer += chunk_text
+        safe_text, buffer, marker_found = self._split_stream_chunk(buffer)
 
-      # 逐字流式输出 replyText（而非原始 JSON 碎片）
-      for char in parsed["replyText"]:
-        yield json.dumps({"type": "token", "content": char}, ensure_ascii=False)
+        if safe_text:
+          collected_reply += safe_text
+          yield json.dumps({"type": "token", "content": safe_text}, ensure_ascii=False)
 
-      yield json.dumps({"type": "done", **parsed}, ensure_ascii=False)
+        if marker_found:
+          in_meta = True
+          meta_text = buffer
+          buffer = ""
+
+      # 流结束：处理剩余 buffer 和 meta
+      if not in_meta:
+        # LLM 未输出 marker，剩余 buffer 当 replyText
+        if buffer:
+          collected_reply += buffer
+          yield json.dumps({"type": "token", "content": buffer}, ensure_ascii=False)
+        emotion, action = "neutral", "idle"
+      else:
+        emotion, action = self._parse_stream_meta(meta_text)
+
+      reply_text = collected_reply.strip() or f"你刚才说：{user_text}"
+      self._append_turn(session_id, user_text, reply_text)
+
+      yield json.dumps(
+        {"type": "done", "replyText": reply_text, "emotion": emotion, "action": action},
+        ensure_ascii=False,
+      )
 
     except Exception as exc:
       logger.exception("流式 LLM 调用失败: %s", exc)
@@ -277,13 +334,11 @@ class DialogueService:
       yield json.dumps({"type": "error", "message": str(exc)}, ensure_ascii=False)
       yield json.dumps({"type": "done", **result}, ensure_ascii=False)
 
-  def _build_system_prompt(self) -> str:
+  def _build_system_prompt(self, character_id: Optional[str] = None) -> str:
+    character_intro = _get_character_prompt(character_id)
     return (
-      "你是一个活泼、友好的虚拟数字人对话大脑，负责驱动屏幕上的数字人。"
-      "必须使用简体中文、自然口语风格回答用户，语气偏轻松、积极。"
-      "你需要根据用户的话尽量多地使用非 neutral 的 emotion 和非 idle 的 action，"
-      "但在严肃、负面话题时要适当收敛，不要过度夸张。"
-      "请只输出一个 JSON 对象，包含三个字段："
+      character_intro
+      + "请只输出一个 JSON 对象，包含三个字段："
       "replyText（字符串，给用户的自然语言回答，要友好自然），"
       "emotion（字符串，取值限定为: neutral, happy, surprised, sad, angry），"
       "action（字符串，取值限定为: idle, wave, greet, think, nod, shakeHead, dance, speak）。"
@@ -291,6 +346,61 @@ class DialogueService:
       "action 取值建议：招呼告别用 greet/wave；思考用 think/nod；否定用 shakeHead；庆祝用 dance；说话用 speak；静止用 idle。"
       "严禁输出 JSON 以外的任何文字。"
     )
+
+  def _build_streaming_system_prompt(self, character_id: Optional[str] = None) -> str:
+    """流式专用 prompt：先输出 replyText 纯文本，再新起一行输出 marker + meta JSON。"""
+    character_intro = _get_character_prompt(character_id)
+    return (
+      character_intro
+      + "\n\n输出格式（严格遵守）：\n"
+      "1. 先直接输出给用户的自然语言回答（replyText），就是纯文本，不要任何 JSON 或标记。\n"
+      f"2. 回答结束后，新起一行输出 {STREAM_META_MARKER}，然后在同一行紧跟一个 JSON 对象："
+      "{\"emotion\":\"...\",\"action\":\"...\"}\n"
+      "emotion 取值限定: neutral, happy, surprised, sad, angry\n"
+      "action 取值限定: idle, wave, greet, think, nod, shakeHead, dance, speak\n"
+      f"严禁在 replyText 部分出现 {STREAM_META_MARKER} 字样或任何 JSON。\n"
+      "示例输出：\n"
+      "您好！很高兴见到您。\n"
+      f"{STREAM_META_MARKER}{{\"emotion\":\"happy\",\"action\":\"wave\"}}"
+    )
+
+  def _split_stream_chunk(self, buffer: str) -> tuple:
+    """从 buffer 分离可安全 yield 的文本和 marker 后的 meta。
+
+    返回 (safe_text, remaining_buffer, marker_found)。
+    - 若 buffer 含完整 marker：safe_text = marker 前内容，
+      remaining_buffer = marker 后内容（meta 起始），marker_found = True。
+    - 若 buffer 末尾是 marker 的前缀（marker 跨 chunk）：safe_text = 去掉前缀的部分，
+      remaining_buffer = 前缀部分，marker_found = False。
+    - 否则：safe_text = 全部 buffer，remaining_buffer = ""，marker_found = False。
+    """
+    pos = buffer.find(STREAM_META_MARKER)
+    if pos != -1:
+      return buffer[:pos], buffer[pos + len(STREAM_META_MARKER):], True
+
+    # 检查末尾是否 marker 前缀（从长到短，优先 hold 住更多）
+    for i in range(len(STREAM_META_MARKER) - 1, 0, -1):
+      if buffer.endswith(STREAM_META_MARKER[:i]):
+        return buffer[:-i], buffer[-i:], False
+
+    return buffer, "", False
+
+  def _parse_stream_meta(self, meta_text: str) -> tuple:
+    """解析流式 meta JSON，返回 (emotion, action)，失败回退 neutral/idle。"""
+    try:
+      parsed = json.loads(meta_text.strip())
+    except (json.JSONDecodeError, AttributeError):
+      return "neutral", "idle"
+
+    emotion = str(parsed.get("emotion", "neutral")).strip() or "neutral"
+    action = str(parsed.get("action", "idle")).strip() or "idle"
+
+    if emotion not in _VALID_EMOTIONS:
+      emotion = "neutral"
+    if action not in _VALID_ACTIONS:
+      action = "idle"
+
+    return emotion, action
 
   def _build_messages(
     self,

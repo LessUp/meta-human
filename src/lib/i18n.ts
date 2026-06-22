@@ -124,6 +124,18 @@ const translations = {
       'MetaHuman Engine - 浏览器原生的 3D 数字人引擎，集成语音、视觉、对话能力。零配置，离线可用，生产级。',
     'meta.keywords':
       'digital human, 3D avatar, AI, voice interaction, computer vision, WebGL, Three.js, React, TypeScript, 数字人, 3D形象, 人工智能, 语音交互, 计算机视觉',
+
+    // Settings Drawer (new sections)
+    'settings.character.title': '角色预设',
+    'settings.character.desc': '切换数字人对话人设，下一轮对话生效。',
+    'settings.config.title': 'API 端点',
+    'settings.config.desc': '运行时覆盖后端地址（优先于 env 配置），刷新后仍生效。',
+    'settings.config.baseUrl': '主端点 Base URL',
+    'settings.config.fallbacks': '备用端点（逗号分隔）',
+    'settings.config.apply': '应用',
+    'settings.config.reset': '恢复 env 默认',
+    'settings.config.saved': '已保存',
+    'settings.config.current': '当前覆盖',
   },
   en: {
     // Navbar
@@ -234,6 +246,20 @@ const translations = {
       'MetaHuman Engine - Browser-native 3D digital human engine with voice, vision, and dialogue capabilities. Zero-config, offline-ready, production-grade.',
     'meta.keywords':
       'digital human, 3D avatar, AI, voice interaction, computer vision, WebGL, Three.js, React, TypeScript',
+
+    // Settings Drawer (new sections)
+    'settings.character.title': 'Character Presets',
+    'settings.character.desc':
+      'Switch the digital human persona; applies on the next dialogue turn.',
+    'settings.config.title': 'API Endpoint',
+    'settings.config.desc':
+      'Override the backend URL at runtime (takes precedence over env config); persists across reloads.',
+    'settings.config.baseUrl': 'Primary Base URL',
+    'settings.config.fallbacks': 'Fallback endpoints (comma-separated)',
+    'settings.config.apply': 'Apply',
+    'settings.config.reset': 'Reset to env default',
+    'settings.config.saved': 'Saved',
+    'settings.config.current': 'Current override',
   },
 };
 

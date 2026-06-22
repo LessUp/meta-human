@@ -7,6 +7,7 @@ export interface TTSCallbacks {
   onSpeakStart?: () => void;
   onSpeakEnd?: () => void;
   onError?: (message: string) => void;
+  onViseme?: (open: number) => void;
 }
 
 export interface SpeechRecognitionStateAdapter {
@@ -58,9 +59,13 @@ export function createTTSCallbacks(): TTSCallbacks {
     onSpeakEnd: () => {
       useDigitalHumanStore.getState().setSpeaking(false);
       useDigitalHumanStore.getState().setBehavior('idle');
+      useDigitalHumanStore.getState().setMouthOpen(0);
     },
     onError: (message) => {
       useSystemStore.getState().setError(message);
+    },
+    onViseme: (open) => {
+      useDigitalHumanStore.getState().setMouthOpen(open);
     },
   };
 }

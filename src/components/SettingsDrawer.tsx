@@ -1,5 +1,7 @@
 import { Settings, X, Sun, Moon } from 'lucide-react';
+import { useState } from 'react';
 import { useDigitalHumanStore } from '../store/digitalHumanStore';
+import { useSystemStore } from '../store/systemStore';
 import { useFocusTrap, useTheme } from '../hooks';
 import ControlPanel from './ControlPanel';
 import ExpressionControlPanel from './ExpressionControlPanel';
@@ -8,6 +10,12 @@ import VisionMirrorPanel from './VisionMirrorPanel';
 import VoiceInteractionPanel from './VoiceInteractionPanel';
 import type { UserEmotion } from '../core/vision/visionMapper';
 import { getAvatarStatusLabel } from '../core/avatar/avatarSourceAdapter';
+import { CHARACTER_PRESETS } from '../core/dialogue/characterPresets';
+import {
+  applyRuntimeApiEndpoints,
+  resetRuntimeApiEndpoints,
+} from '../core/dialogue/dialogueService';
+import { t } from '../lib/i18n';
 
 interface SettingsDrawerProps {
   show: boolean;
@@ -32,7 +40,7 @@ interface SettingsDrawerProps {
   onHeadMotion: (motion: 'nod' | 'shakeHead' | 'raiseHand' | 'waveHand') => void;
 }
 
-const TABS = ['basic', 'expression', 'behavior', 'avatar', 'vision', 'voice'] as const;
+const TABS = ['basic', 'expression', 'behavior', 'avatar', 'vision', 'voice', 'config'] as const;
 
 export default function SettingsDrawer({
   show,
@@ -62,6 +70,8 @@ export default function SettingsDrawer({
   const autoRotate = useDigitalHumanStore((s) => s.autoRotate);
   const currentExpression = useDigitalHumanStore((s) => s.currentExpression);
   const currentBehavior = useDigitalHumanStore((s) => s.currentBehavior);
+  const activeCharacterId = useDigitalHumanStore((s) => s.activeCharacterId);
+  const setActiveCharacter = useDigitalHumanStore((s) => s.setActiveCharacter);
 
   const drawerRef = useFocusTrap<HTMLDivElement>(show, activeTab);
   const { toggleTheme, isDark } = useTheme();
@@ -143,6 +153,31 @@ export default function SettingsDrawer({
                     onToggleAutoRotate={onToggleAutoRotate}
                     onVoiceCommand={onVoiceCommand}
                   />
+                </div>
+                <div className="rounded-xl border border-white/5 bg-white/5 p-4">
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-medium text-white">
+                      {t('settings.character.title')}
+                    </h3>
+                    <p className="text-xs text-gray-400">{t('settings.character.desc')}</p>
+                  </div>
+                  <div className="mt-3 grid gap-2">
+                    {CHARACTER_PRESETS.map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => setActiveCharacter(preset.id)}
+                        className={`rounded-lg border px-3 py-2 text-left transition-colors ${
+                          activeCharacterId === preset.id
+                            ? 'border-blue-500 bg-blue-500/15 text-white'
+                            : 'border-white/10 bg-black/20 text-gray-300 hover:bg-white/5'
+                        }`}
+                      >
+                        <div className="text-sm font-medium">{preset.name}</div>
+                        <div className="text-xs text-gray-400">{preset.description}</div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -227,9 +262,106 @@ export default function SettingsDrawer({
                 <VoiceInteractionPanel onTranscript={(text) => onChatSend(text)} />
               </div>
             )}
+            {activeTab === 'config' && <RuntimeConfigPanel />}
           </div>
         </div>
       </div>
     </>
+  );
+}
+
+function RuntimeConfigPanel() {
+  const runtimeApiConfig = useSystemStore((s) => s.runtimeApiConfig);
+  const setRuntimeApiConfig = useSystemStore((s) => s.setRuntimeApiConfig);
+
+  const [baseUrl, setBaseUrl] = useState(runtimeApiConfig?.baseUrl ?? '');
+  const [fallbacks, setFallbacks] = useState(runtimeApiConfig?.fallbacks ?? '');
+  const [saved, setSaved] = useState(false);
+
+  const handleApply = () => {
+    const trimmed = baseUrl.trim();
+    if (!trimmed) return;
+    const config = { baseUrl: trimmed, fallbacks: fallbacks.trim() };
+    setRuntimeApiConfig(config);
+    applyRuntimeApiEndpoints(config.baseUrl, config.fallbacks);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  };
+
+  const handleReset = () => {
+    setRuntimeApiConfig(null);
+    resetRuntimeApiEndpoints();
+    setBaseUrl('');
+    setFallbacks('');
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  };
+
+  return (
+    <div className="space-y-4 rounded-xl border border-white/10 bg-white/5 p-4">
+      <div className="space-y-1">
+        <h3 className="text-sm font-medium text-white">{t('settings.config.title')}</h3>
+        <p className="text-xs text-gray-400">{t('settings.config.desc')}</p>
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-300" htmlFor="runtime-api-base">
+          {t('settings.config.baseUrl')}
+        </label>
+        <input
+          id="runtime-api-base"
+          type="text"
+          value={baseUrl}
+          onChange={(e) => setBaseUrl(e.target.value)}
+          placeholder="http://localhost:8000"
+          className="block w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-gray-200 placeholder:text-gray-500 focus:border-blue-500 focus:outline-none"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-300" htmlFor="runtime-api-fallbacks">
+          {t('settings.config.fallbacks')}
+        </label>
+        <input
+          id="runtime-api-fallbacks"
+          type="text"
+          value={fallbacks}
+          onChange={(e) => setFallbacks(e.target.value)}
+          placeholder="http://localhost:8001,http://backup:8000"
+          className="block w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-gray-200 placeholder:text-gray-500 focus:border-blue-500 focus:outline-none"
+        />
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handleApply}
+          disabled={!baseUrl.trim()}
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {t('settings.config.apply')}
+        </button>
+        <button
+          type="button"
+          onClick={handleReset}
+          className="rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-white/10"
+        >
+          {t('settings.config.reset')}
+        </button>
+        {saved && <span className="text-xs text-green-400">{t('settings.config.saved')}</span>}
+      </div>
+
+      {runtimeApiConfig && (
+        <div className="rounded-lg border border-white/10 bg-black/20 p-3 text-xs text-gray-400">
+          {t('settings.config.current')}: {runtimeApiConfig.baseUrl}
+          {runtimeApiConfig.fallbacks && (
+            <>
+              {' '}
+              + {t('settings.config.fallbacks')}: {runtimeApiConfig.fallbacks}
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

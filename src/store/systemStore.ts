@@ -66,6 +66,11 @@ export interface ModelLoadMetrics {
   completedAt: number | null;
 }
 
+export interface RuntimeApiConfig {
+  baseUrl: string;
+  fallbacks: string;
+}
+
 interface SystemState {
   isConnected: boolean;
   connectionStatus: ConnectionStatus;
@@ -81,6 +86,7 @@ interface SystemState {
   immersiveMode: ImmersiveMode;
   immersiveSession: XRSession | null;
   immersiveError: string | null;
+  runtimeApiConfig: RuntimeApiConfig | null;
   setConnected: (connected: boolean) => void;
   setConnectionStatus: (status: ConnectionStatus) => void;
   setLoading: (loading: boolean) => void;
@@ -111,11 +117,41 @@ interface SystemState {
   setImmersiveSession: (session: XRSession) => void;
   clearImmersiveSession: (error?: string | null) => void;
   clearError: () => void;
+  setRuntimeApiConfig: (config: RuntimeApiConfig | null) => void;
   resetSystemState: () => void;
 }
 
 const ERROR_THROTTLE_MS = 2000;
 const ENABLE_DEVTOOLS = import.meta.env.DEV && import.meta.env.MODE !== 'test';
+const RUNTIME_API_CONFIG_KEY = 'metahuman_runtime_api_config';
+
+function loadRuntimeApiConfig(): RuntimeApiConfig | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(RUNTIME_API_CONFIG_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<RuntimeApiConfig>;
+    if (typeof parsed?.baseUrl === 'string' && parsed.baseUrl.trim()) {
+      return { baseUrl: parsed.baseUrl.trim(), fallbacks: parsed.fallbacks ?? '' };
+    }
+  } catch {
+    // ignore malformed storage
+  }
+  return null;
+}
+
+function persistRuntimeApiConfig(config: RuntimeApiConfig | null): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (config) {
+      window.localStorage.setItem(RUNTIME_API_CONFIG_KEY, JSON.stringify(config));
+    } else {
+      window.localStorage.removeItem(RUNTIME_API_CONFIG_KEY);
+    }
+  } catch {
+    // ignore quota / privacy mode errors
+  }
+}
 
 const createInitialConnectionDiagnostics = (): ConnectionDiagnostics => ({
   lastHealthCheckAt: null,
@@ -171,6 +207,7 @@ export const useSystemStore = create<SystemState>()(
       immersiveMode: 'standard',
       immersiveSession: null,
       immersiveError: null,
+      runtimeApiConfig: loadRuntimeApiConfig(),
 
       setConnected: (connected) => set({ isConnected: connected }),
 
@@ -349,6 +386,11 @@ export const useSystemStore = create<SystemState>()(
       },
 
       clearError: () => set({ error: null, lastErrorTime: null }),
+
+      setRuntimeApiConfig: (config) => {
+        persistRuntimeApiConfig(config);
+        set({ runtimeApiConfig: config });
+      },
 
       resetSystemState: () =>
         set({

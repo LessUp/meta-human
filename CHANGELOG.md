@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🎭 Streaming & Lipsync
+
+- **True streaming dialogue** — Replaced fake streaming in the Python backend with real token-by-token streaming. The LLM now outputs plain reply text first, followed by a `===META===` marker line carrying the emotion/action JSON, so users see tokens appear as the LLM generates them instead of after the full response completes.
+- **Lipsync mouth animation** — Added a `mouthOpen` state channel driven by a time-based viseme loop in `TTSService` (≈16Hz sinusoidal + noise simulation). The procedural `CyberAvatar` now renders a mouth mesh that opens and closes in sync with TTS playback, and `onSpeakEnd` cleanly resets the mouth to closed.
+
+### 🧑‍🎤 Character Presets
+
+- **Built-in character presets** — Shipped 4 character personas (`lively-assistant`, `serious-advisor`, `cute-companion`, `pro-service`) with backend-side system prompt mapping. The frontend only sends a `characterId`; the backend controls the prompt to avoid injection. A preset selector is now available in the settings drawer's basic tab.
+- **`characterId` in dialogue metadata** — `buildDialogueRequestMeta` now carries an optional `characterId` field, and `useChatStream` forwards the active preset from `digitalHumanStore` on every streaming turn.
+
+### ⚙️ Runtime Configuration
+
+- **Runtime API endpoint override** — Added a `config` tab in the settings drawer for overriding the dialogue backend base URL and fallback endpoints at runtime. The override is persisted in `localStorage` and reapplied on app startup via `ServicesProvider`, taking precedence over `VITE_API_BASE_URL` env config. A reset button restores the env defaults.
+
+### 🧪 Tests
+
+- Added `lipsync.test.ts` (7 tests) covering `mouthOpen` clamping, TTS callback wiring, and the viseme loop start/stop lifecycle.
+- Added `characterPresets.test.ts` (6 tests) covering preset uniqueness, default fallback, and validation.
+- Added `runtimeApiConfig.test.ts` (5 tests) covering `localStorage` persistence and `applyRuntimeApiEndpoints` / `resetRuntimeApiEndpoints` routing.
+- Extended `dialogueRequestMeta.test.ts` with `characterId` inclusion/omission cases.
+- Extended backend `test_dialogue_service.py` with a `CharacterPresetTest` class (3 tests) verifying character prompt selection, unknown-id fallback, and default behavior.
+
 ### ✨ Runtime Capabilities
 
 - Added structured dialogue request metadata so language preference, speech configuration, and recent vision context travel together with each chat turn

@@ -157,6 +157,7 @@ export function useChatStream(options: UseChatStreamOptions) {
             speech: runtimeState.speechConfig,
             vision:
               runtimeState.visionContext.updatedAt === null ? null : runtimeState.visionContext,
+            characterId: runtimeState.activeCharacterId,
           }),
           engine,
           isMuted,

@@ -5,6 +5,8 @@ export {
   streamUserInput,
   DialogueApiError,
   resetDialogueServiceRoutingForTests,
+  applyRuntimeApiEndpoints,
+  resetRuntimeApiEndpoints,
 } from './dialogueService';
 export { DialogueEndpointRouter } from './dialogueEndpointRouter';
 export { normalizeDialogueRequestPayload } from './dialoguePayload';
@@ -52,3 +54,10 @@ export type {
   DialogueTurnOptions,
   DialogueOrchestratorDependencies,
 } from './dialogueOrchestrator';
+export {
+  CHARACTER_PRESETS,
+  DEFAULT_CHARACTER_ID,
+  getCharacterPreset,
+  isValidCharacterId,
+} from './characterPresets';
+export type { CharacterPreset } from './characterPresets';
